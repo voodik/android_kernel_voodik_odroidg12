@@ -33,5 +33,7 @@ extern void cma_init_clear(struct cma *cma, bool clear);
 extern int setup_cma_full_pagemap(struct cma *cma);
 extern int cma_mmu_op(struct page *page, int count, bool set);
 #endif
-
+extern struct page *cma_alloc_at(struct cma *cma, size_t count,
+					unsigned int align,
+					phys_addr_t at_addr);
 #endif

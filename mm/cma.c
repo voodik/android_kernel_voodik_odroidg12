@@ -749,6 +749,20 @@ struct page *cma_alloc(struct cma *cma, size_t count, unsigned int align)
 }
 
 /**
+ * cma_alloc() - allocate pages from contiguous area
+ * @cma:   Contiguous memory region for which the allocation is performed.
+ * @count: Requested number of pages.
+ * @align: Requested alignment of pages (in PAGE_SIZE order).
+ *
+ * This function allocates part of contiguous memory on specific
+ * contiguous memory area.
+ */
+struct page *cma_alloc(struct cma *cma, size_t count, unsigned int align)
+{
+	return cma_alloc_at(cma, count, align, 0);
+}
+
+/**
  * cma_release() - release allocated pages
  * @cma:   Contiguous memory region for which the allocation is performed.
  * @pages: Allocated pages.
