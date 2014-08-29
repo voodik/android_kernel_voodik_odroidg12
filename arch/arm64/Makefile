@@ -152,12 +152,8 @@ ifeq ($(CONFIG_AMLOGIC_MODIFY),y)
 endif
 
 PHONY += dtbs dtbs_install
-
-dtbs: prepare scripts
-	$(Q)$(MAKE) $(build)=$(boot)/dts
-
-dtbs_install:
-	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts
+dtbs dtbs_install: prepare scripts
+	$(Q)$(MAKE) $(build)=$(boot)/dts $@
 
 Image-dtb Image.gz-dtb: vmlinux scripts dtbs
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
