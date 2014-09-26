@@ -42,6 +42,10 @@
 #include <linux/delay.h>
 #include <linux/amlogic/secmon.h>
 #endif /* CONFIG_AMLOGIC_CMA */
+#include <linux/dma-mapping.h>
+
+#include <asm/tlbflush.h>
+#include <asm/cacheflush.h>
 
 #include "cma.h"
 
@@ -511,6 +515,126 @@ err:
 	return ret;
 }
 
+static int __dma_update_pte(pte_t *pte, pgtable_t token, unsigned long addr,
+			    void *data)
+{
+	struct page *page = virt_to_page(addr);
+	pgprot_t prot = *(pgprot_t *)data;
+
+	set_pte_at(&init_mm, addr, pte, mk_pte(page, prot));
+	return 0;
+}
+
+static void __dma_remap(struct page *page, size_t size, pgprot_t prot)
+{
+	unsigned long start = (unsigned long) page_address(page);
+	unsigned end = start + size;
+	int err;
+
+	err = apply_to_page_range(&init_mm, start,
+		size, __dma_update_pte, &prot);
+	if (err)
+		pr_err("***%s: error=%d, pfn=%lx\n", __func__,
+			err, page_to_pfn(page));
+	dsb(sy);
+	flush_tlb_kernel_range(start, end);
+}
+
+static void __dma_clear_buffer(struct page *page, size_t size)
+{
+	void *ptr;
+	/*
+	 * Ensure that the allocated pages are zeroed, and that any data
+	 * lurking in the kernel direct-mapped region is invalidated.
+	 */
+	ptr = page_address(page);
+	if (ptr) {
+		memset(ptr, 0, size);
+		__dma_flush_area(ptr, size);
+		/* comment out as not present for arm64 */
+		/* outer_flush_range(__pa(ptr), __pa(ptr) + size);*/
+	}
+}
+
+struct page *cma_alloc_at(struct cma *cma, size_t count,
+				unsigned int align, phys_addr_t at_addr)
+{
+	unsigned long mask, offset;
+	unsigned long pfn = -1;
+	unsigned long start = 0;
+	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+	struct page *page = NULL;
+	int ret;
+	unsigned long start_pfn = __phys_to_pfn(at_addr);
+
+	if (!cma || !cma->count)
+		return NULL;
+
+	pr_debug("%s(cma %p, count %zu, align %d)\n", __func__, (void *)cma,
+		 count, align);
+
+	if (!count)
+		return NULL;
+
+	mask = cma_bitmap_aligned_mask(cma, align);
+	offset = cma_bitmap_aligned_offset(cma, align);
+	bitmap_maxno = cma_bitmap_maxno(cma);
+	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+
+	if (bitmap_count > bitmap_maxno)
+		return NULL;
+
+	if (start_pfn && start_pfn < cma->base_pfn)
+		return NULL;
+	start = start_pfn ? start_pfn - cma->base_pfn : start;
+
+	for (;;) {
+		mutex_lock(&cma->lock);
+		bitmap_no = bitmap_find_next_zero_area_off(cma->bitmap,
+				bitmap_maxno, start, bitmap_count, mask,
+				offset);
+		if (bitmap_no >= bitmap_maxno || (start && start != bitmap_no)) {
+			mutex_unlock(&cma->lock);
+			break;
+		}
+		bitmap_set(cma->bitmap, bitmap_no, bitmap_count);
+		/*
+		 * It's safe to drop the lock here. We've marked this region for
+		 * our exclusive use. If the migration fails we will take the
+		 * lock again and unmark it.
+		 */
+		mutex_unlock(&cma->lock);
+
+		pfn = cma->base_pfn + (bitmap_no << cma->order_per_bit);
+		mutex_lock(&cma_mutex);
+		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
+		mutex_unlock(&cma_mutex);
+		if (ret == 0) {
+			page = pfn_to_page(pfn);
+			break;
+		}
+
+		cma_clear_bitmap(cma, pfn, count);
+		if (ret != -EBUSY || start)
+			break;
+
+		pr_debug("%s(): memory range at %p is busy, retrying\n",
+			 __func__, pfn_to_page(pfn));
+		/* try again with a bit different memory target */
+		start = bitmap_no + mask + 1;
+	}
+
+	trace_cma_alloc(pfn, page, count, align);
+
+	pr_debug("%s(): returned %p\n", __func__, page);
+	if (page) {
+		__dma_remap(page, count << PAGE_SHIFT,
+			pgprot_writecombine(PAGE_KERNEL));
+		__dma_clear_buffer(page, count << PAGE_SHIFT);
+	}
+	return page;
+}
+
 /**
  * cma_alloc() - allocate pages from contiguous area
  * @cma:   Contiguous memory region for which the allocation is performed.
@@ -654,6 +778,8 @@ bool cma_release(struct cma *cma, const struct page *pages, unsigned int count)
 	aml_cma_release_hook(count, (struct page *)pages);
 	aml_cma_free(pfn, count);
 #else
+	__dma_remap(pages, count << PAGE_SHIFT, PAGE_KERNEL_EXEC);
+
 	free_contig_range(pfn, count);
 #endif /* CONFIG_AMLOGIC_CMA */
 	cma_clear_bitmap(cma, pfn, count);
