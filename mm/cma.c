@@ -43,6 +43,7 @@
 #include <linux/amlogic/secmon.h>
 #endif /* CONFIG_AMLOGIC_CMA */
 #include <linux/dma-mapping.h>
+#include <linux/dma-contiguous.h>
 
 #include <asm/tlbflush.h>
 #include <asm/cacheflush.h>
@@ -663,6 +664,13 @@ struct page *cma_alloc_at(struct cma *cma, size_t count,
 		  page ? page_to_pfn(page) : 0, sched_clock() - tick);
 #endif /* CONFIG_AMLOGIC_CMA */
 	pr_debug("%s(): returned %p\n", __func__, page);
+#ifndef CONFIG_AMLOGIC_CMA
+	if (page) {
+		__dma_remap(page, count << PAGE_SHIFT,
+			pgprot_writecombine(PAGE_KERNEL));
+		__dma_clear_buffer(page, count << PAGE_SHIFT);
+	}
+#endif /* CONFIG_AMLOGIC_CMA */
 	return page;
 }
 
@@ -710,7 +718,7 @@ bool cma_release(struct cma *cma, const struct page *pages, unsigned int count)
 	aml_cma_release_hook(count, (struct page *)pages);
 	aml_cma_free(pfn, count);
 #else
-	__dma_remap(pages, count << PAGE_SHIFT, PAGE_KERNEL_EXEC);
+	__dma_remap((struct page *)pages, count << PAGE_SHIFT, PAGE_KERNEL_EXEC);
 
 	free_contig_range(pfn, count);
 #endif /* CONFIG_AMLOGIC_CMA */
@@ -720,3 +728,82 @@ bool cma_release(struct cma *cma, const struct page *pages, unsigned int count)
 	return true;
 }
 
+#ifdef CONFIG_DMA_CMA
+int dma_get_contiguous_stats(struct device *dev,
+			struct dma_contiguous_stats *stats)
+{
+	struct cma *cma = NULL;
+
+	if ((!dev) || !stats)
+		return -EINVAL;
+
+	if (dev->cma_area)
+		cma = dev->cma_area;
+
+	if (!cma)
+		return -EINVAL;
+
+	stats->size = (cma->count) << PAGE_SHIFT;
+	stats->base = (cma->base_pfn) << PAGE_SHIFT;
+
+	return 0;
+}
+
+#define MAX_REPLACE_DEV 16
+static struct device *replace_dev_list[MAX_REPLACE_DEV];
+static atomic_t replace_dev_count;
+
+bool dma_contiguous_should_replace_page(struct page *page)
+{
+	int i;
+	ulong pfn;
+	struct cma *cma;
+	struct device *dev;
+	int count = atomic_read(&replace_dev_count);
+
+	if (!page)
+		return false;
+	pfn = page_to_pfn(page);
+
+	for (i = 0; i < count; i++) {
+		dev = replace_dev_list[i];
+		if (!dev)
+			continue;
+		cma = dev->cma_area;
+		if (!cma)
+			continue;
+		if (pfn >= cma->base_pfn &&
+		    pfn < cma->base_pfn + cma->count)
+			return true;
+	}
+
+	return false;
+}
+
+/* Enable replacing pages during get_user_pages.
+ * any ref count on CMA page from get_user_pages
+ * makes the page not migratable and can cause
+ * CMA allocation failure. Enabling replace
+ * would force replacing the CMA pages with non-CMA
+ * pages during get_user_pages
+ */
+int dma_contiguous_enable_replace_pages(struct device *dev)
+{
+	int idx;
+	struct cma *cma;
+
+	if (!dev)
+		return -EINVAL;
+
+	idx = atomic_inc_return(&replace_dev_count);
+	if (idx > MAX_REPLACE_DEV)
+		return -EINVAL;
+	replace_dev_list[idx - 1] = dev;
+	cma = dev->cma_area;
+	if (cma) {
+		pr_info("enabled page replacement for spfn=%lx, epfn=%lx\n",
+			cma->base_pfn, cma->base_pfn + cma->count);
+	}
+	return 0;
+}
+#endif /* CONFIG_DMA_CMA */
