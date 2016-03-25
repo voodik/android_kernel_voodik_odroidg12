@@ -610,7 +610,6 @@ int __netpoll_setup(struct netpoll *np, struct net_device *ndev)
 	const struct net_device_ops *ops;
 	int err;
 
-	np->dev = ndev;
 	strlcpy(np->dev_name, ndev->name, IFNAMSIZ);
 	INIT_WORK(&np->cleanup_work, netpoll_async_cleanup);
 
@@ -677,6 +676,7 @@ int netpoll_setup(struct netpoll *np)
 		goto unlock;
 	}
 	dev_hold(ndev);
+	np->dev = ndev;
 
 	/* bring up DSA management network devices up first */
 	for_each_netdev(net, dev) {
@@ -790,6 +790,7 @@ int netpoll_setup(struct netpoll *np)
 	return 0;
 
 put:
+	np->dev = NULL;
 	dev_put(ndev);
 unlock:
 	rtnl_unlock();
