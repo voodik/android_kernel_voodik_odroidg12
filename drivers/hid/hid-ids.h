@@ -1148,7 +1148,6 @@
 /* Focaltech System FT5926 Multitouch(Hardkernel 9" Touch Screen) */
 #define USB_VENDOR_ID_FOCALTECH 0x2808
 #define USB_DEVICE_ID_FOCALTECH_TOUCH   0x81C9
-#endif
 
 /* Silicon Integrated Systems Corp */
 #define USB_VENDOR_ID_SILICON     0x0457
@@ -1180,3 +1179,36 @@
 /* Dell P2314T USB capacitive Screen */
 #define USB_VENDOR_ID_DELL_P2314T	0x2149
 #define USB_DEVICE_ID_P2314T_TOUCH	0x2316
+
+/* DMeasyTouch USB capacitive Screen */
+#define USB_VENDOR_ID_DMEASY	0x7374
+#define USB_DEVICE_ID_DMEASY_TOUCH	0x1241
+
+/* ELO 1002L USB capacitive Screen */
+#define USB_VENDOR_ID_ELO_1002L	0x05E3
+#define USB_DEVICE_ID_ELO_1002L_TOUCH	0x0608
+
+/* LG 23ET63V USB capacitive Screen */
+#define USB_VENDOR_ID_LG_23ET63V	0x0457
+#define USB_DEVICE_ID_LG_23ET63V_TOUCH	0x1034
+
+/* Lilliput 779GL-70NP/C/T - 7" HDMI capacitive Screen */
+#define USB_VENDOR_ID_LILLIPUT	0x1391
+#define USB_DEVICE_ID_LILLIPUT_779GL_TOUCH	0x2112
+
+/* Zaagtech HDMI capacitive Screen */
+#define USB_VENDOR_ID_ZAAGTECH	0xAAEC
+#define USB_DEVICE_ID_ZAAGTECH_TOUCH	0xC021
+
+/* FITOUCH */
+#define USB_VENDOR_ID_FITOUCH 0x10c4
+#define USB_DEVICE_ID_FITOUCH_TOUCHSCREEN_SG 0x5e50
+#define USB_DEVICE_ID_FITOUCH_TOUCHSCREEN_MT 0x5e51
+#define USB_DEVICE_ID_FITOUCH_TOUCHSCREEN_Z_MT 0x5e52
+
+/* Hardkernel */
+#define USB_VENDOR_ID_ODROID	0x16b4
+#define USB_DEVICE_ID_VU5	0x0704
+#define USB_DEVICE_ID_VU7PLUS	0x0705
+
+#endif
