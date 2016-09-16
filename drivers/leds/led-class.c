@@ -21,6 +21,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/timer.h>
+#include <uapi/linux/uleds.h>
 #include "leds.h"
 
 static struct class *leds_class;
@@ -256,7 +257,7 @@ int led_classdev_register_ext(struct device *parent,
 			      struct led_classdev *led_cdev,
 			      struct led_init_data *init_data)
 {
-	char name[64];
+	char name[LED_MAX_NAME_SIZE];
 	int ret;
 
 	ret = led_classdev_next_name(led_cdev->name, name, sizeof(name));
