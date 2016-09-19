@@ -1737,6 +1737,7 @@ struct inode *ubifs_new_inode(struct ubifs_info *c, const struct inode *dir,
 			      umode_t mode);
 int ubifs_getattr(struct vfsmount *mnt, struct dentry *dentry,
 		  struct kstat *stat);
+int ubifs_check_dir_empty(struct inode *dir);
 
 /* xattr.c */
 extern const struct xattr_handler *ubifs_xattr_handlers[];
