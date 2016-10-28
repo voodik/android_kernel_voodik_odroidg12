@@ -149,7 +149,7 @@ struct request {
 
 	int cpu;
 	unsigned cmd_type;
-	u64 cmd_flags;
+	unsigned int cmd_flags;		/* op and common flags */
 	req_flags_t rq_flags;
 	unsigned long atomic_flags;
 
@@ -253,20 +253,6 @@ struct request {
 	ktime_t			lat_hist_io_start;
 	int			lat_hist_enabled;
 };
-
-#define REQ_OP_SHIFT (8 * sizeof(u64) - REQ_OP_BITS)
-#define req_op(req)  ((req)->cmd_flags >> REQ_OP_SHIFT)
-
-#define req_set_op(req, op) do {				\
-	WARN_ON(op >= (1 << REQ_OP_BITS));			\
-	(req)->cmd_flags &= ((1ULL << REQ_OP_SHIFT) - 1);	\
-	(req)->cmd_flags |= ((u64) (op) << REQ_OP_SHIFT);	\
-} while (0)
-
-#define req_set_op_attrs(req, op, flags) do {	\
-	req_set_op(req, op);			\
-	(req)->cmd_flags |= flags;		\
-} while (0)
 
 static inline bool blk_rq_is_passthrough(struct request *rq)
 {
@@ -689,17 +675,40 @@ static inline unsigned int blk_queue_cluster(struct request_queue *q)
 	return q->limits.cluster;
 }
 
+<<<<<<< HEAD
 /*
  * We regard a request as sync, if either a read or a sync write
  */
 static inline bool rw_is_sync(int op, unsigned int rw_flags)
 {
 	return op == REQ_OP_READ || (rw_flags & REQ_SYNC);
+=======
+static inline enum blk_zoned_model
+blk_queue_zoned_model(struct request_queue *q)
+{
+	return q->limits.zoned;
+}
+
+static inline bool blk_queue_is_zoned(struct request_queue *q)
+{
+	switch (blk_queue_zoned_model(q)) {
+	case BLK_ZONED_HA:
+	case BLK_ZONED_HM:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static inline unsigned int blk_queue_zone_size(struct request_queue *q)
+{
+	return blk_queue_is_zoned(q) ? q->limits.chunk_sectors : 0;
+>>>>>>> ef295ecf090d (block: better op and flags encoding)
 }
 
 static inline bool rq_is_sync(struct request *rq)
 {
-	return rw_is_sync(req_op(rq), rq->cmd_flags);
+	return op_is_sync(rq->cmd_flags);
 }
 
 static inline bool blk_rl_full(struct request_list *rl, bool sync)
