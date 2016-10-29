@@ -1268,17 +1268,20 @@ static struct request *blk_mq_map_request(struct request_queue *q,
 	return rq;
 }
 
-static int blk_mq_direct_issue_request(struct request *rq, blk_qc_t *cookie)
+static void blk_mq_try_issue_directly(struct blk_mq_hw_ctx *hctx,
+				      struct request *rq, blk_qc_t *cookie)
 {
 	int ret;
 	struct request_queue *q = rq->q;
-	struct blk_mq_hw_ctx *hctx = blk_mq_map_queue(q, rq->mq_ctx->cpu);
 	struct blk_mq_queue_data bd = {
 		.rq = rq,
 		.list = NULL,
 		.last = 1
 	};
 	blk_qc_t new_cookie = blk_tag_to_qc_t(rq->tag, hctx->queue_num);
+
+	if (blk_mq_hctx_stopped(hctx))
+		goto insert;
 
 	/*
 	 * For OK queue, we are done. For error, kill it. Any other
@@ -1288,7 +1291,7 @@ static int blk_mq_direct_issue_request(struct request *rq, blk_qc_t *cookie)
 	ret = q->mq_ops->queue_rq(hctx, &bd);
 	if (ret == BLK_MQ_RQ_QUEUE_OK) {
 		*cookie = new_cookie;
-		return 0;
+		return;
 	}
 
 	__blk_mq_requeue_request(rq);
@@ -1297,10 +1300,11 @@ static int blk_mq_direct_issue_request(struct request *rq, blk_qc_t *cookie)
 		*cookie = BLK_QC_T_NONE;
 		rq->errors = -EIO;
 		blk_mq_end_request(rq, rq->errors);
-		return 0;
+		return;
 	}
 
-	return -1;
+insert:
+	blk_mq_insert_request(rq, false, true, true);
 }
 
 /*
@@ -1384,16 +1388,7 @@ static blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio)
 		blk_mq_put_ctx(data.ctx);
 		if (!old_rq)
 			goto done;
-
-		if (!(data.hctx->flags & BLK_MQ_F_BLOCKING)) {
-			rcu_read_lock();
-			blk_mq_try_issue_directly(data.hctx, old_rq, &cookie);
-			rcu_read_unlock();
-		} else {
-			srcu_idx = srcu_read_lock(&data.hctx->queue_rq_srcu);
-			blk_mq_try_issue_directly(data.hctx, old_rq, &cookie);
-			srcu_read_unlock(&data.hctx->queue_rq_srcu, srcu_idx);
-		}
+		blk_mq_try_issue_directly(data.hctx, old_rq, &cookie);
 		goto done;
 	}
 
