@@ -675,35 +675,12 @@ static inline unsigned int blk_queue_cluster(struct request_queue *q)
 	return q->limits.cluster;
 }
 
-<<<<<<< HEAD
 /*
  * We regard a request as sync, if either a read or a sync write
  */
 static inline bool rw_is_sync(int op, unsigned int rw_flags)
 {
 	return op == REQ_OP_READ || (rw_flags & REQ_SYNC);
-=======
-static inline enum blk_zoned_model
-blk_queue_zoned_model(struct request_queue *q)
-{
-	return q->limits.zoned;
-}
-
-static inline bool blk_queue_is_zoned(struct request_queue *q)
-{
-	switch (blk_queue_zoned_model(q)) {
-	case BLK_ZONED_HA:
-	case BLK_ZONED_HM:
-		return true;
-	default:
-		return false;
-	}
-}
-
-static inline unsigned int blk_queue_zone_size(struct request_queue *q)
-{
-	return blk_queue_is_zoned(q) ? q->limits.chunk_sectors : 0;
->>>>>>> ef295ecf090d (block: better op and flags encoding)
 }
 
 static inline bool rq_is_sync(struct request *rq)
