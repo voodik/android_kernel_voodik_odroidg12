@@ -1376,7 +1376,7 @@ int dax_iomap_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
 	loff_t pos = (loff_t)vmf->pgoff << PAGE_SHIFT;
 	sector_t sector;
 	struct iomap iomap = { 0 };
-	unsigned flags = 0;
+	unsigned flags = IOMAP_FAULT;
 	int error, major = 0;
 	void *entry;
 
