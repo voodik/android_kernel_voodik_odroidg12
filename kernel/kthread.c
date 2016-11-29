@@ -18,6 +18,7 @@
 #include <linux/freezer.h>
 #include <linux/ptrace.h>
 #include <linux/uaccess.h>
+#include <linux/cgroup.h>
 #include <trace/events/sched.h>
 
 static DEFINE_SPINLOCK(kthread_create_lock);
@@ -73,6 +74,22 @@ static inline struct kthread *to_kthread(struct task_struct *k)
 }
 
 void free_kthread_struct(struct task_struct *k)
+{
+	/*
+	 * Can be NULL if this kthread was created by kernel_thread()
+	 * or if kmalloc() in kthread() failed.
+	 */
+	kfree(to_kthread(k));
+}
+
+#define __to_kthread(vfork)	\
+	container_of(vfork, struct kthread, exited)
+
+/*
+ * TODO: kill it and use to_kthread(). But we still need the users
+ * like kthread_stop() which has to sync with the exiting kthread.
+ */
+static struct kthread *to_live_kthread(struct task_struct *k)
 {
 	struct kthread *kthread;
 
@@ -222,9 +239,6 @@ static int kthread(void *_create)
 	self->data = data;
 	init_completion(&self->exited);
 	init_completion(&self->parked);
-#ifdef CONFIG_BLK_CGROUP
-	self->blkcg_css = NULL;
-#endif
 	current->vfork_done = &self->exited;
 
 	/* OK, tell user we're spawned, wait for stop or wakeup */
@@ -234,10 +248,9 @@ static int kthread(void *_create)
 	schedule();
 
 	ret = -EINTR;
-
-	if (!test_bit(KTHREAD_SHOULD_STOP, &self.flags)) {
+	if (!test_bit(KTHREAD_SHOULD_STOP, &self->flags)) {
 		cgroup_kthread_ready();
-		__kthread_parkme(&self);
+		__kthread_parkme(self);
 		ret = threadfn(data);
 	}
 	do_exit(ret);
