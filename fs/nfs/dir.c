@@ -461,7 +461,6 @@ bool nfs_use_readdirplus(struct inode *dir, struct dir_context *ctx)
  * readdirplus to accelerate any future lookups in the same
  * directory.
  */
-static
 void nfs_advise_use_readdirplus(struct inode *dir)
 {
 	set_bit(NFS_INO_ADVISE_RDPLUS, &NFS_I(dir)->flags);
