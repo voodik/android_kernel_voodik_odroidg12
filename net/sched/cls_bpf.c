@@ -559,12 +559,17 @@ static int cls_bpf_dump_bpf_info(const struct cls_bpf_prog *prog,
 static int cls_bpf_dump_ebpf_info(const struct cls_bpf_prog *prog,
 				  struct sk_buff *skb)
 {
-	if (nla_put_u32(skb, TCA_BPF_FD, prog->bpf_fd))
-		return -EMSGSIZE;
+	struct nlattr *nla;
 
 	if (prog->bpf_name &&
 	    nla_put_string(skb, TCA_BPF_NAME, prog->bpf_name))
 		return -EMSGSIZE;
+
+	nla = nla_reserve(skb, TCA_BPF_DIGEST, sizeof(prog->filter->digest));
+	if (nla == NULL)
+		return -EMSGSIZE;
+
+	memcpy(nla_data(nla), prog->filter->digest, nla_len(nla));
 
 	return 0;
 }
