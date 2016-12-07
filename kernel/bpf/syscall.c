@@ -677,6 +677,25 @@ static void fixup_bpf_calls(struct bpf_prog *prog)
 			 */
 			BUG_ON(!prog->aux->ops->get_func_proto);
 
+			if (insn->imm == BPF_FUNC_get_route_realm)
+				prog->dst_needed = 1;
+			if (insn->imm == BPF_FUNC_get_prandom_u32)
+				bpf_user_rnd_init_once();
+			if (insn->imm == BPF_FUNC_xdp_adjust_head)
+				prog->xdp_adjust_head = 1;
+			if (insn->imm == BPF_FUNC_tail_call) {
+				/* mark bpf_tail_call as different opcode
+				 * to avoid conditional branch in
+				 * interpeter for every normal call
+				 * and to prevent accidental JITing by
+				 * JIT compiler that doesn't support
+				 * bpf_tail_call yet
+				 */
+				insn->imm = 0;
+				insn->code |= BPF_X;
+				continue;
+			}
+
 			fn = prog->aux->ops->get_func_proto(insn->imm);
 			/* all functions that have prototype and verifier allowed
 			 * programs to call them, must be real in-kernel functions
