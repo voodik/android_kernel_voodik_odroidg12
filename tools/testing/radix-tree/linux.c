@@ -12,6 +12,7 @@
 #include <urcu/uatomic.h>
 
 int nr_allocated;
+int preempt_count;
 
 struct kmem_cache {
 	pthread_mutex_t lock;
