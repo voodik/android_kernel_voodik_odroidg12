@@ -337,6 +337,9 @@ int main(int argc, char **argv)
 	iteration_test(7, 20);
 	single_thread_tests(long_run);
 
+	/* Free any remaining preallocated nodes */
+	radix_tree_cpu_dead(0);
+
 	sleep(1);
 	printf("after sleep(1): %d allocated\n", nr_allocated);
 	rcu_unregister_thread();
