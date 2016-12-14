@@ -14,11 +14,6 @@ static inline int gfpflags_allow_blocking(gfp_t mask)
 void *kmalloc(size_t size, gfp_t);
 void kfree(void *);
 
-struct kmem_cache {
-	int size;
-	void (*ctor)(void *);
-};
-
 void *kmem_cache_alloc(struct kmem_cache *cachep, int flags);
 void kmem_cache_free(struct kmem_cache *cachep, void *objp);
 
