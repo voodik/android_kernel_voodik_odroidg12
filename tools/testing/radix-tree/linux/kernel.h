@@ -11,7 +11,11 @@
 #include "../../include/linux/err.h"
 #include "../../../include/linux/kconfig.h"
 
+#ifdef BENCHMARK
+#define RADIX_TREE_MAP_SHIFT	6
+#else
 #define RADIX_TREE_MAP_SHIFT	3
+#endif
 
 #ifndef NULL
 #define NULL	0
