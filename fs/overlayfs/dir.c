@@ -753,7 +753,7 @@ static int ovl_do_remove(struct dentry *dentry, bool is_dir)
 	type = ovl_path_type(dentry);
 
 	old_cred = ovl_override_creds(dentry->d_sb);
-	if (OVL_TYPE_PURE_UPPER(type))
+	if (!ovl_lower_positive(dentry))
 		err = ovl_remove_upper(dentry, is_dir);
 	else
 		err = ovl_remove_and_whiteout(dentry, is_dir);
@@ -880,7 +880,7 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	}
 
 	if (overwrite) {
-		if (old_opaque) {
+		if (ovl_lower_positive(old)) {
 			if (!ovl_dentry_is_whiteout(new)) {
 				/* Whiteout source */
 				flags |= RENAME_WHITEOUT;
