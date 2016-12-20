@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <assert.h>
+#include <limits.h>
 
 #include <linux/slab.h>
 #include <linux/radix-tree.h>
@@ -307,6 +308,11 @@ static void single_thread_tests(bool long_run)
 		nr_allocated, preempt_count);
 	dynamic_height_check();
 	printf("after dynamic_height_check: %d allocated, preempt %d\n",
+		nr_allocated, preempt_count);
+	idr_checks();
+	ida_checks();
+	rcu_barrier();
+	printf("after idr_checks: %d allocated, preempt %d\n",
 		nr_allocated, preempt_count);
 	big_gang_check(long_run);
 	printf("after big_gang_check: %d allocated, preempt %d\n",

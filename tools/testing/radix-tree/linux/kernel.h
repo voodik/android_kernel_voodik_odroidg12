@@ -30,6 +30,7 @@
 #define __force
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #define pr_debug printk
+#define pr_cont printk
 
 #define smp_rmb()	barrier()
 #define smp_wmb()	barrier()
