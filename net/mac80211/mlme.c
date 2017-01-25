@@ -5114,7 +5114,7 @@ void ieee80211_cqm_rssi_notify(struct ieee80211_vif *vif,
 
 	trace_api_cqm_rssi_notify(sdata, rssi_event);
 
-	cfg80211_cqm_rssi_notify(sdata->dev, rssi_event, gfp);
+	cfg80211_cqm_rssi_notify(sdata->dev, rssi_event, rssi_level, gfp);
 }
 EXPORT_SYMBOL(ieee80211_cqm_rssi_notify);
 
