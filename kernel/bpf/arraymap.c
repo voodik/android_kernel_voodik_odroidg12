@@ -338,7 +338,7 @@ static const struct bpf_map_ops array_ops = {
 	.map_gen_lookup = array_map_gen_lookup,
 };
 
-static struct bpf_map_type_list array_type __read_mostly = {
+static struct bpf_map_type_list array_type __ro_after_init = {
 	.ops = &array_ops,
 	.type = BPF_MAP_TYPE_ARRAY,
 };
@@ -352,7 +352,7 @@ static const struct bpf_map_ops percpu_array_ops = {
 	.map_delete_elem = array_map_delete_elem,
 };
 
-static struct bpf_map_type_list percpu_array_type __read_mostly = {
+static struct bpf_map_type_list percpu_array_type __ro_after_init = {
 	.ops = &percpu_array_ops,
 	.type = BPF_MAP_TYPE_PERCPU_ARRAY,
 };
@@ -478,7 +478,7 @@ static const struct bpf_map_ops prog_array_ops = {
 	.map_fd_put_ptr = prog_fd_array_put_ptr,
 };
 
-static struct bpf_map_type_list prog_array_type __read_mostly = {
+static struct bpf_map_type_list prog_array_type __ro_after_init = {
 	.ops = &prog_array_ops,
 	.type = BPF_MAP_TYPE_PROG_ARRAY,
 };
@@ -591,7 +591,7 @@ static const struct bpf_map_ops perf_event_array_ops = {
 	.map_release = perf_event_fd_array_release,
 };
 
-static struct bpf_map_type_list perf_event_array_type __read_mostly = {
+static struct bpf_map_type_list perf_event_array_type __ro_after_init = {
 	.ops = &perf_event_array_ops,
 	.type = BPF_MAP_TYPE_PERF_EVENT_ARRAY,
 };
@@ -633,7 +633,7 @@ static const struct bpf_map_ops cgroup_array_ops = {
 	.map_fd_put_ptr = cgroup_fd_array_put_ptr,
 };
 
-static struct bpf_map_type_list cgroup_array_type __read_mostly = {
+static struct bpf_map_type_list cgroup_array_type __ro_after_init = {
 	.ops = &cgroup_array_ops,
 	.type = BPF_MAP_TYPE_CGROUP_ARRAY,
 };
