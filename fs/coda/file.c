@@ -141,29 +141,7 @@ coda_file_mmap(struct file *coda_file, struct vm_area_struct *vma)
 	cfi->cfi_mapcount++;
 	spin_unlock(&cii->c_lock);
 
-	vma->vm_file = get_file(host_file);
-	ret = host_file->f_op->mmap(host_file, vma);
-
-	if (ret) {
-		/* if call_mmap fails, our caller will put coda_file so we
-		 * should drop the reference to the host_file that we got.
-		 */
-		fput(host_file);
-		kfree(cvm_ops);
-	} else {
-		/* here we add redirects for the open/close vm_operations */
-		cvm_ops->host_vm_ops = vma->vm_ops;
-		if (vma->vm_ops)
-			cvm_ops->vm_ops = *vma->vm_ops;
-
-		cvm_ops->vm_ops.open = coda_vm_open;
-		cvm_ops->vm_ops.close = coda_vm_close;
-		cvm_ops->coda_file = coda_file;
-		atomic_set(&cvm_ops->refcnt, 1);
-
-		vma->vm_ops = &cvm_ops->vm_ops;
-	}
-	return ret;
+	return call_mmap(host_file, vma);
 }
 
 int coda_open(struct inode *coda_inode, struct file *coda_file)
