@@ -481,7 +481,7 @@ struct fuse_conn {
 	spinlock_t lock;
 
 	/** Refcount */
-	atomic_t count;
+	refcount_t count;
 
 	/** Number of fuse_dev's */
 	atomic_t dev_count;
