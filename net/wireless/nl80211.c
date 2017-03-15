@@ -11816,8 +11816,10 @@ static int nl80211_vendor_cmd_dump(struct sk_buff *skb,
 		}
 
 		if (vcmd->flags & WIPHY_VENDOR_CMD_NEED_RUNNING) {
-			if (!wdev_running(wdev))
-				return -ENETDOWN;
+			if (!wdev_running(wdev)) {
+				err = -ENETDOWN;
+				goto out;
+			}
 		}
 	}
 
