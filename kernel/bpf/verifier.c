@@ -3496,124 +3496,59 @@ static int convert_ctx_accesses(struct bpf_verifier_env *env)
 	return 0;
 }
 
-/* fixup insn->imm field of bpf_call instructions
- * and inline eligible helpers as explicit sequence of BPF instructions
+/* fixup insn->imm field of bpf_call instructions:
+ * if (insn->imm == BPF_FUNC_map_lookup_elem)
+ *      insn->imm = bpf_map_lookup_elem - __bpf_call_base;
+ * else if (insn->imm == BPF_FUNC_map_update_elem)
+ *      insn->imm = bpf_map_update_elem - __bpf_call_base;
+ * else ...
  *
  * this function is called after eBPF program passed verification
  */
-static int fixup_bpf_calls(struct bpf_verifier_env *env)
+static void fixup_bpf_calls(struct bpf_prog *prog)
 {
-	struct bpf_prog *prog = env->prog;
-	struct bpf_insn *insn = prog->insnsi;
 	const struct bpf_func_proto *fn;
-	const int insn_cnt = prog->len;
-	struct bpf_insn insn_buf[16];
-	struct bpf_prog *new_prog;
-	struct bpf_map *map_ptr;
-	int i, cnt, delta = 0;
+	int i;
 
+	for (i = 0; i < prog->len; i++) {
+		struct bpf_insn *insn = &prog->insnsi[i];
 
-	for (i = 0; i < insn_cnt; i++, insn++) {
-		if (insn->code == (BPF_ALU | BPF_MOD | BPF_X) ||
-		    insn->code == (BPF_ALU | BPF_DIV | BPF_X)) {
-			/* due to JIT bugs clear upper 32-bits of src register
-			 * before div/mod operation
+		if (insn->code == (BPF_JMP | BPF_CALL)) {
+			/* we reach here when program has bpf_call instructions
+			 * and it passed bpf_check(), means that
+			 * ops->get_func_proto must have been supplied, check it
 			 */
-			insn_buf[0] = BPF_MOV32_REG(insn->src_reg, insn->src_reg);
-			insn_buf[1] = *insn;
-			cnt = 2;
-			new_prog = bpf_patch_insn_data(env, i + delta, insn_buf, cnt);
-			if (!new_prog)
-				return -ENOMEM;
+			BUG_ON(!prog->aux->ops->get_func_proto);
 
-			delta    += cnt - 1;
-			env->prog = prog = new_prog;
-			insn      = new_prog->insnsi + i + delta;
-			continue;
-		}
-
-		if (insn->code != (BPF_JMP | BPF_CALL))
-			continue;
-
-		if (insn->imm == BPF_FUNC_get_route_realm)
-			prog->dst_needed = 1;
-		if (insn->imm == BPF_FUNC_get_prandom_u32)
-			bpf_user_rnd_init_once();
-		if (insn->imm == BPF_FUNC_tail_call) {
-			/* mark bpf_tail_call as different opcode to avoid
-			 * conditional branch in the interpeter for every normal
-			 * call and to prevent accidental JITing by JIT compiler
-			 * that doesn't support bpf_tail_call yet
- 			 */
-			insn->imm = 0;
-			insn->code |= BPF_X;
-
-			/* instead of changing every JIT dealing with tail_call
-			 * emit two extra insns:
-			 * if (index >= max_entries) goto out;
-			 * index &= array->index_mask;
-			 * to avoid out-of-bounds cpu speculation
-			 */
-			map_ptr = env->insn_aux_data[i + delta].map_ptr;
-			if (!map_ptr->unpriv_array)
+			if (insn->imm == BPF_FUNC_get_route_realm)
+				prog->dst_needed = 1;
+			if (insn->imm == BPF_FUNC_get_prandom_u32)
+				bpf_user_rnd_init_once();
+			if (insn->imm == BPF_FUNC_xdp_adjust_head)
+				prog->xdp_adjust_head = 1;
+			if (insn->imm == BPF_FUNC_tail_call) {
+				/* mark bpf_tail_call as different opcode
+				 * to avoid conditional branch in
+				 * interpeter for every normal call
+				 * and to prevent accidental JITing by
+				 * JIT compiler that doesn't support
+				 * bpf_tail_call yet
+				 */
+				insn->imm = 0;
+				insn->code |= BPF_X;
 				continue;
-			insn_buf[0] = BPF_JMP_IMM(BPF_JGE, BPF_REG_3,
-						  map_ptr->max_entries, 2);
-			insn_buf[1] = BPF_ALU32_IMM(BPF_AND, BPF_REG_3,
-						    container_of(map_ptr,
-								 struct bpf_array,
-								 map)->index_mask);
-			insn_buf[2] = *insn;
-			cnt = 3;
-			new_prog = bpf_patch_insn_data(env, i + delta, insn_buf, cnt);
-			if (!new_prog)
-				return -ENOMEM;
-
-			delta    += cnt - 1;
-			env->prog = prog = new_prog;
-			insn      = new_prog->insnsi + i + delta;
-			continue;
-		}
-
-		if (ebpf_jit_enabled() && insn->imm == BPF_FUNC_map_lookup_elem) {
-			map_ptr = env->insn_aux_data[i + delta].map_ptr;
-			if (!map_ptr->ops->map_gen_lookup)
-				goto patch_call_imm;
-
-			cnt = map_ptr->ops->map_gen_lookup(map_ptr, insn_buf);
-			if (cnt == 0 || cnt >= ARRAY_SIZE(insn_buf)) {
-				verbose("bpf verifier is misconfigured\n");
-				return -EINVAL;
 			}
 
-			new_prog = bpf_patch_insn_data(env, i + delta, insn_buf,
-						       cnt);
-			if (!new_prog)
-				return -ENOMEM;
-
-			delta += cnt - 1;
-
-			/* keep walking new program and skip insns we just inserted */
-			env->prog = prog = new_prog;
-			insn      = new_prog->insnsi + i + delta;
-			continue;
+			fn = prog->aux->ops->get_func_proto(insn->imm);
+			/* all functions that have prototype and verifier allowed
+			 * programs to call them, must be real in-kernel functions
+			 */
+			BUG_ON(!fn->func);
+			insn->imm = fn->func - __bpf_call_base;
 		}
-
-patch_call_imm:
-		fn = prog->aux->ops->get_func_proto(insn->imm);
-		/* all functions that have prototype and verifier allowed
-		 * programs to call them, must be real in-kernel functions
-		 */
-		if (!fn->func) {
-			verbose("kernel subsystem misconfigured func %d\n",
-				insn->imm);
-			return -EFAULT;
-		}
-		insn->imm = fn->func - __bpf_call_base;
 	}
-
-	return 0;
 }
+
 
 static void free_states(struct bpf_verifier_env *env)
 {
@@ -3714,7 +3649,7 @@ skip_full_check:
 		ret = convert_ctx_accesses(env);
 
 	if (ret == 0)
-		ret = fixup_bpf_calls(env);
+		fixup_bpf_calls(env->prog);
 
 	if (log_level && log_len >= log_size - 1) {
 		BUG_ON(log_len >= log_size);
