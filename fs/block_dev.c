@@ -1627,6 +1627,9 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
 			bd_set_size(bdev, (loff_t)bdev->bd_part->nr_sects << 9);
 			set_init_blocksize(bdev);
 		}
+
+		if (bdev->bd_bdi == &noop_backing_dev_info)
+			bdev->bd_bdi = bdi_get(disk->queue->backing_dev_info);
 	} else {
 		if (bdev->bd_contains == bdev) {
 			ret = 0;
