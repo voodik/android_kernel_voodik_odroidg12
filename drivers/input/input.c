@@ -31,6 +31,7 @@
 #ifdef CONFIG_AMLOGIC_INPUT_BOOST
 #include <linux/cpufreq.h>
 #endif
+#include "input-poller.h"
 
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@suse.cz>");
 MODULE_DESCRIPTION("Input core");
@@ -614,19 +615,30 @@ int input_open_device(struct input_handle *handle)
 
 	handle->open++;
 
-	if (!dev->users++ && dev->open)
-		retval = dev->open(dev);
+	if (dev->users++) {
+		/*
+		 * Device is already opened, so we can exit immediately and
+		 * report success.
+		 */
+		goto out;
+	}
 
-	if (retval) {
-		dev->users--;
-		if (!--handle->open) {
+	if (dev->open) {
+		retval = dev->open(dev);
+		if (retval) {
+			dev->users--;
+			handle->open--;
 			/*
 			 * Make sure we are not delivering any more events
 			 * through this handle
 			 */
 			synchronize_rcu();
+			goto out;
 		}
 	}
+
+	if (dev->poller)
+		input_dev_poller_start(dev->poller);
 
  out:
 	mutex_unlock(&dev->mutex);
@@ -666,8 +678,13 @@ void input_close_device(struct input_handle *handle)
 
 	__input_release_device(handle);
 
-	if (!--dev->users && dev->close)
-		dev->close(dev);
+	if (!--dev->users) {
+		if (dev->poller)
+			input_dev_poller_stop(dev->poller);
+
+		if (dev->close)
+			dev->close(dev);
+	}
 
 	if (!--handle->open) {
 		/*
@@ -1513,6 +1530,7 @@ static const struct attribute_group *input_dev_attr_groups[] = {
 	&input_dev_attr_group,
 	&input_dev_id_attr_group,
 	&input_dev_caps_attr_group,
+	&input_poller_attribute_group,
 	NULL
 };
 
@@ -1522,6 +1540,7 @@ static void input_dev_release(struct device *device)
 
 	input_ff_destroy(dev);
 	input_mt_destroy_slots(dev);
+	kfree(dev->poller);
 	kfree(dev->absinfo);
 	kfree(dev->vals);
 	kfree(dev);
@@ -2185,6 +2204,9 @@ int input_register_device(struct input_dev *dev)
 
 	if (!dev->setkeycode)
 		dev->setkeycode = input_default_setkeycode;
+
+	if (dev->poller)
+		input_dev_poller_finalize(dev->poller);
 
 	error = device_add(&dev->dev);
 	if (error)
