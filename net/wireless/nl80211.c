@@ -549,6 +549,7 @@ static const struct nla_policy
 nl80211_match_policy[NL80211_SCHED_SCAN_MATCH_ATTR_MAX + 1] = {
 	[NL80211_SCHED_SCAN_MATCH_ATTR_SSID] = { .type = NLA_BINARY,
 						 .len = IEEE80211_MAX_SSID_LEN },
+	[NL80211_SCHED_SCAN_MATCH_ATTR_BSSID] = { .len = ETH_ALEN },
 	[NL80211_SCHED_SCAN_MATCH_ATTR_RSSI] = { .type = NLA_U32 },
 };
 
@@ -7103,8 +7104,15 @@ nl80211_parse_sched_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
 					       attr, nl80211_match_policy);
 			if (err)
 				return ERR_PTR(err);
+
+			/* SSID and BSSID are mutually exclusive */
+			if (tb[NL80211_SCHED_SCAN_MATCH_ATTR_SSID] &&
+			    tb[NL80211_SCHED_SCAN_MATCH_ATTR_BSSID])
+				return ERR_PTR(-EINVAL);
+
 			/* add other standalone attributes here */
-			if (tb[NL80211_SCHED_SCAN_MATCH_ATTR_SSID]) {
+			if (tb[NL80211_SCHED_SCAN_MATCH_ATTR_SSID] ||
+			    tb[NL80211_SCHED_SCAN_MATCH_ATTR_BSSID]) {
 				n_match_sets++;
 				continue;
 			}
@@ -7275,7 +7283,7 @@ nl80211_parse_sched_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
 		nla_for_each_nested(attr,
 				    attrs[NL80211_ATTR_SCHED_SCAN_MATCH],
 				    tmp) {
-			struct nlattr *ssid, *rssi;
+			struct nlattr *ssid, *bssid, *rssi;
 
 			err = nla_parse_nested(tb,
 					       NL80211_SCHED_SCAN_MATCH_ATTR_MAX,
@@ -7283,7 +7291,8 @@ nl80211_parse_sched_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
 			if (err)
 				goto out_free;
 			ssid = tb[NL80211_SCHED_SCAN_MATCH_ATTR_SSID];
-			if (ssid) {
+			bssid = tb[NL80211_SCHED_SCAN_MATCH_ATTR_BSSID];
+			if (ssid || bssid) {
 				if (WARN_ON(i >= n_match_sets)) {
 					/* this indicates a programming error,
 					 * the loop above should have verified
@@ -7293,14 +7302,25 @@ nl80211_parse_sched_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
 					goto out_free;
 				}
 
-				if (nla_len(ssid) > IEEE80211_MAX_SSID_LEN) {
-					err = -EINVAL;
-					goto out_free;
+				if (ssid) {
+					if (nla_len(ssid) > IEEE80211_MAX_SSID_LEN) {
+						err = -EINVAL;
+						goto out_free;
+					}
+					memcpy(request->match_sets[i].ssid.ssid,
+					       nla_data(ssid), nla_len(ssid));
+					request->match_sets[i].ssid.ssid_len =
+						nla_len(ssid);
 				}
-				memcpy(request->match_sets[i].ssid.ssid,
-				       nla_data(ssid), nla_len(ssid));
-				request->match_sets[i].ssid.ssid_len =
-					nla_len(ssid);
+				if (bssid) {
+					if (nla_len(bssid) != ETH_ALEN) {
+						err = -EINVAL;
+						goto out_free;
+					}
+					memcpy(request->match_sets[i].bssid,
+					       nla_data(bssid), ETH_ALEN);
+				}
+
 				/* special attribute - old implementation w/a */
 				request->match_sets[i].rssi_thold =
 					default_match_rssi;
