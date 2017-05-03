@@ -622,6 +622,10 @@ madvise_behavior_valid(int behavior)
 #endif
 	case MADV_DONTDUMP:
 	case MADV_DODUMP:
+#ifdef CONFIG_MEMORY_FAILURE
+	case MADV_SOFT_OFFLINE:
+	case MADV_HWPOISON:
+#endif
 		return true;
 
 	default:
@@ -695,10 +699,6 @@ SYSCALL_DEFINE3(madvise, unsigned long, start, size_t, len_in, int, behavior)
 	size_t len;
 	struct blk_plug plug;
 
-#ifdef CONFIG_MEMORY_FAILURE
-	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
-		return madvise_inject_error(behavior, start, start + len_in);
-#endif
 	if (!madvise_behavior_valid(behavior))
 		return error;
 
@@ -717,6 +717,11 @@ SYSCALL_DEFINE3(madvise, unsigned long, start, size_t, len_in, int, behavior)
 	error = 0;
 	if (end == start)
 		return error;
+
+#ifdef CONFIG_MEMORY_FAILURE
+	if (behavior == MADV_HWPOISON || behavior == MADV_SOFT_OFFLINE)
+		return madvise_inject_error(behavior, start, start + len_in);
+#endif
 
 	write = madvise_need_mmap_write(behavior);
 	if (write) {
