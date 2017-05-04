@@ -1227,8 +1227,8 @@ static u32 cfg80211_calculate_bitrate_vht(struct rate_info *rate)
 	u32 bitrate;
 	int idx;
 
-	if (WARN_ON_ONCE(rate->mcs > 9))
-		return 0;
+	if (rate->mcs > 9)
+		goto warn;
 
 	switch (rate->bw) {
 	case RATE_INFO_BW_160:
@@ -1243,8 +1243,7 @@ static u32 cfg80211_calculate_bitrate_vht(struct rate_info *rate)
 	case RATE_INFO_BW_5:
 	case RATE_INFO_BW_10:
 	default:
-		WARN_ON(1);
-		/* fall through */
+		goto warn;
 	case RATE_INFO_BW_20:
 		idx = 0;
 	}
@@ -1257,6 +1256,10 @@ static u32 cfg80211_calculate_bitrate_vht(struct rate_info *rate)
 
 	/* do NOT round down here */
 	return (bitrate + 50000) / 100000;
+ warn:
+	WARN_ONCE(1, "invalid rate bw=%d, mcs=%d, nss=%d\n",
+		  rate->bw, rate->mcs, rate->nss);
+	return 0;
 }
 
 u32 cfg80211_calculate_bitrate(struct rate_info *rate)
