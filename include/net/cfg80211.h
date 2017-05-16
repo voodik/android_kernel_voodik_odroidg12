@@ -1445,6 +1445,9 @@ struct mesh_config {
  * @mcast_rate: multicat rate for Mesh Node [6Mbps is the default for 802.11a]
  * @basic_rates: basic rates to use when creating the mesh
  * @beacon_rate: bitrate to be used for beacons
+ * @userspace_handles_dfs: whether user space controls DFS operation, i.e.
+ *	changes the channel when a radar is detected. This is required
+ *	to operate on DFS channels.
  *
  * These parameters are fixed when the mesh is created.
  */
@@ -1466,6 +1469,7 @@ struct mesh_setup {
 	int mcast_rate[NUM_NL80211_BANDS];
 	u32 basic_rates;
 	struct cfg80211_bitrate_mask beacon_rate;
+	bool userspace_handles_dfs;
 };
 
 /**
