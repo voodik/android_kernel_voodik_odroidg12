@@ -424,7 +424,7 @@ void smp_call_function_many(const struct cpumask *mask,
 	cfd = this_cpu_ptr(&cfd_data);
 
 	cpumask_and(cfd->cpumask, mask, cpu_online_mask);
-	cpumask_clear_cpu(this_cpu, cfd->cpumask);
+	__cpumask_clear_cpu(this_cpu, cfd->cpumask);
 
 	/* Some callers race with other cpus changing the passed mask */
 	if (unlikely(!cpumask_weight(cfd->cpumask)))
