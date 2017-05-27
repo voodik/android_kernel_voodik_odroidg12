@@ -1080,57 +1080,13 @@ SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
 }
 
 #ifdef CONFIG_COMPAT
-
-static ssize_t compat_do_readv_writev(int type, struct file *file,
-			       const struct compat_iovec __user *uvector,
-			       unsigned long nr_segs, loff_t *pos,
-			       int flags)
-{
-	compat_ssize_t tot_len;
-	struct iovec iovstack[UIO_FASTIOV];
-	struct iovec *iov = iovstack;
-	struct iov_iter iter;
-	ssize_t ret;
-
-	ret = compat_import_iovec(type, uvector, nr_segs,
-				  UIO_FASTIOV, &iov, &iter);
-	if (ret < 0)
-		return ret;
-
-	tot_len = iov_iter_count(&iter);
-	if (!tot_len)
-		goto out;
-	ret = rw_verify_area(type, file, pos, tot_len);
-	if (ret < 0)
-		goto out;
-
-	if (type != READ)
-		file_start_write(file);
-
-	if ((type == READ && file->f_op->read_iter) ||
-	    (type == WRITE && file->f_op->write_iter))
-		ret = do_iter_readv_writev(file, &iter, pos, type, flags);
-	else
-		ret = do_loop_readv_writev(file, &iter, pos, type, flags);
-
-	if (type != READ)
-		file_end_write(file);
-
-out:
-	kfree(iov);
-	if ((ret + (type == READ)) > 0) {
-		if (type == READ)
-			fsnotify_access(file);
-		else
-			fsnotify_modify(file);
-	}
-	return ret;
-}
-
 static size_t compat_readv(struct file *file,
 			   const struct compat_iovec __user *vec,
 			   unsigned long vlen, loff_t *pos, int flags)
 {
+	struct iovec iovstack[UIO_FASTIOV];
+	struct iovec *iov = iovstack;
+	struct iov_iter iter;
 	ssize_t ret = -EBADF;
 
 	if (!(file->f_mode & FMODE_READ))
@@ -1140,8 +1096,11 @@ static size_t compat_readv(struct file *file,
 	if (!(file->f_mode & FMODE_CAN_READ))
 		goto out;
 
-	ret = compat_do_readv_writev(READ, file, vec, vlen, pos, flags);
-
+	ret = compat_import_iovec(READ, vec, vlen, UIO_FASTIOV, &iov, &iter);
+	if (ret < 0)
+		goto out;
+	ret = __do_readv_writev(READ, file, &iter, pos, flags);
+	kfree(iov);
 out:
 	if (ret > 0)
 		add_rchar(current, ret);
@@ -1241,6 +1200,9 @@ static size_t compat_writev(struct file *file,
 			    const struct compat_iovec __user *vec,
 			    unsigned long vlen, loff_t *pos, int flags)
 {
+	struct iovec iovstack[UIO_FASTIOV];
+	struct iovec *iov = iovstack;
+	struct iov_iter iter;
 	ssize_t ret = -EBADF;
 
 	if (!(file->f_mode & FMODE_WRITE))
@@ -1250,8 +1212,11 @@ static size_t compat_writev(struct file *file,
 	if (!(file->f_mode & FMODE_CAN_WRITE))
 		goto out;
 
-	ret = compat_do_readv_writev(WRITE, file, vec, vlen, pos, flags);
-
+	ret = compat_import_iovec(WRITE, vec, vlen, UIO_FASTIOV, &iov, &iter);
+	if (ret < 0)
+		goto out;
+	ret = __do_readv_writev(WRITE, file, &iter, pos, flags);
+	kfree(iov);
 out:
 	if (ret > 0)
 		add_wchar(current, ret);
