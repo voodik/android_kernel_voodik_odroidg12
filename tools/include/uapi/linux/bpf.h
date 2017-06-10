@@ -172,8 +172,6 @@ union bpf_attr {
 	};
 } __attribute__((aligned(8)));
 
-<<<<<<< HEAD
-=======
 /* BPF helper function descriptions:
  *
  * void *bpf_map_lookup_elem(&map, &key)
@@ -276,8 +274,11 @@ union bpf_attr {
  *     @flags: room for future extensions
  *     Return: 0 on success or negative error
  *
- * u64 bpf_perf_event_read(&map, index)
- *     Return: Number events read or error code
+ * u64 bpf_perf_event_read(map, flags)
+ *     read perf event counter value
+ *     @map: pointer to perf_event_array map
+ *     @flags: index of event in the map or bitmask flags
+ *     Return: value of perf event counter read or error code
  *
  * int bpf_redirect(ifindex, flags)
  *     redirect to another netdev
@@ -291,11 +292,11 @@ union bpf_attr {
  *     @skb: pointer to skb
  *     Return: realm if != 0
  *
- * int bpf_perf_event_output(ctx, map, index, data, size)
+ * int bpf_perf_event_output(ctx, map, flags, data, size)
  *     output perf raw sample
  *     @ctx: struct pt_regs*
  *     @map: pointer to perf_event_array map
- *     @index: index of event in the map
+ *     @flags: index of event in the map or bitmask flags
  *     @data: data on stack to be output as raw data
  *     @size: size of data
  *     Return: 0 on success or negative error
@@ -442,6 +443,22 @@ union bpf_attr {
  *     Return:
  *       > 0 length of the string including the trailing NUL on success
  *       < 0 error
+ *
+ * u64 bpf_get_socket_cookie(skb)
+ *     Get the cookie for the socket stored inside sk_buff.
+ *     @skb: pointer to skb
+ *     Return: 8 Bytes non-decreasing number on success or 0 if the socket
+ *     field is missing inside sk_buff
+ *
+ * u32 bpf_get_socket_uid(skb)
+ *     Get the owner uid of the socket stored inside sk_buff.
+ *     @skb: pointer to skb
+ *     Return: uid of the socket owner on success or overflowuid if failed.
+ *
+ * u32 bpf_set_hash(skb, hash)
+ *     Set full skb->hash.
+ *     @skb: pointer to skb
+ *     @hash: hash to set
  */
 #define __BPF_FUNC_MAPPER(FN)		\
 	FN(unspec),			\
@@ -491,7 +508,8 @@ union bpf_attr {
 	FN(xdp_adjust_head),		\
 	FN(probe_read_str),		\
 	FN(get_socket_cookie),		\
-	FN(get_socket_uid),
+	FN(get_socket_uid),		\
+	FN(set_hash),
 
 /* integer value in 'imm' field of BPF_CALL instruction selects which helper
  * function eBPF program intends to call
