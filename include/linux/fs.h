@@ -1996,6 +1996,8 @@ static inline bool HAS_UNMAPPED_ID(struct inode *inode)
  * I_SYNC_QUEUED	Inode is queued in b_io or b_more_io writeback lists.
  *			Used to detect that mark_inode_dirty() should not move
  * 			inode between dirty lists.
+ * I_OVL_INUSE		Used by overlayfs to get exclusive ownership on upper
+ *			and work dirs among overlayfs mounts.
  *
  * Q: What is the difference between I_WILL_FREE and I_FREEING?
  */
@@ -2016,6 +2018,7 @@ static inline bool HAS_UNMAPPED_ID(struct inode *inode)
 #define I_DIRTY_TIME		(1 << 11)
 #define I_DIRTY_TIME_EXPIRED	(1 << 12)
 #define I_WB_SWITCH		(1 << 13)
+#define I_OVL_INUSE		(1 << 14)
 #define I_SYNC_QUEUED		(1 << 17)
 
 #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
