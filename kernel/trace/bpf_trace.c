@@ -511,7 +511,7 @@ static const struct bpf_func_proto *kprobe_prog_func_proto(enum bpf_func_id func
 
 /* bpf+kprobe programs can access fields of 'struct pt_regs' */
 static bool kprobe_prog_is_valid_access(int off, int size, enum bpf_access_type type,
-					enum bpf_reg_type *reg_type)
+					struct bpf_insn_access_aux *info)
 {
 	if (off < 0 || off >= sizeof(struct pt_regs))
 		return false;
@@ -519,6 +519,13 @@ static bool kprobe_prog_is_valid_access(int off, int size, enum bpf_access_type 
 		return false;
 	if (off % size != 0)
 		return false;
+	/*
+	 * Assertion for 32 bit to make sure last 8 byte access
+	 * (BPF_DW) to the last 4 byte member is disallowed.
+	 */
+	if (off + size > sizeof(struct pt_regs))
+		return false;
+
 	return true;
 }
 
@@ -587,7 +594,7 @@ static const struct bpf_func_proto *tp_prog_func_proto(enum bpf_func_id func_id)
 }
 
 static bool tp_prog_is_valid_access(int off, int size, enum bpf_access_type type,
-				    enum bpf_reg_type *reg_type)
+				    struct bpf_insn_access_aux *info)
 {
 	if (off < sizeof(void *) || off >= PERF_MAX_TRACE_SIZE)
 		return false;
@@ -595,6 +602,8 @@ static bool tp_prog_is_valid_access(int off, int size, enum bpf_access_type type
 		return false;
 	if (off % size != 0)
 		return false;
+
+	BUILD_BUG_ON(PERF_MAX_TRACE_SIZE % sizeof(__u64));
 	return true;
 }
 
@@ -604,40 +613,47 @@ const struct bpf_verifier_ops tracepoint_prog_ops = {
 };
 
 static bool pe_prog_is_valid_access(int off, int size, enum bpf_access_type type,
-				    enum bpf_reg_type *reg_type)
+				    struct bpf_insn_access_aux *info)
 {
+	const int size_sp = FIELD_SIZEOF(struct bpf_perf_event_data,
+					 sample_period);
+
 	if (off < 0 || off >= sizeof(struct bpf_perf_event_data))
 		return false;
 	if (type != BPF_READ)
 		return false;
 	if (off % size != 0)
 		return false;
-	if (off == offsetof(struct bpf_perf_event_data, sample_period)) {
-		if (size != sizeof(u64))
+
+	switch (off) {
+	case bpf_ctx_range(struct bpf_perf_event_data, sample_period):
+		bpf_ctx_record_field_size(info, size_sp);
+		if (!bpf_ctx_narrow_access_ok(off, size, size_sp))
 			return false;
-	} else {
+		break;
+	default:
 		if (size != sizeof(long))
 			return false;
 	}
+
 	return true;
 }
 
 static u32 pe_prog_convert_ctx_access(enum bpf_access_type type,
 				      const struct bpf_insn *si,
 				      struct bpf_insn *insn_buf,
-				      struct bpf_prog *prog)
+				      struct bpf_prog *prog, u32 *target_size)
 {
 	struct bpf_insn *insn = insn_buf;
 
 	switch (si->off) {
 	case offsetof(struct bpf_perf_event_data, sample_period):
-		BUILD_BUG_ON(FIELD_SIZEOF(struct perf_sample_data, period) != sizeof(u64));
-
 		*insn++ = BPF_LDX_MEM(BPF_FIELD_SIZEOF(struct bpf_perf_event_data_kern,
 						       data), si->dst_reg, si->src_reg,
 				      offsetof(struct bpf_perf_event_data_kern, data));
 		*insn++ = BPF_LDX_MEM(BPF_DW, si->dst_reg, si->dst_reg,
-				      offsetof(struct perf_sample_data, period));
+				      bpf_target_off(struct perf_sample_data, period, 8,
+						     target_size));
 		break;
 	default:
 		*insn++ = BPF_LDX_MEM(BPF_FIELD_SIZEOF(struct bpf_perf_event_data_kern,
