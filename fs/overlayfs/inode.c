@@ -154,8 +154,8 @@ out:
 
 int ovl_permission(struct inode *inode, int mask)
 {
-	bool is_upper;
-	struct inode *realinode = ovl_inode_real(inode, &is_upper);
+	struct inode *upperinode = ovl_inode_upper(inode);
+	struct inode *realinode = upperinode ?: ovl_inode_lower(inode);
 	const struct cred *old_cred;
 	int err;
 
@@ -174,7 +174,8 @@ int ovl_permission(struct inode *inode, int mask)
 		return err;
 
 	old_cred = ovl_override_creds(inode->i_sb);
-	if (!is_upper && !special_file(realinode->i_mode) && mask & MAY_WRITE) {
+	if (!upperinode &&
+	    !special_file(realinode->i_mode) && mask & MAY_WRITE) {
 		mask &= ~(MAY_WRITE | MAY_APPEND);
 		/* Make sure mounter can read file for copy up later */
 		mask |= MAY_READ;
@@ -307,7 +308,7 @@ ssize_t ovl_listxattr(struct dentry *dentry, char *list, size_t size)
 
 struct posix_acl *ovl_get_acl(struct inode *inode, int type)
 {
-	struct inode *realinode = ovl_inode_real(inode, NULL);
+	struct inode *realinode = ovl_inode_real(inode);
 	const struct cred *old_cred;
 	struct posix_acl *acl;
 
@@ -484,17 +485,24 @@ static int ovl_inode_set(struct inode *inode, void *data)
 	return 0;
 }
 
-struct inode *ovl_get_inode(struct dentry *dentry)
+struct inode *ovl_get_inode(struct dentry *dentry, struct dentry *upperdentry)
 {
-	struct dentry *upperdentry = ovl_dentry_upper(dentry);
-	struct inode *realinode = d_inode(ovl_dentry_real(dentry));
+	struct dentry *lowerdentry = ovl_dentry_lower(dentry);
+	struct inode *realinode = upperdentry ? d_inode(upperdentry) : NULL;
 	struct inode *inode;
+
+	if (!realinode)
+		realinode = d_inode(lowerdentry);
 
 	if (upperdentry && !d_is_dir(upperdentry)) {
 		inode = iget5_locked(dentry->d_sb, (unsigned long) realinode,
 				     ovl_inode_test, ovl_inode_set, realinode);
-		if (!inode || !(inode->i_state & I_NEW))
+		if (!inode)
 			goto out;
+		if (!(inode->i_state & I_NEW)) {
+			dput(upperdentry);
+			goto out;
+		}
 
 		set_nlink(inode, realinode->i_nlink);
 	} else {
@@ -503,7 +511,7 @@ struct inode *ovl_get_inode(struct dentry *dentry)
 			goto out;
 	}
 	ovl_fill_inode(inode, realinode->i_mode, realinode->i_rdev);
-	ovl_inode_init(inode, dentry);
+	ovl_inode_init(inode, upperdentry, lowerdentry);
 	if (inode->i_state & I_NEW)
 		unlock_new_inode(inode);
 out:
