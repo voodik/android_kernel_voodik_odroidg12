@@ -2404,6 +2404,51 @@ static const struct bpf_func_proto bpf_xdp_adjust_head_proto = {
 	.arg2_type	= ARG_ANYTHING,
 };
 
+static int __bpf_tx_xdp(struct net_device *dev, struct xdp_buff *xdp)
+{
+	if (dev->netdev_ops->ndo_xdp_xmit) {
+		dev->netdev_ops->ndo_xdp_xmit(dev, xdp);
+		return 0;
+	}
+	bpf_warn_invalid_xdp_redirect(dev->ifindex);
+	return -EOPNOTSUPP;
+}
+
+int xdp_do_redirect(struct net_device *dev, struct xdp_buff *xdp)
+{
+	struct redirect_info *ri = this_cpu_ptr(&redirect_info);
+
+	dev = dev_get_by_index_rcu(dev_net(dev), ri->ifindex);
+	ri->ifindex = 0;
+	if (unlikely(!dev)) {
+		bpf_warn_invalid_xdp_redirect(ri->ifindex);
+		return -EINVAL;
+	}
+
+	return __bpf_tx_xdp(dev, xdp);
+}
+EXPORT_SYMBOL_GPL(xdp_do_redirect);
+
+BPF_CALL_2(bpf_xdp_redirect, u32, ifindex, u64, flags)
+{
+	struct redirect_info *ri = this_cpu_ptr(&redirect_info);
+
+	if (unlikely(flags))
+		return XDP_ABORTED;
+
+	ri->ifindex = ifindex;
+	ri->flags = flags;
+	return XDP_REDIRECT;
+}
+
+static const struct bpf_func_proto bpf_xdp_redirect_proto = {
+	.func           = bpf_xdp_redirect,
+	.gpl_only       = false,
+	.ret_type       = RET_INTEGER,
+	.arg1_type      = ARG_ANYTHING,
+	.arg2_type      = ARG_ANYTHING,
+};
+
 bool bpf_helper_changes_pkt_data(void *func)
 {
 	if (func == bpf_skb_vlan_push ||
@@ -2967,6 +3012,8 @@ xdp_func_proto(enum bpf_func_id func_id)
 		return &bpf_get_smp_processor_id_proto;
 	case BPF_FUNC_xdp_adjust_head:
 		return &bpf_xdp_adjust_head_proto;
+	case BPF_FUNC_redirect:
+		return &bpf_xdp_redirect_proto;
 	default:
 		return bpf_base_func_proto(func_id);
 	}
@@ -3255,6 +3302,41 @@ void bpf_warn_invalid_xdp_action(u32 act)
 	WARN_ONCE(1, "Illegal XDP return value %u, expect packet loss\n", act);
 }
 EXPORT_SYMBOL_GPL(bpf_warn_invalid_xdp_action);
+
+void bpf_warn_invalid_xdp_redirect(u32 ifindex)
+{
+	WARN_ONCE(1, "Illegal XDP redirect to unsupported device ifindex(%i)\n", ifindex);
+}
+
+static bool __is_valid_sock_ops_access(int off, int size)
+{
+	if (off < 0 || off >= sizeof(struct bpf_sock_ops))
+		return false;
+	/* The verifier guarantees that size > 0. */
+	if (off % size != 0)
+		return false;
+	if (size != sizeof(__u32))
+		return false;
+
+	return true;
+}
+
+static bool sock_ops_is_valid_access(int off, int size,
+				     enum bpf_access_type type,
+				     struct bpf_insn_access_aux *info)
+{
+	if (type == BPF_WRITE) {
+		switch (off) {
+		case offsetof(struct bpf_sock_ops, op) ...
+		     offsetof(struct bpf_sock_ops, replylong[3]):
+			break;
+		default:
+			return false;
+		}
+	}
+
+	return __is_valid_sock_ops_access(off, size);
+}
 
 static u32 bpf_convert_ctx_access(enum bpf_access_type type,
 				  const struct bpf_insn *si,
