@@ -332,6 +332,11 @@ static inline bool unprivileged_ebpf_enabled(void)
 	return !sysctl_unprivileged_bpf_disabled;
 }
 
+/* Map specifics */
+struct net_device  *__dev_map_lookup_elem(struct bpf_map *map, u32 key);
+void __dev_map_insert_ctx(struct bpf_map *map, u32 index);
+void __dev_map_flush(struct bpf_map *map);
+
 #else
 static inline struct bpf_prog *bpf_prog_get(u32 ufd)
 {
@@ -369,11 +374,27 @@ static inline void __bpf_prog_uncharge(struct user_struct *user, u32 pages)
 {
 }
 
+<<<<<<< HEAD
 static inline bool unprivileged_ebpf_enabled(void)
 {
 	return false;
 }
 
+=======
+static inline struct net_device  *__dev_map_lookup_elem(struct bpf_map *map,
+						       u32 key)
+{
+	return NULL;
+}
+
+static inline void __dev_map_insert_ctx(struct bpf_map *map, u32 index)
+{
+}
+
+static inline void __dev_map_flush(struct bpf_map *map)
+{
+}
+>>>>>>> 46f55cffa473 (net: fix build error in devmap helper calls)
 #endif /* CONFIG_BPF_SYSCALL */
 
 /* verifier prototypes for helper functions called from eBPF programs */
@@ -397,7 +418,10 @@ extern const struct bpf_func_proto bpf_get_stackid_proto;
 void bpf_user_rnd_init_once(void);
 u64 bpf_user_rnd_u32(u64 r1, u64 r2, u64 r3, u64 r4, u64 r5);
 
+<<<<<<< HEAD
 /* Map specifics */
 struct net_device  *__dev_map_lookup_elem(struct bpf_map *map, u32 key);
 
+=======
+>>>>>>> 46f55cffa473 (net: fix build error in devmap helper calls)
 #endif /* _LINUX_BPF_H */
