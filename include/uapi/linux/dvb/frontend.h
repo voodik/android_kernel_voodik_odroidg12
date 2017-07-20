@@ -146,21 +146,21 @@ enum fe_sec_mini_cmd {
  *			to reset DiSEqC, tone and parameters
  */
 enum fe_status {
-	FE_HAS_SIGNAL	= 0x01,   /* found something above the noise level */
-	FE_HAS_CARRIER	= 0x02,   /* found a DVB signal  */
-	FE_HAS_VITERBI	= 0x04,   /* FEC is stable  */
-	FE_HAS_SYNC	= 0x08,   /* found sync bytes  */
-	FE_HAS_LOCK	= 0x10,   /* everything's working... */
-	FE_TIMEDOUT	= 0x20,   /* no lock within the last ~2 seconds */
-	FE_REINIT	= 0x40,    /* frontend was reinitialized,  */
+	FE_NONE			= 0x00,
+	FE_HAS_SIGNAL		= 0x01,
+	FE_HAS_CARRIER		= 0x02,
+	FE_HAS_VITERBI		= 0x04,
+	FE_HAS_SYNC		= 0x08,
+	FE_HAS_LOCK		= 0x10,
+	FE_TIMEDOUT		= 0x20,
+	FE_REINIT		= 0x40,
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
-	BLINDSCAN_NONEDO = 0x80, /* not blind scan  */
-	BLINDSCAN_UPDATESTARTFREQ = 0x100, /* blind scan update start freq  */
-	BLINDSCAN_UPDATEPROCESS   = 0x200, /* blind scan update process  */
-	BLINDSCAN_UPDATERESULTFREQ = 0x400/* blind scan update result  */
+        BLINDSCAN_NONEDO = 0x80, /* not blind scan  */
+        BLINDSCAN_UPDATESTARTFREQ = 0x100, /* blind scan update start freq  */
+        BLINDSCAN_UPDATEPROCESS   = 0x200, /* blind scan update process  */
+        BLINDSCAN_UPDATERESULTFREQ = 0x400/* blind scan update result  */
 #endif
-}; /* application is recommended to reset */
-/* DiSEqC, tone and parameters */
+};
 
 enum fe_spectral_inversion {
 	INVERSION_OFF,
