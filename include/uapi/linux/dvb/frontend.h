@@ -139,6 +139,7 @@ enum fe_sec_mini_cmd {
  *			to reset DiSEqC, tone and parameters
  */
 enum fe_status {
+	FE_NONE			= 0x00,
 	FE_HAS_SIGNAL	= 0x01,   /* found something above the noise level */
 	FE_HAS_CARRIER	= 0x02,   /* found a DVB signal  */
 	FE_HAS_VITERBI	= 0x04,   /* FEC is stable  */
