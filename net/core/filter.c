@@ -1834,6 +1834,45 @@ static const struct bpf_func_proto bpf_redirect_map_proto = {
 	.arg3_type      = ARG_ANYTHING,
 };
 
+BPF_CALL_3(bpf_sk_redirect_map, struct bpf_map *, map, u32, key, u64, flags)
+{
+	struct redirect_info *ri = this_cpu_ptr(&redirect_info);
+
+	if (unlikely(flags))
+		return SK_ABORTED;
+
+	ri->ifindex = key;
+	ri->flags = flags;
+	ri->map = map;
+
+	return SK_REDIRECT;
+}
+
+struct sock *do_sk_redirect_map(void)
+{
+	struct redirect_info *ri = this_cpu_ptr(&redirect_info);
+	struct sock *sk = NULL;
+
+	if (ri->map) {
+		sk = __sock_map_lookup_elem(ri->map, ri->ifindex);
+
+		ri->ifindex = 0;
+		ri->map = NULL;
+		/* we do not clear flags for future lookup */
+	}
+
+	return sk;
+}
+
+static const struct bpf_func_proto bpf_sk_redirect_map_proto = {
+	.func           = bpf_sk_redirect_map,
+	.gpl_only       = false,
+	.ret_type       = RET_INTEGER,
+	.arg1_type      = ARG_CONST_MAP_PTR,
+	.arg2_type      = ARG_ANYTHING,
+	.arg3_type      = ARG_ANYTHING,
+};
+
 BPF_CALL_1(bpf_get_cgroup_classid, const struct sk_buff *, skb)
 {
 	return task_get_classid(skb);
@@ -3146,6 +3185,8 @@ static const struct bpf_func_proto *
 	switch (func_id) {
 	case BPF_FUNC_setsockopt:
 		return &bpf_setsockopt_proto;
+	case BPF_FUNC_sock_map_update:
+		return &bpf_sock_map_update_proto;
 	default:
 		return bpf_base_func_proto(func_id);
 	}
@@ -3869,11 +3910,7 @@ const struct bpf_verifier_ops cg_sock_prog_ops = {
 };
 
 const struct bpf_verifier_ops sock_ops_prog_ops = {
-<<<<<<< HEAD
 	.get_func_proto		= sock_ops_func_proto,
-=======
-	.get_func_proto		= bpf_base_func_proto,
->>>>>>> 40304b2a1567 (bpf: BPF support for sock_ops)
 	.is_valid_access	= sock_ops_is_valid_access,
 	.convert_ctx_access	= sock_ops_convert_ctx_access,
 };
