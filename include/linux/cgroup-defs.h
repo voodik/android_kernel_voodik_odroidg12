@@ -68,6 +68,18 @@ enum {
 enum {
 	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
 	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
+
+	/*
+	 * Consider namespaces as delegation boundaries.  If this flag is
+	 * set, controller specific interface files in a namespace root
+	 * aren't writeable from inside the namespace.
+	 */
+	CGRP_ROOT_NS_DELEGATE	= (1 << 3),
+
+	/*
+	 * Enable cpuset controller in v1 cgroup to use v2 behavior.
+	 */
+	CGRP_ROOT_CPUSET_V2_MODE = (1 << 4),
 };
 
 /* cftype->flags */
