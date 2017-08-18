@@ -62,6 +62,7 @@ struct bpf_map {
 	 */
 	struct user_struct *user ____cacheline_aligned;
 	atomic_t refcnt;
+	int numa_node;
 	atomic_t usercnt;
 	struct work_struct work;
 #ifdef CONFIG_SECURITY
@@ -292,7 +293,7 @@ struct bpf_map *bpf_map_inc(struct bpf_map *map, bool uref);
 void bpf_map_put_with_uref(struct bpf_map *map);
 void bpf_map_put(struct bpf_map *map);
 int bpf_map_precharge_memlock(u32 pages);
-void *bpf_map_area_alloc(size_t size);
+void *bpf_map_area_alloc(size_t size, int numa_node);
 void bpf_map_area_free(void *base);
 
 extern int sysctl_unprivileged_bpf_disabled;
@@ -353,6 +354,13 @@ struct net_device  *__dev_map_lookup_elem(struct bpf_map *map, u32 key);
 struct sock  *__sock_map_lookup_elem(struct bpf_map *map, u32 key);
 void __dev_map_insert_ctx(struct bpf_map *map, u32 index);
 void __dev_map_flush(struct bpf_map *map);
+
+/* Return map's numa specified by userspace */
+static inline int bpf_map_attr_numa_node(const union bpf_attr *attr)
+{
+	return (attr->map_flags & BPF_F_NUMA_NODE) ?
+		attr->numa_node : NUMA_NO_NODE;
+}
 
 #else
 static inline struct bpf_prog *bpf_prog_get(u32 ufd)
