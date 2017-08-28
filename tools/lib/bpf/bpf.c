@@ -167,3 +167,119 @@ int bpf_obj_get(const char *pathname)
 
 	return sys_bpf(BPF_OBJ_GET, &attr, sizeof(attr));
 }
+
+int bpf_prog_attach(int prog_fd, int target_fd, enum bpf_attach_type type,
+		    unsigned int flags)
+{
+	union bpf_attr attr;
+
+	bzero(&attr, sizeof(attr));
+	attr.target_fd	   = target_fd;
+	attr.attach_bpf_fd = prog_fd;
+	attr.attach_type   = type;
+	attr.attach_flags  = flags;
+
+	return sys_bpf(BPF_PROG_ATTACH, &attr, sizeof(attr));
+}
+
+int bpf_prog_detach(int target_fd, enum bpf_attach_type type)
+{
+	union bpf_attr attr;
+
+	bzero(&attr, sizeof(attr));
+	attr.target_fd	 = target_fd;
+	attr.attach_type = type;
+
+	return sys_bpf(BPF_PROG_DETACH, &attr, sizeof(attr));
+}
+
+int bpf_prog_test_run(int prog_fd, int repeat, void *data, __u32 size,
+		      void *data_out, __u32 *size_out, __u32 *retval,
+		      __u32 *duration)
+{
+	union bpf_attr attr;
+	int ret;
+
+	bzero(&attr, sizeof(attr));
+	attr.test.prog_fd = prog_fd;
+	attr.test.data_in = ptr_to_u64(data);
+	attr.test.data_out = ptr_to_u64(data_out);
+	attr.test.data_size_in = size;
+	attr.test.repeat = repeat;
+
+	ret = sys_bpf(BPF_PROG_TEST_RUN, &attr, sizeof(attr));
+	if (size_out)
+		*size_out = attr.test.data_size_out;
+	if (retval)
+		*retval = attr.test.retval;
+	if (duration)
+		*duration = attr.test.duration;
+	return ret;
+}
+
+int bpf_prog_get_next_id(__u32 start_id, __u32 *next_id)
+{
+	union bpf_attr attr;
+	int err;
+
+	bzero(&attr, sizeof(attr));
+	attr.start_id = start_id;
+
+	err = sys_bpf(BPF_PROG_GET_NEXT_ID, &attr, sizeof(attr));
+	if (!err)
+		*next_id = attr.next_id;
+
+	return err;
+}
+
+int bpf_map_get_next_id(__u32 start_id, __u32 *next_id)
+{
+	union bpf_attr attr;
+	int err;
+
+	bzero(&attr, sizeof(attr));
+	attr.start_id = start_id;
+
+	err = sys_bpf(BPF_MAP_GET_NEXT_ID, &attr, sizeof(attr));
+	if (!err)
+		*next_id = attr.next_id;
+
+	return err;
+}
+
+int bpf_prog_get_fd_by_id(__u32 id)
+{
+	union bpf_attr attr;
+
+	bzero(&attr, sizeof(attr));
+	attr.prog_id = id;
+
+	return sys_bpf(BPF_PROG_GET_FD_BY_ID, &attr, sizeof(attr));
+}
+
+int bpf_map_get_fd_by_id(__u32 id)
+{
+	union bpf_attr attr;
+
+	bzero(&attr, sizeof(attr));
+	attr.map_id = id;
+
+	return sys_bpf(BPF_MAP_GET_FD_BY_ID, &attr, sizeof(attr));
+}
+
+int bpf_obj_get_info_by_fd(int prog_fd, void *info, __u32 *info_len)
+{
+	union bpf_attr attr;
+	int err;
+
+	bzero(&attr, sizeof(attr));
+	attr.info.bpf_fd = prog_fd;
+	attr.info.info_len = *info_len;
+	attr.info.info = ptr_to_u64(info);
+
+	err = sys_bpf(BPF_OBJ_GET_INFO_BY_FD, &attr, sizeof(attr));
+	if (!err)
+		*info_len = attr.info.info_len;
+
+	return err;
+}
