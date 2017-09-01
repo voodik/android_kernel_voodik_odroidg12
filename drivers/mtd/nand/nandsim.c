@@ -1400,7 +1400,7 @@ static ssize_t write_file(struct nandsim *ns, struct file *file, void *buf, size
 	if (err)
 		return err;
 	noreclaim_flag = memalloc_noreclaim_save();
-	tx = kernel_write(file, buf, count, pos);
+	tx = kernel_write(file, buf, count, &pos);
 	memalloc_noreclaim_restore(noreclaim_flag);
 	put_pages(ns);
 	return tx;
