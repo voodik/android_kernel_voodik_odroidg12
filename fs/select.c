@@ -1350,7 +1350,6 @@ static long do_compat_pselect(int n, compat_ulong_t __user *inp,
 	struct compat_timespec __user *tsp, compat_sigset_t __user *sigmask,
 	compat_size_t sigsetsize)
 {
-	compat_sigset_t ss32;
 	sigset_t ksigmask, sigsaved;
 	struct compat_timespec ts;
 	struct timespec end_time, *to = NULL;
@@ -1368,9 +1367,8 @@ static long do_compat_pselect(int n, compat_ulong_t __user *inp,
 	if (sigmask) {
 		if (sigsetsize != sizeof(compat_sigset_t))
 			return -EINVAL;
-		if (copy_from_user(&ss32, sigmask, sizeof(ss32)))
+		if (get_compat_sigset(&ksigmask, sigmask))
 			return -EFAULT;
-		sigset_from_compat(&ksigmask, &ss32);
 
 		sigdelsetmask(&ksigmask, sigmask(SIGKILL)|sigmask(SIGSTOP));
 		sigprocmask(SIG_SETMASK, &ksigmask, &sigsaved);
@@ -1419,7 +1417,6 @@ COMPAT_SYSCALL_DEFINE5(ppoll, struct pollfd __user *, ufds,
 	unsigned int,  nfds, struct compat_timespec __user *, tsp,
 	const compat_sigset_t __user *, sigmask, compat_size_t, sigsetsize)
 {
-	compat_sigset_t ss32;
 	sigset_t ksigmask, sigsaved;
 	struct compat_timespec ts;
 	struct timespec end_time, *to = NULL;
@@ -1437,9 +1434,8 @@ COMPAT_SYSCALL_DEFINE5(ppoll, struct pollfd __user *, ufds,
 	if (sigmask) {
 		if (sigsetsize != sizeof(compat_sigset_t))
 			return -EINVAL;
-		if (copy_from_user(&ss32, sigmask, sizeof(ss32)))
+		if (get_compat_sigset(&ksigmask, sigmask))
 			return -EFAULT;
-		sigset_from_compat(&ksigmask, &ss32);
 
 		sigdelsetmask(&ksigmask, sigmask(SIGKILL)|sigmask(SIGSTOP));
 		sigprocmask(SIG_SETMASK, &ksigmask, &sigsaved);
