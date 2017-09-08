@@ -482,7 +482,7 @@ static void test_sockmap(int task, void *data)
 		}
 	}
 
-	/* Test attaching bad fds */
+	/* Test attaching/detaching bad fds */
 	err = bpf_prog_attach(-1, fd, BPF_SK_SKB_STREAM_PARSER, 0);
 	if (!err) {
 		printf("Failed invalid parser prog attach\n");
@@ -492,6 +492,30 @@ static void test_sockmap(int task, void *data)
 	err = bpf_prog_attach(-1, fd, BPF_SK_SKB_STREAM_VERDICT, 0);
 	if (!err) {
 		printf("Failed invalid verdict prog attach\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_attach(-1, fd, __MAX_BPF_ATTACH_TYPE, 0);
+	if (!err) {
+		printf("Failed unknown prog attach\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_detach(fd, BPF_SK_SKB_STREAM_PARSER);
+	if (err) {
+		printf("Failed empty parser prog detach\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_detach(fd, BPF_SK_SKB_STREAM_VERDICT);
+	if (err) {
+		printf("Failed empty verdict prog detach\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_detach(fd, __MAX_BPF_ATTACH_TYPE);
+	if (!err) {
+		printf("Detach invalid prog successful\n");
 		goto out_sockmap;
 	}
 
@@ -533,6 +557,13 @@ static void test_sockmap(int task, void *data)
 			      BPF_SK_SKB_STREAM_VERDICT, 0);
 	if (err) {
 		printf("Failed bpf prog attach\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_attach(verdict_prog, map_fd_rx,
+			      __MAX_BPF_ATTACH_TYPE, 0);
+	if (!err) {
+		printf("Attached unknown bpf prog\n");
 		goto out_sockmap;
 	}
 
@@ -649,6 +680,50 @@ static void test_sockmap(int task, void *data)
 			       err, i, sfd[i]);
 			goto out_sockmap;
 		}
+	}
+
+	/* Test tasks number of forked operations */
+	for (i = 0; i < tasks; i++) {
+		pid[i] = fork();
+		if (pid[i] == 0) {
+			for (i = 0; i < 6; i++) {
+				bpf_map_delete_elem(map_fd_tx, &i);
+				bpf_map_delete_elem(map_fd_rx, &i);
+				bpf_map_update_elem(map_fd_tx, &i,
+						    &sfd[i], BPF_ANY);
+				bpf_map_update_elem(map_fd_rx, &i,
+						    &sfd[i], BPF_ANY);
+			}
+			exit(0);
+		} else if (pid[i] == -1) {
+			printf("Couldn't spawn #%d process!\n", i);
+			exit(1);
+		}
+	}
+
+	for (i = 0; i < tasks; i++) {
+		int status;
+
+		assert(waitpid(pid[i], &status, 0) == pid[i]);
+		assert(status == 0);
+	}
+
+	err = bpf_prog_detach(map_fd_rx, __MAX_BPF_ATTACH_TYPE);
+	if (!err) {
+		printf("Detached an invalid prog type.\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_detach(map_fd_rx, BPF_SK_SKB_STREAM_PARSER);
+	if (err) {
+		printf("Failed parser prog detach\n");
+		goto out_sockmap;
+	}
+
+	err = bpf_prog_detach(map_fd_rx, BPF_SK_SKB_STREAM_VERDICT);
+	if (err) {
+		printf("Failed parser prog detach\n");
+		goto out_sockmap;
 	}
 
 	/* Test map close sockets */
