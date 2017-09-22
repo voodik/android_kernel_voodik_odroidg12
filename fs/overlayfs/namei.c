@@ -634,6 +634,7 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
 		}
 
 		if (d.redirect) {
+			err = -ENOMEM;
 			upperredirect = kstrdup(d.redirect, GFP_KERNEL);
 			if (!upperredirect)
 				goto out_put_upper;
