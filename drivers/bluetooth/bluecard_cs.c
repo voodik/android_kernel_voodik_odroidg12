@@ -155,9 +155,9 @@ static void bluecard_detach(struct pcmcia_device *p_dev);
 /* ======================== LED handling routines ======================== */
 
 
-static void bluecard_activity_led_timeout(u_long arg)
+static void bluecard_activity_led_timeout(struct timer_list *t)
 {
-	struct bluecard_info *info = (struct bluecard_info *)arg;
+	struct bluecard_info *info = from_timer(info, t, timer);
 	unsigned int iobase = info->p_dev->resource[0]->start;
 
 	if (!test_bit(CARD_HAS_PCCARD_ID, &(info->hw_state)))
@@ -695,8 +695,7 @@ static int bluecard_open(struct bluecard_info *info)
 
 	spin_lock_init(&(info->lock));
 
-	setup_timer(&(info->timer), &bluecard_activity_led_timeout,
-		    (u_long)info);
+	timer_setup(&info->timer, bluecard_activity_led_timeout, 0);
 
 	skb_queue_head_init(&(info->txq));
 
