@@ -346,11 +346,6 @@ int bpf_check(struct bpf_prog **fp, union bpf_attr *attr);
 
 struct bpf_prog *bpf_prog_get_type_path(const char *name, enum bpf_prog_type type);
 
-static inline bool unprivileged_ebpf_enabled(void)
-{
-	return !sysctl_unprivileged_bpf_disabled;
-}
-
 /* Map specifics */
 struct net_device  *__dev_map_lookup_elem(struct bpf_map *map, u32 key);
 struct sock  *__sock_map_lookup_elem(struct bpf_map *map, u32 key);
@@ -401,7 +396,7 @@ static inline void __bpf_prog_uncharge(struct user_struct *user, u32 pages)
 {
 }
 
-static inline bool unprivileged_ebpf_enabled(void)
+static inline int bpf_obj_get_user(const char __user *pathname, int flags)
 {
 	return false;
 }
