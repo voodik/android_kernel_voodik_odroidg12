@@ -875,7 +875,7 @@ out:
 	return err;
 }
 
-static int ovl_get_workdir(struct ovl_fs *ufs, struct path *workpath)
+static int ovl_make_workdir(struct ovl_fs *ufs, struct path *workpath)
 {
 	struct dentry *temp;
 	int err;
@@ -930,27 +930,27 @@ static int ovl_get_workdir(struct ovl_fs *ufs, struct path *workpath)
 	return 0;
 }
 
-static int ovl_get_workpath(struct ovl_fs *ufs, struct path *upperpath,
-			    struct path *workpath)
+static int ovl_get_workdir(struct ovl_fs *ufs, struct path *upperpath)
 {
 	int err;
+	struct path workpath = { };
 
-	err = ovl_mount_dir(ufs->config.workdir, workpath);
+	err = ovl_mount_dir(ufs->config.workdir, &workpath);
 	if (err)
 		goto out;
 
 	err = -EINVAL;
-	if (upperpath->mnt != workpath->mnt) {
+	if (upperpath->mnt != workpath.mnt) {
 		pr_err("overlayfs: workdir and upperdir must reside under the same mount\n");
 		goto out;
 	}
-	if (!ovl_workdir_ok(workpath->dentry, upperpath->dentry)) {
+	if (!ovl_workdir_ok(workpath.dentry, upperpath->dentry)) {
 		pr_err("overlayfs: workdir and upperdir must be separate subtrees\n");
 		goto out;
 	}
 
 	err = -EBUSY;
-	if (ovl_inuse_trylock(workpath->dentry)) {
+	if (ovl_inuse_trylock(workpath.dentry)) {
 		ufs->workdir_locked = true;
 	} else if (ufs->config.index) {
 		pr_err("overlayfs: workdir is in-use by another mount, mount with '-o index=off' to override exclusive workdir protection.\n");
@@ -959,9 +959,15 @@ static int ovl_get_workpath(struct ovl_fs *ufs, struct path *upperpath,
 		pr_warn("overlayfs: workdir is in-use by another mount, accessing files from both mounts will result in undefined behavior.\n");
 	}
 
-	ufs->workbasedir = dget(workpath->dentry);
+	ufs->workbasedir = dget(workpath.dentry);
+	err = ovl_make_workdir(ufs, &workpath);
+	if (err)
+		goto out;
+
 	err = 0;
 out:
+	path_put(&workpath);
+
 	return err;
 }
 
@@ -1122,8 +1128,7 @@ out_free_stack:
 
 static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 {
-	struct path upperpath = { NULL, NULL };
-	struct path workpath = { NULL, NULL };
+	struct path upperpath = { };
 	struct dentry *root_dentry;
 	struct ovl_entry *oe = NULL;
 	struct ovl_fs *ufs;
@@ -1167,11 +1172,7 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 		if (err)
 			goto out_err;
 
-		err = ovl_get_workpath(ufs, &upperpath, &workpath);
-		if (err)
-			goto out_err;
-
-		err = ovl_get_workdir(ufs, &workpath);
+		err = ovl_get_workdir(ufs, &upperpath);
 		if (err)
 			goto out_err;
 
@@ -1237,7 +1238,6 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	for (i = 0; i < numlower; i++)
 		mntput(stack[i].mnt);
 	kfree(stack);
-	path_put(&workpath);
 
 	if (upperpath.dentry) {
 		oe->has_upper = true;
@@ -1261,7 +1261,6 @@ out_err:
 	for (i = 0; i < numlower; i++)
 		path_put(&stack[i]);
 	kfree(stack);
-	path_put(&workpath);
 	path_put(&upperpath);
 	ovl_free_fs(ufs);
 out:
