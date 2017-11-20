@@ -974,8 +974,7 @@ static int usbhid_parse(struct hid_device *hid)
 	int num_descriptors;
 	size_t offset = offsetof(struct hid_descriptor, desc);
 
-	quirks = usbhid_lookup_quirk(le16_to_cpu(dev->descriptor.idVendor),
-			le16_to_cpu(dev->descriptor.idProduct));
+	quirks = hid_lookup_quirk(hid);
 
 	if (quirks & HID_QUIRK_IGNORE)
 		return -ENODEV;
@@ -1326,7 +1325,6 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
 	hid->vendor = le16_to_cpu(dev->descriptor.idVendor);
 	hid->product = le16_to_cpu(dev->descriptor.idProduct);
 	hid->name[0] = 0;
-	hid->quirks = usbhid_lookup_quirk(hid->vendor, hid->product);
 	if (intf->cur_altsetting->desc.bInterfaceProtocol ==
 			USB_INTERFACE_PROTOCOL_MOUSE)
 		hid->type = HID_TYPE_USBMOUSE;
@@ -1654,7 +1652,7 @@ static int __init hid_init(void)
 {
 	int retval = -ENOMEM;
 
-	retval = usbhid_quirks_init(quirks_param);
+	retval = hid_quirks_init(quirks_param, BUS_USB, MAX_USBHID_BOOT_QUIRKS);
 	if (retval)
 		goto usbhid_quirks_init_fail;
 	retval = usb_register(&hid_driver);
@@ -1664,7 +1662,7 @@ static int __init hid_init(void)
 
 	return 0;
 usb_register_fail:
-	usbhid_quirks_exit();
+	hid_quirks_exit(BUS_USB);
 usbhid_quirks_init_fail:
 	return retval;
 }
@@ -1672,7 +1670,7 @@ usbhid_quirks_init_fail:
 static void __exit hid_exit(void)
 {
 	usb_deregister(&hid_driver);
-	usbhid_quirks_exit();
+	hid_quirks_exit(BUS_USB);
 }
 
 module_init(hid_init);
