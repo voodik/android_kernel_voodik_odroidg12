@@ -44,7 +44,7 @@ $(obj)/shipped-certs.c: $(wildcard $(srctree)/$(src)/certs/*.x509)
 	      echo "$$allf"; \
 	      echo '};'; \
 	      echo 'unsigned int shipped_regdb_certs_len = sizeof(shipped_regdb_certs);'; \
-	  ) >> $@)
+	  ) > $@)
 
 $(obj)/extra-certs.c: $(CONFIG_CFG80211_EXTRA_REGDB_KEYDIR:"%"=%) \
 		      $(wildcard $(CONFIG_CFG80211_EXTRA_REGDB_KEYDIR:"%"=%)/*.x509)
@@ -67,4 +67,4 @@ $(obj)/extra-certs.c: $(CONFIG_CFG80211_EXTRA_REGDB_KEYDIR:"%"=%) \
 	      echo "$$allf"; \
 	      echo '};'; \
 	      echo 'unsigned int extra_regdb_certs_len = sizeof(extra_regdb_certs);'; \
-	  ) >> $@)
+	  ) > $@)
