@@ -972,6 +972,7 @@ static int dvb_frontend_clear_cache(struct dvb_frontend *fe)
 	}
 
 	c->stream_id = NO_STREAM_ID_FILTER;
+	c->scrambling_sequence_index = 0;/* default sequence */
 
 	switch (c->delivery_system) {
 	case SYS_DVBS:
@@ -1051,6 +1052,7 @@ static struct dtv_cmds_h dtv_cmds[DTV_MAX_COMMAND + 1] = {
 
 	_DTV_CMD(DTV_STREAM_ID, 1, 0),
 	_DTV_CMD(DTV_DVBT2_PLP_ID_LEGACY, 1, 0),
+	_DTV_CMD(DTV_SCRAMBLING_SEQUENCE_INDEX, 1, 0),
 	_DTV_CMD(DTV_LNA, 1, 0),
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 	/*set blind scan cmd*/
@@ -1441,6 +1443,11 @@ static int dtv_property_process_get(struct dvb_frontend *fe,
 	case DTV_STREAM_ID:
 	case DTV_DVBT2_PLP_ID_LEGACY:
 		tvp->u.data = c->stream_id;
+		break;
+
+	/* Physical layer scrambling support */
+	case DTV_SCRAMBLING_SEQUENCE_INDEX:
+		tvp->u.data = c->scrambling_sequence_index;
 		break;
 
 	/* ATSC-MH */
@@ -1930,6 +1937,11 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
 	case DTV_STREAM_ID:
 	case DTV_DVBT2_PLP_ID_LEGACY:
 		c->stream_id = tvp->u.data;
+		break;
+
+	/* Physical layer scrambling support */
+	case DTV_SCRAMBLING_SEQUENCE_INDEX:
+		c->scrambling_sequence_index = data;
 		break;
 
 	/* ATSC-MH */
