@@ -281,8 +281,8 @@ out:
 	return fh;
 }
 
-static int ovl_set_origin(struct dentry *dentry, struct dentry *lower,
-			  struct dentry *upper)
+int ovl_set_origin(struct dentry *dentry, struct dentry *lower,
+		   struct dentry *upper)
 {
 	const struct ovl_fh *fh = NULL;
 	int err;
