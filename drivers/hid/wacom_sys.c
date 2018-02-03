@@ -222,7 +222,7 @@ static void wacom_feature_mapping(struct hid_device *hdev,
 	unsigned int equivalent_usage = wacom_equivalent_usage(usage->hid);
 	u8 *data;
 	int ret;
-	int n;
+	u32 n;
 
 	switch (equivalent_usage) {
 	case HID_DG_CONTACTMAX:
