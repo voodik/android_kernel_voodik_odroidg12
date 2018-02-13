@@ -480,7 +480,7 @@ static void ieee80211_report_ack_skb(struct ieee80211_local *local,
 		if (sdata) {
 			if (ieee80211_is_any_nullfunc(hdr->frame_control))
 				cfg80211_probe_status(sdata->dev, hdr->addr1,
-						      cookie, acked,
+						      cookie, acked, 0, false,
 						      GFP_ATOMIC);
 			else
 				cfg80211_mgmt_tx_status(&sdata->wdev, cookie,
