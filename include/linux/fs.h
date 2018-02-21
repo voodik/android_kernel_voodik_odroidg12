@@ -1370,6 +1370,8 @@ struct mm_struct;
 
 /* sb->s_iflags to limit user namespace mounts */
 #define SB_I_USERNS_VISIBLE		0x00000010 /* fstype already mounted */
+#define SB_I_IMA_UNVERIFIABLE_SIGNATURE	0x00000020
+#define SB_I_UNTRUSTED_MOUNTER		0x00000040
 
 /* Temporary flag until all filesystems are converted to dynamic bdis */
 #define SB_I_DYNBDI	0x00000100
