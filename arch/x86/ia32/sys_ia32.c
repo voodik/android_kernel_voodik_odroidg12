@@ -210,9 +210,9 @@ asmlinkage ssize_t sys32_readahead(int fd, unsigned off_lo, unsigned off_hi,
 asmlinkage long sys32_sync_file_range(int fd, unsigned off_low, unsigned off_hi,
 				      unsigned n_low, unsigned n_hi,  int flags)
 {
-	return sys_sync_file_range(fd,
-				   ((u64)off_hi << 32) | off_low,
-				   ((u64)n_hi << 32) | n_low, flags);
+	return ksys_sync_file_range(fd,
+				    ((u64)off_hi << 32) | off_low,
+				    ((u64)n_hi << 32) | n_low, flags);
 }
 
 asmlinkage long sys32_fadvise64(int fd, unsigned offset_lo, unsigned offset_hi,
