@@ -1067,4 +1067,11 @@ static inline long ksys_open(const char __user *filename, int flags,
 	return do_sys_open(AT_FDCWD, filename, flags, mode);
 }
 
+extern long do_sys_truncate(const char __user *pathname, loff_t length);
+
+static inline long ksys_truncate(const char __user *pathname, loff_t length)
+{
+	return do_sys_truncate(pathname, length);
+}
+
 #endif
