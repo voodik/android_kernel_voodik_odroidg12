@@ -227,6 +227,6 @@ asmlinkage long sys32_fallocate(int fd, int mode, unsigned offset_lo,
 				unsigned offset_hi, unsigned len_lo,
 				unsigned len_hi)
 {
-	return sys_fallocate(fd, mode, ((u64)offset_hi << 32) | offset_lo,
-			     ((u64)len_hi << 32) | len_lo);
+	return ksys_fallocate(fd, mode, ((u64)offset_hi << 32) | offset_lo,
+			      ((u64)len_hi << 32) | len_lo);
 }
