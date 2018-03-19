@@ -201,7 +201,7 @@ asmlinkage compat_ssize_t sys32_pread64(unsigned int fd,
 					unsigned long poshi,
 					unsigned long poslo)
 {
-	return sys_pread64(fd, ubuf, count, (poshi << 32) | poslo);
+	return ksys_pread64(fd, ubuf, count, (poshi << 32) | poslo);
 }
 
 asmlinkage compat_ssize_t sys32_pwrite64(unsigned int fd,
@@ -210,7 +210,7 @@ asmlinkage compat_ssize_t sys32_pwrite64(unsigned int fd,
 					 unsigned long poshi,
 					 unsigned long poslo)
 {
-	return sys_pwrite64(fd, ubuf, count, (poshi << 32) | poslo);
+	return ksys_pwrite64(fd, ubuf, count, (poshi << 32) | poslo);
 }
 
 asmlinkage long compat_sys_readahead(int fd,

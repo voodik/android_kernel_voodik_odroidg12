@@ -177,15 +177,15 @@ asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int __user *stat_addr,
 asmlinkage long sys32_pread(unsigned int fd, char __user *ubuf, u32 count,
 			    u32 poslo, u32 poshi)
 {
-	return sys_pread64(fd, ubuf, count,
-			 ((loff_t)AA(poshi) << 32) | AA(poslo));
+	return ksys_pread64(fd, ubuf, count,
+			    ((loff_t)AA(poshi) << 32) | AA(poslo));
 }
 
 asmlinkage long sys32_pwrite(unsigned int fd, const char __user *ubuf,
 			     u32 count, u32 poslo, u32 poshi)
 {
-	return sys_pwrite64(fd, ubuf, count,
-			  ((loff_t)AA(poshi) << 32) | AA(poslo));
+	return ksys_pwrite64(fd, ubuf, count,
+			     ((loff_t)AA(poshi) << 32) | AA(poslo));
 }
 
 
