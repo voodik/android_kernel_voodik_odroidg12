@@ -1156,6 +1156,8 @@ struct cfg80211_tid_stats {
  *	(IEEE80211_NUM_TIDS) index for MSDUs not encapsulated in QoS-MPDUs.
  *	Note that this doesn't use the @filled bit, but is used if non-NULL.
  * @ack_signal: signal strength (in dBm) of the last ACK frame.
+ * @avg_ack_signal: average rssi value of ack packet for the no of msdu's has
+ *	been sent.
  */
 struct station_info {
 	u64 filled;
@@ -1201,6 +1203,7 @@ struct station_info {
 	u8 rx_beacon_signal_avg;
 	struct cfg80211_tid_stats *pertid;
 	s8 ack_signal;
+	s8 avg_ack_signal;
 };
 
 #if IS_ENABLED(CONFIG_CFG80211)
