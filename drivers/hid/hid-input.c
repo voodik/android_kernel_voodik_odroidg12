@@ -1556,8 +1556,11 @@ static struct hid_input *hidinput_allocate(struct hid_device *hid)
 	input_dev->id.product = hid->product;
 	input_dev->id.version = hid->version;
 	input_dev->dev.parent = &hid->dev;
+
 	hidinput->input = input_dev;
 	list_add_tail(&hidinput->list, &hid->inputs);
+
+	INIT_LIST_HEAD(&hidinput->reports);
 
 	return hidinput;
 }
@@ -1708,6 +1711,9 @@ int hidinput_connect(struct hid_device *hid, unsigned int force)
 
 			if (hid->quirks & HID_QUIRK_MULTI_INPUT)
 				hidinput->report = report;
+
+			list_add_tail(&report->hidinput_list,
+				      &hidinput->reports);
 		}
 	}
 
