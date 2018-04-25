@@ -244,6 +244,7 @@ struct fbtft_par {
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	void __iomem *reg_gpiox;
 #endif
+	bool polarity;
 };
 
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
