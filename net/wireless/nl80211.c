@@ -4607,7 +4607,7 @@ static int nl80211_send_station(struct sk_buff *msg, u32 cmd, u32 portid,
 #undef PUT_SINFO
 #undef PUT_SINFO_U64
 
-	if (sinfo->filled & BIT(NL80211_STA_INFO_TID_STATS)) {
+	if (sinfo->pertid) {
 		struct nlattr *tidsattr;
 		int tid;
 
@@ -4645,6 +4645,7 @@ static int nl80211_send_station(struct sk_buff *msg, u32 cmd, u32 portid,
 		}
 
 		nla_nest_end(msg, tidsattr);
+		kfree(sinfo->pertid);
 	}
 
 	nla_nest_end(msg, sinfoattr);
