@@ -360,7 +360,8 @@ struct kiocb {
 	void (*ki_complete)(struct kiocb *iocb, long ret, long ret2);
 	void			*private;
 	int			ki_flags;
-	enum rw_hint		ki_hint;
+	u16			ki_hint;
+
 };
 
 static inline bool is_sync_kiocb(struct kiocb *kiocb)
@@ -1997,6 +1998,37 @@ static inline bool HAS_UNMAPPED_ID(struct inode *inode)
 	return !uid_valid(inode->i_uid) || !gid_valid(inode->i_gid);
 }
 
+<<<<<<< HEAD
+=======
+static inline enum rw_hint file_write_hint(struct file *file)
+{
+	if (file->f_write_hint != WRITE_LIFE_NOT_SET)
+		return file->f_write_hint;
+
+	return file_inode(file)->i_write_hint;
+}
+
+static inline int iocb_flags(struct file *file);
+
+static inline u16 ki_hint_validate(enum rw_hint hint)
+{
+	typeof(((struct kiocb *)0)->ki_hint) max_hint = -1;
+
+	if (hint <= max_hint)
+		return hint;
+	return 0;
+}
+
+static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
+{
+	*kiocb = (struct kiocb) {
+		.ki_filp = filp,
+		.ki_flags = iocb_flags(filp),
+		.ki_hint = ki_hint_validate(file_write_hint(filp)),
+	};
+}
+
+>>>>>>> fc28724d67c9 (fs: Convert kiocb rw_hint from enum to u16)
 /*
  * Inode state bits.  Protected by inode->i_lock
  *
