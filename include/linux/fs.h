@@ -35,6 +35,7 @@
 #include <linux/percpu-rwsem.h>
 #include <linux/delayed_call.h>
 #include <linux/uuid.h>
+#include <linux/ioprio.h>
 
 #include <asm/byteorder.h>
 #include <uapi/linux/fs.h>
@@ -361,7 +362,7 @@ struct kiocb {
 	void			*private;
 	int			ki_flags;
 	u16			ki_hint;
-
+	u16			ki_ioprio; /* See linux/ioprio.h */
 };
 
 static inline bool is_sync_kiocb(struct kiocb *kiocb)
@@ -1998,8 +1999,6 @@ static inline bool HAS_UNMAPPED_ID(struct inode *inode)
 	return !uid_valid(inode->i_uid) || !gid_valid(inode->i_gid);
 }
 
-<<<<<<< HEAD
-=======
 static inline enum rw_hint file_write_hint(struct file *file)
 {
 	if (file->f_write_hint != WRITE_LIFE_NOT_SET)
@@ -2025,10 +2024,10 @@ static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
 		.ki_filp = filp,
 		.ki_flags = iocb_flags(filp),
 		.ki_hint = ki_hint_validate(file_write_hint(filp)),
+		.ki_ioprio = IOPRIO_PRIO_VALUE(IOPRIO_CLASS_NONE, 0),
 	};
 }
 
->>>>>>> fc28724d67c9 (fs: Convert kiocb rw_hint from enum to u16)
 /*
  * Inode state bits.  Protected by inode->i_lock
  *
