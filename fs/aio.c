@@ -1489,11 +1489,11 @@ static int aio_setup_rw(int rw, struct iocb *iocb, struct iovec **iovec,
 	return import_iovec(rw, buf, len, UIO_FASTIOV, iovec, iter);
 }
 
-static inline ssize_t aio_rw_ret(struct kiocb *req, ssize_t ret)
+static inline void aio_rw_done(struct kiocb *req, ssize_t ret)
 {
 	switch (ret) {
 	case -EIOCBQUEUED:
-		return ret;
+		break;
 	case -ERESTARTSYS:
 	case -ERESTARTNOINTR:
 	case -ERESTARTNOHAND:
@@ -1506,7 +1506,6 @@ static inline ssize_t aio_rw_ret(struct kiocb *req, ssize_t ret)
 		/*FALLTHRU*/
 	default:
 		aio_complete_rw(req, ret, 0);
-		return 0;
 	}
 }
 
@@ -1535,10 +1534,10 @@ static ssize_t aio_read(struct kiocb *req, struct iocb *iocb, bool vectored,
 		goto out_fput;
 	ret = rw_verify_area(READ, file, &req->ki_pos, iov_iter_count(&iter));
 	if (!ret)
-		ret = aio_rw_ret(req, call_read_iter(file, req, &iter));
+		aio_rw_done(req, call_read_iter(file, req, &iter));
 	kfree(iovec);
 out_fput:
-	if (unlikely(ret && ret != -EIOCBQUEUED))
+	if (unlikely(ret))
 		fput(file);
 	return ret;
 }
@@ -1580,11 +1579,11 @@ static ssize_t aio_write(struct kiocb *req, struct iocb *iocb, bool vectored,
 			__sb_writers_release(file_inode(file)->i_sb, SB_FREEZE_WRITE);
 		}
 		req->ki_flags |= IOCB_WRITE;
-		ret = aio_rw_ret(req, call_write_iter(file, req, &iter));
+		aio_rw_done(req, call_write_iter(file, req, &iter));
 	}
 	kfree(iovec);
 out_fput:
-	if (unlikely(ret && ret != -EIOCBQUEUED))
+	if (unlikely(ret))
 		fput(file);
 	return ret;
 }
@@ -1615,7 +1614,7 @@ static int aio_fsync(struct fsync_iocb *req, struct iocb *iocb, bool datasync)
 	req->datasync = datasync;
 	INIT_WORK(&req->work, aio_fsync_work);
 	schedule_work(&req->work);
-	return -EIOCBQUEUED;
+	return 0;
 }
 
 /* need to use list_del_init so we can check if item was present */
@@ -1743,7 +1742,7 @@ static ssize_t aio_poll(struct aio_kiocb *aiocb, struct iocb *iocb)
 done:
 	if (mask)
 		__aio_poll_complete(aiocb, mask);
-	return -EIOCBQUEUED;
+	return 0;
 out_fail:
 	fput(req->file);
 	return -EINVAL; /* same as no support for IOCB_CMD_POLL */
@@ -1834,12 +1833,11 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 	}
 
 	/*
-	 * If ret is -EIOCBQUEUED, ownership of the file reference acquired
-	 * above passed to the file system, which at this point might have
-	 * dropped the reference, so we must be careful to not reference it
-	 * once we have called into the file system.
+	 * If ret is 0, we'd either done aio_complete() ourselves or have
+	 * arranged for that to be done asynchronously.  Anything non-zero
+	 * means that we need to destroy req ourselves.
 	 */
-	if (ret && ret != -EIOCBQUEUED)
+	if (ret)
 		goto out_put_req;
 	return 0;
 out_put_req:
