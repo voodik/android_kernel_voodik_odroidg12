@@ -31,6 +31,12 @@ config XFRM_USER_COMPAT
 	  Transformation(XFRM) user configuration interface like IPsec
 	  used by compatible Linux applications.
 
+config XFRM_INTERFACE
+	tristate "Transformation virtual interface"
+	depends on XFRM && IPV6
+	---help---
+	  This provides a virtual interface to route IPsec traffic.
+
 	  If unsure, say N.
 
 config XFRM_SUB_POLICY
