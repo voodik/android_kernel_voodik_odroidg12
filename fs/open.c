@@ -741,7 +741,7 @@ static int do_dentry_open(struct file *f,
 	f->f_mapping = inode->i_mapping;
 
 	if (unlikely(f->f_flags & O_PATH)) {
-		f->f_mode = FMODE_PATH;
+		f->f_mode = FMODE_PATH | FMODE_OPENED;
 		f->f_op = &empty_fops;
 		return 0;
 	}
@@ -791,6 +791,7 @@ static int do_dentry_open(struct file *f,
 		if (error)
 			goto cleanup_all;
 	}
+	f->f_mode |= FMODE_OPENED;
 	if ((f->f_mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
 		i_readcount_inc(inode);
 	if ((f->f_mode & FMODE_READ) &&
