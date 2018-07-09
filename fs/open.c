@@ -915,15 +915,10 @@ struct file *dentry_open(const struct path *path, int flags,
 	f = alloc_empty_file(flags, cred);
 	if (!IS_ERR(f)) {
 		error = vfs_open(path, f, cred);
-		if (!error) {
-			/* from now on we need fput() to dispose of f */
+		if (!error)
 			error = open_check_o_direct(f);
-			if (error) {
-				fput(f);
-				f = ERR_PTR(error);
-			}
-		} else { 
-			put_filp(f);
+		if (error) {
+			fput(f);
 			f = ERR_PTR(error);
 		}
 	}
@@ -939,7 +934,7 @@ struct file *open_with_fake_path(const struct path *path, int flags,
 		int error;
 
 		f->f_path = *path;
-		error = do_dentry_open(f, inode, NULL);
+		error = do_dentry_open(f, inode, NULL, cred);
 		if (error) {
 			fput(f);
 			f = ERR_PTR(error);

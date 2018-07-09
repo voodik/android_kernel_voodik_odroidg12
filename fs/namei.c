@@ -3592,7 +3592,7 @@ static struct file *path_openat(struct nameidata *nd,
 
 	s = path_init(nd, flags);
 	if (IS_ERR(s)) {
-		put_filp(file);
+		fput(file);
 		return ERR_CAST(s);
 	}
 	while (!(error = link_path_walk(s, nd)) &&
@@ -3608,7 +3608,7 @@ static struct file *path_openat(struct nameidata *nd,
 out2:
 	if (!(opened & FILE_OPENED)) {
 		BUG_ON(!error);
-		put_filp(file);
+		fput(file);
 	}
 	if (unlikely(error)) {
 		if (error == -EOPENSTALE) {
