@@ -3569,7 +3569,7 @@ SYSCALL_DEFINE2(memfd_create,
 	}
 	info = SHMEM_I(file_inode(file));
 	file->f_mode |= FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE;
-	file->f_flags |= O_RDWR | O_LARGEFILE;
+	file->f_flags |= O_LARGEFILE;
 	if (flags & MFD_ALLOW_SEALING)
 		info->seals &= ~F_SEAL_SEAL;
 
@@ -4065,8 +4065,7 @@ static struct file *__shmem_file_setup(const char *name, loff_t size,
 	if (IS_ERR(res))
 		goto put_path;
 
-	res = alloc_file(&path, FMODE_WRITE | FMODE_READ,
-		  &shmem_file_operations);
+	res = alloc_file(&path, O_RDWR, &shmem_file_operations);
 	if (IS_ERR(res))
 		goto put_path;
 
