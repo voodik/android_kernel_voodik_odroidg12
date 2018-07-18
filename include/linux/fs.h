@@ -1107,17 +1107,7 @@ struct file_lock_context {
 
 extern void send_sigio(struct fown_struct *fown, int fd, int band);
 
-/*
- * Return the inode to use for locking
- *
- * For overlayfs this should be the overlay inode, not the real inode returned
- * by file_inode().  For any other fs file_inode(filp) and locks_inode(filp) are
- * equal.
- */
-static inline struct inode *locks_inode(const struct file *f)
-{
-	return f->f_path.dentry->d_inode;
-}
+#define locks_inode(f) file_inode(f)
 
 #ifdef CONFIG_FILE_LOCKING
 extern int fcntl_getlk(struct file *, unsigned int, struct flock __user *);
@@ -1337,6 +1327,32 @@ extern pid_t f_getown(struct file *filp);
 extern int send_sigurg(struct fown_struct *fown);
 
 struct mm_struct;
+
+/*
+ * sb->s_flags.  Note that these mirror the equivalent MS_* flags where
+ * represented in both.
+ */
+#define SB_RDONLY	 1	/* Mount read-only */
+#define SB_NOSUID	 2	/* Ignore suid and sgid bits */
+#define SB_NODEV	 4	/* Disallow access to device special files */
+#define SB_NOEXEC	 8	/* Disallow program execution */
+#define SB_SYNCHRONOUS	16	/* Writes are synced at once */
+#define SB_MANDLOCK	64	/* Allow mandatory locks on an FS */
+#define SB_DIRSYNC	128	/* Directory modifications are synchronous */
+#define SB_NOATIME	1024	/* Do not update access times. */
+#define SB_NODIRATIME	2048	/* Do not update directory access times */
+#define SB_SILENT	32768
+#define SB_POSIXACL	(1<<16)	/* VFS does not apply the umask */
+#define SB_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+#define SB_I_VERSION	(1<<23) /* Update inode I_version field */
+#define SB_LAZYTIME	(1<<25) /* Update the on-disk [acm]times lazily */
+
+/* These sb flags are internal to the kernel */
+#define SB_SUBMOUNT     (1<<26)
+#define SB_NOSEC	(1<<28)
+#define SB_BORN		(1<<29)
+#define SB_ACTIVE	(1<<30)
+#define SB_NOUSER	(1<<31)
 
 /*
  *	Umount options
