@@ -332,7 +332,7 @@ void ovl_inode_update(struct inode *inode, struct dentry *upperdentry)
 	}
 }
 
-void ovl_dentry_version_inc(struct dentry *dentry, bool impurity)
+static void ovl_dentry_version_inc(struct dentry *dentry, bool impurity)
 {
 	struct inode *inode = d_inode(dentry);
 
@@ -345,6 +345,14 @@ void ovl_dentry_version_inc(struct dentry *dentry, bool impurity)
 	 */
 	if (OVL_TYPE_MERGE(ovl_path_type(dentry)) || impurity)
 		OVL_I(inode)->version++;
+}
+
+void ovl_dir_modified(struct dentry *dentry, bool impurity)
+{
+	/* Copy mtime/ctime */
+	ovl_copyattr(d_inode(ovl_dentry_upper(dentry)), d_inode(dentry));
+
+	ovl_dentry_version_inc(dentry, impurity);
 }
 
 u64 ovl_dentry_version_get(struct dentry *dentry)
