@@ -701,7 +701,6 @@ asmlinkage void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
 	pr_crit("FAR:%lx\n", far);
 	show_all_pfn(current, regs);
 #endif /* CONFIG_AMLOGIC_USER_FAULT */
-	die("Oops - bad mode", regs, 0);
 	local_irq_disable();
 	panic("bad mode");
 }
