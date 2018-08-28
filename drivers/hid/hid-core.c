@@ -1104,6 +1104,7 @@ int hid_open_report(struct hid_device *device)
 				hid_err(device, "unbalanced delimiter at end of report description\n");
 				goto err;
 			}
+			kfree(parser->collection_stack);
 			vfree(parser);
 			device->status |= HID_STAT_PARSED;
 			return 0;
@@ -1113,6 +1114,7 @@ int hid_open_report(struct hid_device *device)
 	hid_err(device, "item fetching failed at offset %u/%u\n",
 		size - (unsigned int)(end - start), size);
 err:
+	kfree(parser->collection_stack);
 	vfree(parser);
 	hid_close_report(device);
 	return ret;
