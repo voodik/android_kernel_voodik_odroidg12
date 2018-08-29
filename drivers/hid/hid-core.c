@@ -1064,7 +1064,7 @@ int hid_open_report(struct hid_device *device)
 	parser = vzalloc(sizeof(struct hid_parser));
 	if (!parser) {
 		ret = -ENOMEM;
-		goto err;
+		goto alloc_err;
 	}
 
 	parser->device = device;
@@ -1115,6 +1115,7 @@ int hid_open_report(struct hid_device *device)
 		size - (unsigned int)(end - start), size);
 err:
 	kfree(parser->collection_stack);
+alloc_err:
 	vfree(parser);
 	hid_close_report(device);
 	return ret;
