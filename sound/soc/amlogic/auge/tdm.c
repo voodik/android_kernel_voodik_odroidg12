@@ -130,7 +130,7 @@ static const struct snd_pcm_hardware aml_tdm_hardware = {
 	    SNDRV_PCM_FMTBIT_S32_LE,
 
 	.period_bytes_min = 64,
-	.period_bytes_max = 256 * 1024,
+	.period_bytes_max = 256 * 1024 * 2,
 	.periods_min = 2,
 	.periods_max = 1024,
 	.buffer_bytes_max = 1024 * 1024,
