@@ -133,7 +133,7 @@ static const struct snd_pcm_hardware aml_tdm_hardware = {
 	.period_bytes_max = 256 * 1024 * 2,
 	.periods_min = 2,
 	.periods_max = 1024,
-	.buffer_bytes_max = 1024 * 1024,
+	.buffer_bytes_max = 512 * 1024 * 2,
 
 	.rate_min = 8000,
 	.rate_max = 384000,
