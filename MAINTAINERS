@@ -14673,6 +14673,11 @@ F:	drivers\amlogic\media\vout\lcd\lcd_debug.h
 F:	drivers\amlogic\media\vout\lcd\lcd_tcon.c
 F:	drivers\amlogic\media\vout\lcd\lcd_tcon.h
 
+AMLOGIC VDIN DRIVERS
+M:	Xuhua Zhang <xuhua.zhang@amlogic.com>
+F:	drivers/amlogic/media/vin/tvin/vdin/vdin_afbce.c
+F:	drivers/amlogic/media/vin/tvin/vdin/vdin_afbce.h
+
 HARDKERNEL S922D odroidn2
 M: 	Joy Cho <joy.cho@hardkernel.com>
 F:	arch/arm64/configs/odroidn2_defconfig
