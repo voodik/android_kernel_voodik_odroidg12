@@ -101,6 +101,32 @@ static int hdmitx_cntl_misc(struct hdmitx_dev *hdev, unsigned int cmd,
 #define TX_INPUT_COLOR_RANGE	0
 /* Pixel bit width: 4=24-bit; 5=30-bit; 6=36-bit; 7=48-bit. */
 #define TX_COLOR_DEPTH		 COLORDEPTH_24B
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+static int dvi_mode = VOUTMODE_NOINIT;
+
+int odroid_voutmode(void)
+{
+	return dvi_mode;
+}
+EXPORT_SYMBOL(odroid_voutmode);
+
+static  int __init vout_setup(char *s)
+{
+	if (!strcmp(s, "hdmi"))
+		dvi_mode = VOUTMODE_HDMI;
+	else if (!strcmp(s, "dvi"))
+		dvi_mode = VOUTMODE_DVI;
+	else
+		dvi_mode = VOUTMODE_NOINIT;
+
+	pr_info("voutmode : %d\n", dvi_mode);
+
+	return 0;
+}
+__setup("voutmode=", vout_setup);
+#endif
+
 int hdmitx_hpd_hw_op(enum hpd_op cmd)
 {
 	struct hdmitx_dev *hdev = get_hdmitx_device();
