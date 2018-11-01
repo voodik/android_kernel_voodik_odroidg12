@@ -47,6 +47,7 @@
 #include <linux/extcon.h>
 #include <linux/i2c.h>
 
+#include <linux/amlogic/cpu_version.h>
 #include <linux/amlogic/media/vout/vinfo.h>
 #include <linux/amlogic/media/vout/vout_notify.h>
 #ifdef CONFIG_AMLOGIC_SND_SOC
@@ -2182,7 +2183,7 @@ static int is_4k50_fmt(char *mode)
 		"2160p50hz",
 		"2160p60hz",
 		"smpte50hz",
-		"smpte50hz",
+		"smpte60hz",
 		NULL
 	};
 
@@ -2191,6 +2192,33 @@ static int is_4k50_fmt(char *mode)
 		return 1;
 	}
 	return 0;
+}
+
+static int is_4k_fmt(char *mode)
+{
+	int i;
+	static char const *hdmi4k[] = {
+		"2160p",
+		"smpte",
+		NULL
+	};
+
+	for (i = 0; hdmi4k[i]; i++) {
+		if (strstr(mode, hdmi4k[i]))
+			return 1;
+	}
+	return 0;
+}
+
+/* below items has feature limited, may need extra judgement */
+static bool hdmitx_limited_1080p(void)
+{
+	if (is_meson_gxl_package_805X())
+		return 1;
+	else if (is_meson_gxl_package_805Y())
+		return 1;
+	else
+		return 0;
 }
 
 /**/
@@ -2209,6 +2237,8 @@ static ssize_t show_disp_cap(struct device *dev,
 		for (i = 0; disp_mode_t[i]; i++) {
 			memset(mode_tmp, 0, sizeof(mode_tmp));
 			strncpy(mode_tmp, disp_mode_t[i], 31);
+			if (hdmitx_limited_1080p() && is_4k_fmt(mode_tmp))
+				continue;
 			vic = hdmitx_edid_get_VIC(&hdmitx_device, mode_tmp, 0);
 			/* Handling only 4k420 mode */
 			if (vic == HDMI_Unknown) {
