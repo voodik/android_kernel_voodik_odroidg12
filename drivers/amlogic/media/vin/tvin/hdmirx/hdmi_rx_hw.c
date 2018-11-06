@@ -2165,26 +2165,28 @@ hdmirx_wr_dwc(DWC_DMI_SW_RST, data32);
 
 void hdmirx_hw_config(void)
 {
-rx_pr("%s port:%d\n", __func__, rx.port);
-control_reset();
-/* hdmi_rx_top_edid_update(); */
-rx_hdcp_init();
-hdmirx_audio_init();
-packet_init();
-if (rx.chip_id != CHIP_ID_TXHD)
-	hdmirx_20_init();
-DWC_init();
-hdmirx_irq_hdcp_enable(true);
-hdmirx_phy_init();
-hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value);
-rx_pr("%s  %d Done!\n", __func__, rx.port);
-if (rx.chip_id <= CHIP_ID_TXL)
-	cec_hw_reset();
+	rx_pr("%s port:%d\n", __func__, rx.port);
+	control_reset();
+	/* hdmi_rx_top_edid_update(); */
+	rx_hdcp_init();
+	hdmirx_audio_init();
+	packet_init();
+	if (rx.chip_id != CHIP_ID_TXHD)
+		hdmirx_20_init();
+	DWC_init();
+	hdmirx_irq_hdcp_enable(true);
+	hdmirx_phy_init();
+	hdmirx_wr_top(TOP_INTR_MASKN, top_intr_maskn_value);
+	rx_pr("%s  %d Done!\n", __func__, rx.port);
+	/* hdmi reset will cause cec not working*/
+	/* cec modult need reset */
+	if (rx.chip_id <= CHIP_ID_TXL)
+		cec_hw_reset(1);/*1:snps cec*/
 }
 
 /*
-* hdmirx_hw_probe - hdmirx top/controller/phy init
-*/
+ * hdmirx_hw_probe - hdmirx top/controller/phy init
+ */
 void hdmirx_hw_probe(void)
 {
 hdmirx_wr_top(TOP_MEM_PD, 0);
