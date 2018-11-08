@@ -4453,6 +4453,11 @@ CONFIG_NVMEM=y
 # CONFIG_TEE is not set
 
 #
+# ODROID Specific Hardware
+#
+CONFIG_ODROIDN2_SYSFS=y
+
+#
 # Firmware Drivers
 #
 CONFIG_ARM_PSCI_FW=y
