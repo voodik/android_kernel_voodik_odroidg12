@@ -54,6 +54,11 @@
 			};
 		};
 	};
+
+	odroid_sysfs {
+		compatible = "odroid-sysfs";
+		status = "okay";
+	};
 };
 
 &custom_maps {
