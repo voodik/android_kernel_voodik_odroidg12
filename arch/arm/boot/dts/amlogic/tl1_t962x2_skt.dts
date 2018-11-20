@@ -1514,3 +1514,7 @@
 &efuse {
 	status = "okay";
 };
+
+&efuse {
+	status = "okay";
+};
