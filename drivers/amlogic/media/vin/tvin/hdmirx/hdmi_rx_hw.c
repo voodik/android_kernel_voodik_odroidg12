@@ -62,7 +62,7 @@ static DEFINE_SPINLOCK(reg_rw_lock);
 /* will suspend because of RxSense = 0, such as xiaomi-mtk box */
 static bool phy_fast_switching;
 static bool phy_fsm_enhancement = true;
-unsigned int last_clk_rate;
+/*unsigned int last_clk_rate;*/
 
 /* SNPS suggest to use the previous setting 0x3f when handle eq issues to
 * make clk_stable bit more stable(=1),but 0x3f may misjudge 46.25~92.5
@@ -2037,107 +2037,106 @@ int hdmirx_audio_init(void)
  */
 void snps_phyg3_init(void)
 {
-unsigned int data32;
-unsigned int term_value =
-	hdmirx_rd_top(TOP_HPD_PWR5V);
+	unsigned int data32;
+	unsigned int term_value =
+		hdmirx_rd_top(TOP_HPD_PWR5V);
 
-data32 = 0;
-data32 |= 1 << 6;
-data32 |= 1 << 4;
-data32 |= rx.port << 2;
-data32 |= 1 << 1;
-data32 |= 1 << 0;
-hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
-mdelay(1);
+	data32 = 0;
+	data32 |= 1 << 6;
+	data32 |= 1 << 4;
+	data32 |= rx.port << 2;
+	data32 |= 1 << 1;
+	data32 |= 1 << 0;
+	hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
+	mdelay(1);
 
-data32	= 0;
-data32 |= 1 << 6;
-data32 |= 1 << 4;
-data32 |= rx.port << 2;
-data32 |= 1 << 1;
-data32 |= 0 << 0;
-hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
+	data32	= 0;
+	data32 |= 1 << 6;
+	data32 |= 1 << 4;
+	data32 |= rx.port << 2;
+	data32 |= 1 << 1;
+	data32 |= 0 << 0;
+	hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
 
-data32 = 0;
-data32 |= phy_lock_thres << 10;
-data32 |= 1 << 9;
-data32 |= ((phy_cfg_clk * 4) / 1000);
-hdmirx_wr_phy(PHY_CMU_CONFIG, data32);
+	data32 = 0;
+	data32 |= phy_lock_thres << 10;
+	data32 |= 1 << 9;
+	data32 |= ((phy_cfg_clk * 4) / 1000);
+	hdmirx_wr_phy(PHY_CMU_CONFIG, data32);
 
-hdmirx_wr_phy(PHY_VOLTAGE_LEVEL, eq_ref_voltage);
+	hdmirx_wr_phy(PHY_VOLTAGE_LEVEL, eq_ref_voltage);
 
-data32 = 0;
-data32 |= 0	<< 15;
-data32 |= 0	<< 13;
-data32 |= 0	<< 12;
-data32 |= phy_fast_switching << 11;
-data32 |= 0	<< 10;
-data32 |= phy_fsm_enhancement << 9;
-data32 |= 0	<< 8;
-data32 |= 0	<< 7;
-data32 |= 0 << 5;
-data32 |= 0	<< 3;
-data32 |= 0 << 2;
-data32 |= 0 << 0;
-hdmirx_wr_phy(PHY_SYSTEM_CONFIG, data32);
+	data32 = 0;
+	data32 |= 0	<< 15;
+	data32 |= 0	<< 13;
+	data32 |= 0	<< 12;
+	data32 |= phy_fast_switching << 11;
+	data32 |= 0	<< 10;
+	data32 |= phy_fsm_enhancement << 9;
+	data32 |= 0	<< 8;
+	data32 |= 0	<< 7;
+	data32 |= 0 << 5;
+	data32 |= 0	<< 3;
+	data32 |= 0 << 2;
+	data32 |= 0 << 0;
+	hdmirx_wr_phy(PHY_SYSTEM_CONFIG, data32);
 
-hdmirx_wr_phy(MPLL_PARAMETERS2,	0x1c94);
-hdmirx_wr_phy(MPLL_PARAMETERS3,	0x3713);
-/*default 0x24da , EQ optimizing for kaiboer box */
-hdmirx_wr_phy(MPLL_PARAMETERS4,	0x24dc);
-hdmirx_wr_phy(MPLL_PARAMETERS5,	0x5492);
-hdmirx_wr_phy(MPLL_PARAMETERS6,	0x4b0d);
-hdmirx_wr_phy(MPLL_PARAMETERS7,	0x4760);
-hdmirx_wr_phy(MPLL_PARAMETERS8,	0x008c);
-hdmirx_wr_phy(MPLL_PARAMETERS9,	0x0010);
-hdmirx_wr_phy(MPLL_PARAMETERS10, 0x2d20);
-hdmirx_wr_phy(MPLL_PARAMETERS11, 0x2e31);
-hdmirx_wr_phy(MPLL_PARAMETERS12, 0x4b64);
-hdmirx_wr_phy(MPLL_PARAMETERS13, 0x2493);
-hdmirx_wr_phy(MPLL_PARAMETERS14, 0x676d);
-hdmirx_wr_phy(MPLL_PARAMETERS15, 0x23e0);
-hdmirx_wr_phy(MPLL_PARAMETERS16, 0x001b);
-hdmirx_wr_phy(MPLL_PARAMETERS17, 0x2218);
-hdmirx_wr_phy(MPLL_PARAMETERS18, 0x1b25);
-hdmirx_wr_phy(MPLL_PARAMETERS19, 0x2492);
-hdmirx_wr_phy(MPLL_PARAMETERS20, 0x48ea);
-hdmirx_wr_phy(MPLL_PARAMETERS21, 0x0011);
-hdmirx_wr_phy(MPLL_PARAMETERS22, 0x04d2);
-hdmirx_wr_phy(MPLL_PARAMETERS23, 0x0414);
+	hdmirx_wr_phy(MPLL_PARAMETERS2,	0x1c94);
+	hdmirx_wr_phy(MPLL_PARAMETERS3,	0x3713);
+	/*default 0x24da , EQ optimizing for kaiboer box */
+	hdmirx_wr_phy(MPLL_PARAMETERS4,	0x24dc);
+	hdmirx_wr_phy(MPLL_PARAMETERS5,	0x5492);
+	hdmirx_wr_phy(MPLL_PARAMETERS6,	0x4b0d);
+	hdmirx_wr_phy(MPLL_PARAMETERS7,	0x4760);
+	hdmirx_wr_phy(MPLL_PARAMETERS8,	0x008c);
+	hdmirx_wr_phy(MPLL_PARAMETERS9,	0x0010);
+	hdmirx_wr_phy(MPLL_PARAMETERS10, 0x2d20);
+	hdmirx_wr_phy(MPLL_PARAMETERS11, 0x2e31);
+	hdmirx_wr_phy(MPLL_PARAMETERS12, 0x4b64);
+	hdmirx_wr_phy(MPLL_PARAMETERS13, 0x2493);
+	hdmirx_wr_phy(MPLL_PARAMETERS14, 0x676d);
+	hdmirx_wr_phy(MPLL_PARAMETERS15, 0x23e0);
+	hdmirx_wr_phy(MPLL_PARAMETERS16, 0x001b);
+	hdmirx_wr_phy(MPLL_PARAMETERS17, 0x2218);
+	hdmirx_wr_phy(MPLL_PARAMETERS18, 0x1b25);
+	hdmirx_wr_phy(MPLL_PARAMETERS19, 0x2492);
+	hdmirx_wr_phy(MPLL_PARAMETERS20, 0x48ea);
+	hdmirx_wr_phy(MPLL_PARAMETERS21, 0x0011);
+	hdmirx_wr_phy(MPLL_PARAMETERS22, 0x04d2);
+	hdmirx_wr_phy(MPLL_PARAMETERS23, 0x0414);
 
-/* Configuring I2C to work in fastmode */
-hdmirx_wr_dwc(DWC_I2CM_PHYG3_MODE,	 0x1);
-/* disable overload protect for Philips DVD */
-/* NOTE!!!!! don't remove below setting */
-hdmirx_wr_phy(OVL_PROT_CTRL, 0xa);
+	/* Configuring I2C to work in fastmode */
+	hdmirx_wr_dwc(DWC_I2CM_PHYG3_MODE,	 0x1);
+	/* disable overload protect for Philips DVD */
+	/* NOTE!!!!! don't remove below setting */
+	hdmirx_wr_phy(OVL_PROT_CTRL, 0xa);
 
-/* clear clkrate cfg */
-hdmirx_wr_bits_phy(PHY_CDR_CTRL_CNT, CLK_RATE_BIT, 0);
-last_clk_rate = 0;
+	/* clear clkrate cfg */
+	hdmirx_wr_bits_phy(PHY_CDR_CTRL_CNT, CLK_RATE_BIT, 0);
+	/*last_clk_rate = 0;*/
+	rx.physts.clk_rate = 0;
+	/* enable all ports's termination */
+	data32 = 0;
+	data32 |= 1 << 8;
+	data32 |= ((term_value & 0xF) << 4);
+	hdmirx_wr_phy(PHY_MAIN_FSM_OVERRIDE1, data32);
 
-/* enable all ports's termination */
-data32 = 0;
-data32 |= 1 << 8;
-data32 |= ((term_value & 0xF) << 4);
-hdmirx_wr_phy(PHY_MAIN_FSM_OVERRIDE1, data32);
-
-data32 = 0;
-data32 |= 1 << 6;
-data32 |= 1 << 4;
-data32 |= rx.port << 2;
-data32 |= 0 << 1;
-data32 |= 0 << 0;
-hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
+	data32 = 0;
+	data32 |= 1 << 6;
+	data32 |= 1 << 4;
+	data32 |= rx.port << 2;
+	data32 |= 0 << 1;
+	data32 |= 0 << 0;
+	hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
 
 }
 
 /*
-* hdmirx_phy_init - hdmirx phy initialization
-*/
+ * hdmirx_phy_init - hdmirx phy initialization
+ */
 void hdmirx_phy_init(void)
 {
 	uint32_t data32;
-	uint32_t cur_cable_clk;
 
 	if (rx.hdmirxdev->data->chip_id == CHIP_ID_TL1) {
 		/* give default value */
@@ -2145,10 +2144,9 @@ void hdmirx_phy_init(void)
 		data32 |= rx.port << 2;
 		hdmirx_wr_dwc(DWC_SNPS_PHYG3_CTRL, data32);
 
-		cur_cable_clk = rx_measure_clock(MEASURE_CLK_CABLE);
-		data32 = rx_get_scdc_clkrate_sts();
-		if (cur_cable_clk > 0)
-			aml_phy_bw_switch(cur_cable_clk, data32);
+		if (rx.physts.cable_clk > 0)
+			aml_phy_bw_switch(rx.physts.cable_clk,
+				rx.physts.clk_rate);
 		else
 			aml_phy_bw_switch(PHY_DEFAULT_FRQ, 0);
 	} else {
@@ -2165,39 +2163,58 @@ rx_pr("%s Done!\n", __func__);
 */
 bool rx_clkrate_monitor(void)
 {
-unsigned int clk_rate;
-bool changed = false;
-int i;
-int error = 0;
+	uint32_t clk_rate;
+	bool changed = false;
+	int i;
+	int error = 0;
+	int cur_cable_clk;
+	uint32_t clk_diff;
+	uint32_t cur_phy_bw;
 
-if (rx.chip_id == CHIP_ID_TXHD)
-	return false;
-
-if (force_clk_rate & 0x10)
-	clk_rate = force_clk_rate & 1;
-else
-	clk_rate = (hdmirx_rd_dwc(DWC_SCDC_REGS0) >> 17) & 1;
-
-if (clk_rate != last_clk_rate) {
-	changed = true;
-	if (rx.chip_id != CHIP_ID_TL1) {
-		for (i = 0; i < 3; i++) {
-			error = hdmirx_wr_bits_phy(PHY_CDR_CTRL_CNT,
-				CLK_RATE_BIT, clk_rate);
+	clk_rate = rx_get_scdc_clkrate_sts();
+	if (clk_rate != rx.physts.clk_rate) {
+		changed = true;
+		if (rx.chip_id != CHIP_ID_TL1) {
+			for (i = 0; i < 3; i++) {
+				error = hdmirx_wr_bits_phy(PHY_CDR_CTRL_CNT,
+					CLK_RATE_BIT, clk_rate);
 
 			if (error == 0)
 				break;
 		}
+		if (log_level & VIDEO_LOG)
+			rx_pr("clk_rate:%d, last_clk_rate: %d\n",
+			clk_rate, rx.physts.clk_rate);
+		rx.physts.clk_rate = clk_rate;
 	}
-	if (log_level & VIDEO_LOG)
-		rx_pr("clk_rate:%d, last_clk_rate: %d\n",
-		clk_rate, last_clk_rate);
-	last_clk_rate = clk_rate;
-	if (rx.state >= FSM_WAIT_CLK_STABLE)
-		rx.state = FSM_WAIT_CLK_STABLE;
+
+	if (rx.hdmirxdev->data->chip_id == CHIP_ID_TL1) {
+		cur_cable_clk = rx_measure_clock(MEASURE_CLK_CABLE);
+		clk_diff = diff(rx.physts.cable_clk, cur_cable_clk);
+		/*clk_rate = rx_get_scdc_clkrate_sts();*/
+		cur_phy_bw = aml_cable_clk_band(cur_cable_clk, clk_rate);
+		if ((rx.cur_5v_sts) &&	((rx.physts.phy_bw != cur_phy_bw) ||
+				changed || (clk_diff > (1000*KHz)))) {
+			changed = true;
+			aml_phy_bw_switch(cur_cable_clk, clk_rate);
+			udelay(50);/*wait pll lock*/
+			rx_pr("phy clk chg:cabclk:%d,%d,rate:%d,lock:%d\n",
+			cur_cable_clk, rx.physts.cable_clk,
+			clk_rate, aml_phy_pll_lock());
+			rx.physts.cable_clk = cur_cable_clk;
+			rx.physts.clk_rate = clk_rate;
+			rx.physts.phy_bw = cur_phy_bw;
+		}
+	}
+
+	if (changed) {
+		if (rx.state >= FSM_WAIT_CLK_STABLE)
+			rx.state = FSM_WAIT_CLK_STABLE;
+	}
+
+	return changed;
 }
-return changed;
-}
+
 
 /*
 * rx_hdcp_init - hdcp1.4 init and enable
@@ -3788,8 +3805,8 @@ void rx_emp_status(void)
 {
 	rx_pr("p_addr_a=0x%x\n", rx.empbuff.p_addr_a);
 	rx_pr("p_addr_b=0x%x\n", rx.empbuff.p_addr_b);
-	rx_pr("storeA=0x%x\n", (uint32_t)rx.empbuff.storeB);
-	rx_pr("storeB=0x%x\n", (uint32_t)rx.empbuff.storeB);
+	rx_pr("storeA=0x%x\n", rx.empbuff.storeB);
+	rx_pr("storeB=0x%x\n", rx.empbuff.storeB);
 	rx_pr("irq cnt =0x%x\n", rx.empbuff.irqcnt);
 	rx_pr("ready=0x%p\n", rx.empbuff.ready);
 	rx_pr("dump_mode =0x%x\n", rx.empbuff.dump_mode);
