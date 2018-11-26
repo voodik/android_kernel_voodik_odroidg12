@@ -21,11 +21,6 @@
 	firmware {
 		android {
 			compatible = "android,firmware";
-			vbmeta {
-				compatible = "android,vbmeta";
-				parts = "boot,system,vendor";
-				by_name_prefix="/dev/block";
-			};
 			fstab {
 				compatible = "android,fstab";
 				system {
@@ -47,6 +42,13 @@
 					dev = "/dev/block/odm";
 					type = "vfat";
 					mnt_flags = "rw";
+					fsmgr_flags = "wait";
+				};
+				product {
+					compatible = "android,product";
+					dev = "/dev/block/product";
+					type = "ext4";
+					mnt_flags = "ro,barrier=1,inode_readahead_blks=8";
 					fsmgr_flags = "wait";
 				};
 			};
