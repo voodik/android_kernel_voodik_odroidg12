@@ -14727,3 +14727,7 @@ DWAV TOUCHSCREEN DRIVER
 M:	codewalker@hardkernel.com>
 S:	Maintained
 F:	drivers/input/touchscreen/dwav-usb-mt.c
+
+HARDKERNEL S922D odroidn2
+M: 	Kevin Kim <ckkim@hardkernel.com>
+F:      drivers/char/aml-gpiomem.c
