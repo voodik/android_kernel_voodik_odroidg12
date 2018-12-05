@@ -170,6 +170,8 @@ static int open_collection(struct hid_parser *parser, unsigned type)
 	collection->type = type;
 	collection->usage = usage;
 	collection->level = parser->collection_stack_ptr - 1;
+	collection->parent = parser->active_collection;
+	parser->active_collection = collection;
 
 	if (type == HID_COLLECTION_APPLICATION)
 		parser->device->maxapplication++;
@@ -188,6 +190,8 @@ static int close_collection(struct hid_parser *parser)
 		return -EINVAL;
 	}
 	parser->collection_stack_ptr--;
+	if (parser->active_collection)
+		parser->active_collection = parser->active_collection->parent;
 	return 0;
 }
 
