@@ -46,7 +46,7 @@
  *
  *
  */
-#define RX_VER2 "ver.2018/12/18"
+#define RX_VER2 "ver.2018/12/20"
 
 /*print type*/
 #define	LOG_EN		0x01
@@ -373,6 +373,7 @@ struct phy_sts {
 	uint32_t pll_rate;
 	uint32_t clk_rate;
 	uint32_t phy_bw;
+	uint32_t pll_bw;
 	uint32_t cablesel;
 	ulong timestap;
 	uint32_t err_sum;
