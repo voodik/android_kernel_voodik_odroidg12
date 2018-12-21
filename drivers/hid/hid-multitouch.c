@@ -1644,6 +1644,125 @@ static const struct hid_device_id mt_devices[] = {
 		HID_USB_DEVICE(USB_VENDOR_ID_FITOUCH,
 				USB_DEVICE_ID_FITOUCH_TOUCHSCREEN_Z_MT) },
 
+/* Hannspree HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_HANNSPREE,
+				USB_DEVICE_ID_HANNSPREE_HT225HPB_TOUCH) },
+
+/* iiyama HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_IIYAMA,
+				USB_DEVICE_ID_IIYAMA_T2236MSC_B2AG_TOUCH) },
+
+/* Planar PS5561T HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_PLANAR,
+				USB_DEVICE_ID_PLANAR_PS5561T_TOUCH) },
+
+/* Silicon Intergrated System SiS9255 DRWO-TECH HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_SiS,
+				USB_DEVICE_ID_SiS_SiS9255_DRWO_TOUCH) },
+
+/* InFocus HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_INFOCUS,
+				USB_DEVICE_ID_INFOCUS_INF4030P) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC2575,
+				USB_DEVICE_ID_VIEWSONIC_TD2740) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC2575,
+				USB_DEVICE_ID_VIEWSONIC_TD2430) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC1BFD,
+				USB_DEVICE_ID_VIEWSONIC_TD2210V1) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC28C8,
+				USB_DEVICE_ID_VIEWSONIC_TD2210V2) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC0FB8,
+				USB_DEVICE_ID_VIEWSONIC_TD2421) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC1FF7,
+				USB_DEVICE_ID_VIEWSONIC_CDE7061T) },
+
+/* ViewSonic HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_VIEWSONIC13FF,
+				USB_DEVICE_ID_VIEWSONIC_EP5502T) },
+
+/* Greatouch HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_GREATOUCH,
+				USB_DEVICE_ID_GREATOUCH_MT_8K) },
+
+/* WAVESHARE HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_WAVESHARE,
+				USB_DEVICE_ID_WAVESHARE_10_1) },
+
+/* SAMSUNG HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG_2619,
+				USB_DEVICE_ID_LH65DMEXTBC) },
+
+/* SAMSUNG HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG_04E8,
+				USB_DEVICE_ID_LH55PMFXTBC) },
+
+/* Planar PS5562T HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_PLANAR_2309,
+				USB_DEVICE_ID_PLANAR_PS5562T_TOUCH) },
+
+/* CJTouch HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_CJTOUCH,
+				USB_DEVICE_ID_CCA_UL01_DM) },
+
+/* NEC HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(USB_VENDOR_ID_NEC_1926,
+				USB_DEVICE_ID_V652_TM) },
+
+/* NEWHAVEN DISPLAY capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(
+				USB_VENDOR_ID_NHD,
+				USB_DEVICE_ID_NHD_7_0_HDMI_N_RSXN_CTU) },
+
+/* ByQDTech DISPLAY capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(
+				USB_VENDOR_ID_BYQDTECH,
+				USB_DEVICE_ID_BYQDTECH_7) },
+
+/* SHARP DISPLAY capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(
+				USB_VENDOR_ID_SHARP,
+				USB_DEVICE_ID_SHARP_TSLV238) },
+
+/* TEST DISPLAY capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(
+				USB_VENDOR_ID_TEST,
+				USB_DEVICE_ID_TEST) },
+
 	/* Generic MT device */
 	{ HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH, HID_ANY_ID, HID_ANY_ID) },
 
