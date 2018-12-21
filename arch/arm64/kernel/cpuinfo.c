@@ -176,23 +176,24 @@ static int c_show(struct seq_file *m, void *v)
 	seq_puts(m, "\n");
 #endif
 	{
+		int ret;
 		char uuid[32];
 		char *p = uuid;
 		loff_t pos = 0;
 
-		efuse_read_usr(uuid, sizeof(uuid), &pos);
 		seq_puts(m, "Serial\t\t: ");
-		for (i = 0; i < 8; i++)
-			seq_printf(m, "%c", *(unsigned char *)p++);
-		for (i = 0; i < 12; i++) {
-			if ((i % 4) == 0)
-				seq_puts(m, "-");
-			seq_printf(m, "%c", *(unsigned char *)p++);
+
+		ret = efuse_read_usr(uuid, sizeof(uuid), &pos);
+		if ((ret < 0) || (ret != sizeof(uuid))) {
+			seq_puts(m, "Unknown\n");
+		} else {
+			for (i = 0; i < sizeof(uuid); i++) {
+				if ((i == 8) || (i == 12) || (i == 16) || (i == 20))
+					seq_putc(m, '-');
+				seq_printf(m, "%c", uuid[i]);
+			}
+			seq_putc(m, '\n');
 		}
-		seq_puts(m, "-");
-		for (i = 0; i < 12; i++)
-			seq_printf(m, "%c", *(unsigned char *)p++);
-		seq_puts(m, "\n");
 	}
 #else
 #ifdef CONFIG_AMLOGIC_CPU_INFO
