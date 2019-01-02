@@ -1,5 +1,5 @@
 /*
- * arch/arm64/boot/dts/amlogic/s905d2_odroidc3_android.dts
+ * arch/arm64/boot/dts/amlogic/meson64_odroidc3_android.dts
  *
  * Copyright (C) 2018 Hardkernel Co., Ltd. All rights reserved.
  *
@@ -15,17 +15,12 @@
  *
  */
 
-#include "s905d2_odroidc3.dts"
+#include "meson64_odroidn2.dts"
 
 / {
 	firmware {
 		android {
 			compatible = "android,firmware";
-			vbmeta {
-				compatible = "android,vbmeta";
-				parts = "boot,system,vendor";
-				by_name_prefix="/dev/block";
-			};
 			fstab {
 				compatible = "android,fstab";
 				system {
@@ -49,8 +44,20 @@
 					mnt_flags = "rw";
 					fsmgr_flags = "wait";
 				};
+				product {
+					compatible = "android,product";
+					dev = "/dev/block/product";
+					type = "ext4";
+					mnt_flags = "ro,barrier=1,inode_readahead_blks=8";
+					fsmgr_flags = "wait";
+				};
 			};
 		};
+	};
+
+	odroid_sysfs {
+		compatible = "odroid-sysfs";
+		status = "okay";
 	};
 };
 
