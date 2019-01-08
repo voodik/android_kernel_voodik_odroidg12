@@ -161,8 +161,17 @@
 
 &i2c2 {
 	status = "okay";
-	pinctrl-names = "default";
+	pinctrl-names = "default","gpio_periphs";
 	pinctrl-0 = <&i2c2_master_pins1>;
+	pinctrl-1 = <&i2c2_to_gpiox>;
+	clock-frequency = <100000>;		/* default 100k */
+};
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names = "default","gpio_periphs";
+	pinctrl-0 = <&i2c3_master_pins2>;
+	pinctrl-1 = <&i2c3_to_gpioa>;
 	clock-frequency = <100000>;		/* default 100k */
 };
 
@@ -219,11 +228,33 @@
 };
 
 &pinctrl_periphs {
+	i2c2_master_pins1: i2c2_pins1 {
+		mux {
+			drive-strength = <3>;
+		};
+	};
+	i2c2_to_gpiox:i2c2_gpiox {
+		mux {
+			groups = "GPIOX_17",
+				"GPIOX_18";
+			function = "gpio_periphs";
+			drive-strength = <3>;
+		};
+	};
 	i2c3_master_pins2:i2c3_pins2 {
 		mux {
 			drive-strength = <3>;
 		};
 	};
+	i2c3_to_gpioa:i2c3_gpioa {
+		mux {
+			groups = "GPIOA_14",
+				"GPIOA_15";
+			function = "gpio_periphs";
+			drive-strength = <3>;
+		};
+	};
+
 	pwmcd_to_gpios:pwmcd_gpio {
 		mux {
 			groups = "GPIOX_5", "GPIOX_6";
