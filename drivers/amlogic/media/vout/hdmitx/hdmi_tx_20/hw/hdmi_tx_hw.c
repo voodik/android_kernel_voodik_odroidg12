@@ -2697,6 +2697,8 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
 		return 0;
 	pr_info(HW "set audio\n");
 	audio_mute_op(hdev->tx_aud_cfg);
+
+#if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	/* PCM & 8 ch */
 	if ((audio_param->type == CT_PCM) &&
 		(audio_param->channel_num == (8 - 1)))
@@ -2707,6 +2709,7 @@ static int hdmitx_set_audmode(struct hdmitx_dev *hdev,
 	/* if hdev->aud_output_ch is true, select I2S as 8ch in, 2ch out */
 	if (hdev->aud_output_ch)
 		hdev->tx_aud_src = 1;
+#endif
 
 	pr_info(HW "hdmitx tx_aud_src = %d\n", hdev->tx_aud_src);
 
