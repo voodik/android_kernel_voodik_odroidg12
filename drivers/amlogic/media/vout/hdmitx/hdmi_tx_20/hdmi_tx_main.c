@@ -4625,7 +4625,6 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 	if (pdev->dev.of_node) {
-		int dongle_mode = 0;
 		memset(&hdmitx_device.config_data, 0,
 			sizeof(struct hdmi_config_platform_data));
 		/* Get ic type information */
@@ -4637,14 +4636,17 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 			pr_info(SYS "hdmitx_device.chip_type : %d\n",
 				hdmitx_device.chip_type);
 
-		/* Get dongle_mode information */
-		ret = of_property_read_u32(pdev->dev.of_node, "dongle_mode",
-			&dongle_mode);
-		hdmitx_device.dongle_mode = !!dongle_mode;
-		if (!ret)
-			pr_info(SYS "hdmitx_device.dongle_mode: %d\n",
-				hdmitx_device.dongle_mode);
-
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+		/* Get audio source information */
+		ret = of_property_read_u32(pdev->dev.of_node, "tx_aud_src",
+			&(hdmitx_device.tx_aud_src));
+		if (ret) {
+			pr_info(SYS "not find tx_aud_src\n");
+			hdmitx_device.tx_aud_src = 0;
+		}
+		pr_info(SYS "hdmitx_device.tx_aud_src : %d\n",
+			hdmitx_device.tx_aud_src);
+#endif
 		ret = of_property_read_u32(pdev->dev.of_node,
 			"repeater_tx", &val);
 		if (!ret)
