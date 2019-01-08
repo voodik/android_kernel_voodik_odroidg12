@@ -1754,28 +1754,28 @@ hdmirx_wr_dwc(DWC_HDCP22_CONTROL, data32);
 }
 
 /*
-* hdcp22_suspend - suspend flow of hdcp2.2
-*/
-void hdcp22_suspend(void)
+ * hdcp_22_off
+ */
+void hdcp_22_off(void)
 {
-hdcp22_clk_en(0);
-/* note: can't pull down hpd before enter suspend */
-/* it will stop cec wake up func if EE domain still working */
-/* rx_set_cur_hpd(0); */
-hpd_to_esm = 0;
-hdmirx_wr_dwc(DWC_HDCP22_CONTROL,
-			0x0);
-if (hdcp22_kill_esm == 0)
-	/* rx_pr("kill = 1\n"); */
-	hdmirx_hdcp22_esm_rst();
-	/* msleep(20); */
-rx_pr("hdcp22 off\n");
+	hdcp22_clk_en(0);
+	/* note: can't pull down hpd before enter suspend */
+	/* it will stop cec wake up func if EE domain still working */
+	/* rx_set_cur_hpd(0); */
+	hpd_to_esm = 0;
+	hdmirx_wr_dwc(DWC_HDCP22_CONTROL,
+				0x0);
+	if (hdcp22_kill_esm == 0)
+		hdmirx_hdcp22_esm_rst();
+	else
+		hdcp22_kill_esm = 0;
+	rx_pr("hdcp22 off\n");
 }
 
 /*
-* hdcp22_resume - resume flow of hdcp2.2
-*/
-void hdcp22_resume(void)
+ * hdcp_22_on
+ */
+void hdcp_22_on(void)
 {
 hdcp22_kill_esm = 0;
 /* switch_set_state(&rx.hpd_sdev, 0x0); */
