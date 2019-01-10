@@ -487,7 +487,7 @@ else
 * returns unsigned char bytes read from the addr
 */
 unsigned char rd_reg_b(enum map_addr_module_e module,
-unsigned char reg_addr)
+	unsigned int reg_addr)
 {
 unsigned char val = 0;
 
