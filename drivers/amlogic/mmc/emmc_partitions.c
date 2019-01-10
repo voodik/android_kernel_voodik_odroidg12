@@ -989,6 +989,7 @@ static int add_emmc_partition(struct gendisk *disk,
 	return 0;
 }
 
+#if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 static int is_card_emmc(struct mmc_card *card)
 {
 	struct mmc_host *mmc = card->host;
@@ -1000,6 +1001,7 @@ static int is_card_emmc(struct mmc_card *card)
 		return 0;
 	/*return mmc->is_emmc_port;*/
 }
+#endif
 
 static ssize_t emmc_version_get(struct class *class,
 		struct class_attribute *attr, char *buf)
@@ -1160,8 +1162,10 @@ int aml_emmc_partition_ops(struct mmc_card *card, struct gendisk *disk)
 
 	pr_info("Enter %s\n", __func__);
 
+#if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	if (is_card_emmc(card) == 0) /* not emmc, nothing to do */
 		return 0;
+#endif
 
 	buffer = kmalloc(512, GFP_KERNEL);
 	if (!buffer)

@@ -3023,9 +3023,11 @@ static int mmc_validate_mpt_partition(struct mmc_card *card)
 	char *buf;
 	int ret;
 
+#if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	/* check only if 'card' is eMMC device */
 	if (strcmp(mmc_hostname(card->host), "emmc"))
 		return -EINVAL;
+#endif
 
 	buf = (char*)kmalloc(1 << card->csd.read_blkbits, GFP_KERNEL);
 	if (buf == NULL)
