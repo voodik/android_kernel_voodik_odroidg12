@@ -48,6 +48,7 @@
 #include "queue.h"
 #include "block.h"
 #ifdef CONFIG_AMLOGIC_MMC
+#include <linux/of.h>
 #include <linux/mmc/emmc_partitions.h>
 #endif
 
@@ -3049,6 +3050,22 @@ static int mmc_validate_mpt_partition(struct mmc_card *card)
 	kfree(buf);
 	return ret;
 }
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+static bool mmc_is_ignored(struct mmc_host *host)
+{
+	bool ignore = false;
+	struct device_node *of_node = host->parent->of_node;
+	struct device_node *child;
+
+	for_each_child_of_node(of_node, child) {
+		if (of_property_read_bool(child, "ignore"))
+			ignore = true;
+	}
+
+	return ignore;
+}
+#endif // defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 #endif
 
 static int mmc_blk_probe(struct mmc_card *card)
@@ -3083,7 +3100,8 @@ static int mmc_blk_probe(struct mmc_card *card)
 		goto out;
 
 #ifdef CONFIG_AMLOGIC_MMC
-	if (mmc_validate_mpt_partition(card) == 0) {
+	if (mmc_validate_mpt_partition(card) == 0 &&
+			!mmc_is_ignored(card->host)) {
 		/* amlogic add emmc partitions ops */
 		aml_emmc_partition_ops(card, md->disk);
 	}
