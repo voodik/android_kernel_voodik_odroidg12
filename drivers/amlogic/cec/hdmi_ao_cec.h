@@ -534,7 +534,8 @@ extern uint32_t hdmirx_rd_dwc(uint16_t addr);
 extern void hdmirx_wr_dwc(uint16_t addr, uint32_t data);
 extern unsigned int rd_reg_hhi(unsigned int offset);
 extern void wr_reg_hhi(unsigned int offset, unsigned int val);
-
+extern int cec_set_dev_info(uint8_t dev_idx);
+int __attribute__((weak))cec_set_dev_info(uint8_t dev_idx);
 #else
 static inline unsigned long hdmirx_rd_top(unsigned long addr)
 {

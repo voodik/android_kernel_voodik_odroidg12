@@ -236,6 +236,17 @@ void rx_hpd_to_esm_handle(struct work_struct *work)
 	rx_pr("esm_hpd-1\n");
 }
 
+int cec_set_dev_info(uint8_t dev_idx)
+{
+	cec_dev_info |= 1 << dev_idx;
+
+	if (dev_idx == 1)
+		hdcp_enc_mode = 1;
+
+	return 0;
+}
+EXPORT_SYMBOL(cec_set_dev_info);
+
 /*
  *func: irq tasklet
  *param: flag:
