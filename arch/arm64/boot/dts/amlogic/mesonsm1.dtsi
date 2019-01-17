@@ -1811,6 +1811,16 @@
 			function = "jtag_a";
 		};
 	};
+
+	jtag_apao_pins:jtag_apao_pin {
+		mux {
+			groups = "jtag_a_tdi",
+			"jtag_a_tdo",
+			"jtag_a_clk",
+			"jtag_a_tms";
+			function = "jtag_a";
+		};
+	};
 };
 
 &pinctrl_periphs {
