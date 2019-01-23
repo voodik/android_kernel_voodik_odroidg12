@@ -1022,9 +1022,17 @@ static int f2fs_cross_rename(struct inode *old_dir, struct dentry *old_dentry,
 	if (err)
 		goto out;
 
+<<<<<<< HEAD
 	err = dquot_initialize(new_dir);
 	if (err)
 		goto out;
+=======
+	if ((f2fs_encrypted_inode(old_dir) || f2fs_encrypted_inode(new_dir)) &&
+			(old_dir != new_dir) &&
+			(!fscrypt_has_permitted_context(new_dir, old_inode) ||
+			 !fscrypt_has_permitted_context(old_dir, new_inode)))
+		return -EXDEV;
+>>>>>>> a5edcea7ae17... fscrypt: return -EXDEV for incompatible rename or link into encrypted dir
 
 	old_entry = f2fs_find_entry(old_dir, &old_dentry->d_name, &old_page);
 	if (!old_entry) {
