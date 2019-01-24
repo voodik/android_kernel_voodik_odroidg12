@@ -3052,14 +3052,14 @@ static int mmc_validate_mpt_partition(struct mmc_card *card)
 }
 
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-static bool mmc_is_ignored(struct mmc_host *host)
+static bool mmc_is_ignore_mpt(struct mmc_host *host)
 {
 	bool ignore = false;
 	struct device_node *of_node = host->parent->of_node;
 	struct device_node *child;
 
 	for_each_child_of_node(of_node, child) {
-		if (of_property_read_bool(child, "ignore"))
+		if (of_property_read_bool(child, "ignore_mpt"))
 			ignore = true;
 	}
 
@@ -3101,7 +3101,7 @@ static int mmc_blk_probe(struct mmc_card *card)
 
 #ifdef CONFIG_AMLOGIC_MMC
 	if (mmc_validate_mpt_partition(card) == 0 &&
-			!mmc_is_ignored(card->host)) {
+			!mmc_is_ignore_mpt(card->host)) {
 		/* amlogic add emmc partitions ops */
 		aml_emmc_partition_ops(card, md->disk);
 	}
