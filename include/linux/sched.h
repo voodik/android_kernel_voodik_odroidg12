@@ -3851,7 +3851,7 @@ static inline void membarrier_mm_sync_core_before_usermode(struct mm_struct *mm)
 	if (likely(!(atomic_read(&mm->membarrier_state) &
 		     MEMBARRIER_STATE_PRIVATE_EXPEDITED_SYNC_CORE)))
 		return;
-	sync_core_before_usermode();
+//	sync_core_before_usermode();
 }
 
 static inline void membarrier_execve(struct task_struct *t)
