@@ -13817,7 +13817,8 @@ F: include/dt-bindings/clock/amlogic,gxl-clkc.h
 F: include/linux/amlogic/media/sound/audin_regs.h
 F: sound/soc/Kconfig
 F: sound/soc/Makefile
-F: sound/soc/amlogic/*
+F: sound/soc/amlogic/auge/*
+F: sound/soc/amlogic/meson/*
 F: sound/soc/codecs/Kconfig
 F: sound/soc/codecs/Makefile
 F: sound/soc/codecs/amlogic/*
