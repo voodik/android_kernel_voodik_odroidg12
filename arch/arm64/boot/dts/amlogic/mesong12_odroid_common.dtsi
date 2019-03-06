@@ -102,6 +102,7 @@
 			mclk-fs = <256>;
 			bitclock-master = <&aml_tdmc>;
 			frame-master = <&aml_tdmc>;
+			continuous-clock;
 			/* suffix-name, sync with android audio hal
 			 * what's the dai link used for
 			 */
