@@ -1240,6 +1240,7 @@
 			&clkc CLKID_DEMUX
 			&clkc CLKID_AHB_ARB0
 			&clkc CLKID_DOS
+			&clkc CLKID_CLK81
 			&clkc CLKID_VDEC_MUX
 			&clkc CLKID_HCODEC_MUX
 			&clkc CLKID_HEVC_MUX
@@ -1248,6 +1249,7 @@
 			"demux",
 			"ahbarb0",
 			"vdec",
+			"clk_81",
 			"clk_vdec_mux",
 			"clk_hcodec_mux",
 			"clk_hevc_mux",
@@ -2323,6 +2325,24 @@
 			drive-strength = <2>;
 		};
 	};
+
+	/*dvb_p_ts1_pins: dvb_p_ts1_pins {
+	 *	tsin_b {
+	 *		groups = "tsin_b_sop_z",
+	 *		"tsin_b_valid_z",
+	 *		"tsin_b_clk_z",
+	 *		"tsin_b_din0_z",
+	 *		"tsin_b_din1",
+	 *		"tsin_b_din2",
+	 *		"tsin_b_din3",
+	 *		"tsin_b_din4",
+	 *		"tsin_b_din5",
+	 *		"tsin_b_din6",
+	 *		"tsin_b_din7";
+	 *		function = "tsin_b";
+	 *	};
+	 *};
+	 */
 
 	pwm_a_pins: pwm_a {
 		mux {

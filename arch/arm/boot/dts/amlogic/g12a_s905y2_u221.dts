@@ -44,7 +44,7 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x100000 0x7ff00000>;
+		linux,usable-memory = <0x000000 0x80000000>;
 	};
 
 	reserved-memory {
@@ -201,13 +201,13 @@
 
 	wifi_pwm_conf:wifi_pwm_conf{
 		pwm_channel1_conf {
-			pwms = <&pwm_ef MESON_PWM_0 30040 0>;
-			duty-cycle = <15020>;
+			pwms = <&pwm_ef MESON_PWM_0 30541 0>;
+			duty-cycle = <15270>;
 			times = <10>;
 		};
 		pwm_channel2_conf {
-			pwms = <&pwm_ef MESON_PWM_2 30030 0>;
-			duty-cycle = <15015>;
+			pwms = <&pwm_ef MESON_PWM_2 30500 0>;
+			duty-cycle = <15250>;
 			times = <12>;
 		};
 	};
@@ -259,7 +259,7 @@
 	unifykey{
 		compatible = "amlogic, unifykey";
 		status = "ok";
-		unifykey-num = <15>;
+		unifykey-num = <16>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -275,6 +275,7 @@
 		unifykey-index-12= <&keysn_12>;
 		unifykey-index-13= <&keysn_13>;
 		unifykey-index-14= <&keysn_14>;
+		unifykey-index-15= <&keysn_15>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -351,6 +352,11 @@
 		};
 		keysn_14:key_14{
 			key-name = "attestationkeybox";// attestation key
+			key-device = "secure";
+			key-permit = "read","write","del";
+		};
+		keysn_15:key_15{
+			key-name = "netflix_mgkid";
 			key-device = "secure";
 			key-permit = "read","write","del";
 		};

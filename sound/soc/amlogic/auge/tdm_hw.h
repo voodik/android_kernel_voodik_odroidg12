@@ -26,11 +26,11 @@ enum tdmin_src {
 	PAD_TDMINA_DIN = 0,
 	PAD_TDMINB_DIN = 1,
 	PAD_TDMINC_DIN = 2,
-	PAD_TDMINA_D = 4,
-	PAD_TDMINB_D = 5,
-	PAD_TDMINC_D = 6,
-	HDMIRX_I2S = 7,
-	ACODEC_ADC = 8,
+	PAD_TDMINA_D = 3,
+	PAD_TDMINB_D = 4,
+	PAD_TDMINC_D = 5,
+	HDMIRX_I2S = 6,
+	ACODEC_ADC = 7,
 	TDMOUTA = 13,
 	TDMOUTB = 14,
 	TDMOUTC = 15,
@@ -72,6 +72,8 @@ extern void aml_tdm_fifo_reset(
 	struct aml_audio_controller *actrl,
 	int stream, int index);
 
+extern int tdmout_get_frddr_type(int bitwidth);
+
 extern void aml_tdm_fifo_ctrl(
 	struct aml_audio_controller *actrl,
 	int bitwidth, int stream,
@@ -86,6 +88,12 @@ extern void aml_tdm_set_format(
 	unsigned int capture_active,
 	unsigned int playback_active);
 
+extern void aml_update_tdmin_skew(struct aml_audio_controller *actrl,
+	int idx, int skew);
+
+extern void aml_update_tdmin_rev_ws(struct aml_audio_controller *actrl,
+	int idx, int is_rev);
+
 extern void aml_tdm_set_slot_out(
 	struct aml_audio_controller *actrl,
 	int index, int slots, int slot_width,
@@ -95,9 +103,13 @@ extern void aml_tdm_set_slot_in(
 	struct aml_audio_controller *actrl,
 	int index, int in_src, int slot_width);
 
-extern void tdm_update_slot_in(
+extern void aml_update_tdmin_src(
 	struct aml_audio_controller *actrl,
 	int index, int in_src);
+
+extern void tdmin_set_chnum_en(
+	struct aml_audio_controller *actrl,
+	int index, bool enable);
 
 extern void aml_tdm_set_channel_mask(
 	struct aml_audio_controller *actrl,
@@ -130,4 +142,12 @@ extern void aml_tdm_clk_pad_select(
 	int tdm_index, int clk_sel);
 
 extern void i2s_to_hdmitx_ctrl(int tdm_index);
+void aml_tdm_mute_playback(
+		struct aml_audio_controller *actrl,
+		int index,
+		bool mute);
+void aml_tdm_mute_capture(
+		struct aml_audio_controller *actrl,
+		int tdm_index,
+		bool mute);
 #endif

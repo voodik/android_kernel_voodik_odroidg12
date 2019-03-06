@@ -437,6 +437,7 @@ struct osd_fence_map_s {
 	u32 afbc_inter_format;
 	u32 background_w;
 	u32 background_h;
+	size_t afbc_len;
 	struct fence *in_fence;
 };
 
@@ -464,6 +465,7 @@ struct layer_fence_map_s {
 	u32 plane_alpha;
 	u32 dim_layer;
 	u32 dim_color;
+	size_t afbc_len;
 	struct file *buf_file;
 	struct fence *in_fence;
 };
@@ -621,7 +623,8 @@ struct hw_list_s {
 
 typedef int (*sync_render_fence)(u32 index, u32 yres,
 	struct sync_req_render_s *request,
-	u32 phys_addr);
+	u32 phys_addr,
+	size_t len);
 typedef void (*osd_toggle_buffer_op)(
 	struct kthread_work *work);
 struct osd_fence_fun_s {
@@ -730,11 +733,10 @@ struct hw_para_s {
 	u32 osd_fps;
 	u32 osd_fps_start;
 	u32 osd_display_debug;
-	char __iomem *screen_base[HW_OSD_COUNT];
-	u32 screen_size[HW_OSD_COUNT];
-	char __iomem *screen_base_backup[HW_OSD_COUNT];
-	u32 screen_size_backup[HW_OSD_COUNT];
-	u32 osd_clear[HW_OSD_COUNT];
+	ulong screen_base[HW_OSD_COUNT];
+	ulong screen_size[HW_OSD_COUNT];
+	ulong screen_base_backup[HW_OSD_COUNT];
+	ulong screen_size_backup[HW_OSD_COUNT];
 	u32 vinfo_width;
 	u32 vinfo_height;
 	u32 fb_drvier_probe;

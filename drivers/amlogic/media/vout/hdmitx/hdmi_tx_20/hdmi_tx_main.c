@@ -84,7 +84,9 @@ static struct vinfo_s *hdmitx_get_current_vinfo(void);
 static DEFINE_MUTEX(setclk_mutex);
 static DEFINE_MUTEX(getedid_mutex);
 
-static struct hdmitx_dev hdmitx_device;
+static struct hdmitx_dev hdmitx_device = {
+	.frac_rate_policy = 1,
+};
 
 struct vout_device_s hdmitx_vdev = {
 	.dv_info = &(hdmitx_device.RXCap.dv_info),
@@ -472,7 +474,7 @@ static int set_disp_mode_auto(void)
 		hdev->para = hdmi_get_fmt_name("invalid", hdev->fmt_attr);
 		return -1;
 	}
-	memcpy(mode, info->name, sizeof(mode));
+	strncpy(mode, info->name, sizeof(mode));
 	if (strstr(mode, "fp")) {
 		int i = 0;
 
@@ -4010,7 +4012,10 @@ static int get_dt_vend_init_data(struct device_node *np,
 
 static void hdmitx_init_fmt_attr(struct hdmitx_dev *hdev)
 {
-	memset(hdev->fmt_attr, 0, sizeof(hdev->fmt_attr));
+	if (strlen(hdev->fmt_attr) >= 8) {
+		pr_info(SYS "fmt_attr %s\n", hdev->fmt_attr);
+		return;
+	}
 	if ((hdev->para->cd == COLORDEPTH_RESERVED) &&
 	    (hdev->para->cs == COLORSPACE_RESERVED)) {
 		strcpy(hdev->fmt_attr, "default");
@@ -4782,22 +4787,63 @@ static char *next_token_ex(char *separator, char *buf, unsigned int size,
 	return pToken;
 }
 
+/* check the colorattribute from uboot */
+static void check_hdmiuboot_attr(char *token)
+{
+	char attr[16] = {0};
+	const char * const cs[] = {
+		"444", "422", "rgb", "420", NULL};
+	const char * const cd[] = {
+		"8bit", "10bit", "12bit", "16bit", NULL};
+	int i;
+
+	if (hdmitx_device.fmt_attr[0] != 0)
+		return;
+
+	if (!token)
+		return;
+
+	for (i = 0; cs[i] != NULL; i++) {
+		if (strstr(token, cs[i])) {
+			if (strlen(cs[i]) < sizeof(attr))
+				strncpy(attr, cs[i], strlen(cs[i]));
+			strcat(attr, ",");
+			break;
+		}
+	}
+	for (i = 0; cd[i] != NULL; i++) {
+		if (strstr(token, cd[i])) {
+			if (strlen(cd[i]) < (sizeof(attr) - strlen(attr)))
+				strncat(attr, cd[i], strlen(cd[i]));
+			strncpy(hdmitx_device.fmt_attr, attr,
+				sizeof(hdmitx_device.fmt_attr));
+			hdmitx_device.fmt_attr[15] = '\0';
+			break;
+		}
+	}
+}
+
 static  int __init hdmitx_boot_para_setup(char *s)
 {
 	char separator[] = {' ', ',', ';', 0x0};
 	char *token;
-	unsigned int token_len, token_offset, offset = 0;
+	unsigned int token_len = 0;
+	unsigned int token_offset = 0;
+	unsigned int offset = 0;
 	int size = strlen(s);
+
+	memset(hdmitx_device.fmt_attr, 0, sizeof(hdmitx_device.fmt_attr));
 
 	do {
 		token = next_token_ex(separator, s, size, offset,
 				&token_len, &token_offset);
-	if (token) {
-		if ((token_len == 3)
-			&& (strncmp(token, "off", token_len) == 0)) {
-			init_flag |= INIT_FLAG_NOT_LOAD;
+		if (token) {
+			if ((token_len == 3)
+				&& (strncmp(token, "off", token_len) == 0)) {
+				init_flag |= INIT_FLAG_NOT_LOAD;
+			}
+			check_hdmiuboot_attr(token);
 		}
-	}
 		offset = token_offset;
 	} while (token);
 	return 0;

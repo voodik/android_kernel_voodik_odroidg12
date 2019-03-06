@@ -123,11 +123,14 @@ extern int osd_sync_request(u32 index, u32 yres,
 	struct fb_sync_request_s *request);
 extern int osd_sync_request_render(u32 index, u32 yres,
 	struct sync_req_render_s *request,
-	u32 phys_addr);
+	u32 phys_addr,
+	size_t len);
 extern int osd_sync_do_hwc(struct do_hwc_cmd_s *hwc_cmd);
 extern s64  osd_wait_vsync_event(void);
 extern void osd_cursor_hw(u32 index, s16 x, s16 y, s16 xstart, s16 ystart,
 			  u32 osd_w, u32 osd_h);
+extern void osd_cursor_hw_no_scale(u32 index, s16 x, s16 y, s16 xstart,
+			  s16 ystart, u32 osd_w, u32 osd_h);
 extern void osd_init_scan_mode(void);
 extern void osd_suspend_hw(void);
 extern void osd_resume_hw(void);
@@ -188,13 +191,16 @@ void osd_do_hwc(void);
 int osd_get_capbility(u32 index);
 void osd_backup_screen_info(
 	u32 index,
-	char __iomem *screen_base,
-	u32 screen_size);
-void osd_restore_screen_info(
+	unsigned long screen_base,
+	unsigned long screen_size);
+void osd_get_screen_info(
 	u32 index,
 	char __iomem **screen_base,
 	unsigned long *screen_size);
-void osd_set_clear(u32 index, u32 osd_clear);
+int get_vmap_addr(u32 index, u8 __iomem **buf);
+ssize_t dd_vmap_write(u32 index, const char __user *buf,
+	size_t count, loff_t *ppos);
+int osd_set_clear(u32 index);
 void osd_page_flip(struct osd_plane_map_s *plane_map);
 void walk_through_update_list(void);
 int osd_setting_blend(void);

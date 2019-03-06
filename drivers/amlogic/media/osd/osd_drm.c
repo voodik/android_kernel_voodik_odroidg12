@@ -115,6 +115,36 @@ static ssize_t loglevel_write_file(
 	return count;
 }
 
+static ssize_t logmodule_read_file(struct file *file, char __user *userbuf,
+				 size_t count, loff_t *ppos)
+{
+	char buf[128];
+	ssize_t len;
+
+	len = snprintf(buf, 128, "%d\n", osd_log_module);
+	return simple_read_from_buffer(userbuf, count, ppos, buf, len);
+}
+
+static ssize_t logmodule_write_file(
+	struct file *file, const char __user *userbuf,
+	size_t count, loff_t *ppos)
+{
+	unsigned int log_module;
+	char buf[128];
+	int ret = 0;
+
+	if (count > sizeof(buf) || count <= 0)
+		return -EINVAL;
+	if (copy_from_user(buf, userbuf, count))
+		return -EFAULT;
+	if (buf[count - 1] == '\n')
+		buf[count - 1] = '\0';
+	ret = kstrtoint(buf, 0, &log_module);
+	osd_log_info("log_level: %d->%d\n", osd_log_module, log_module);
+	osd_log_module = log_module;
+	return count;
+}
+
 static ssize_t debug_read_file(struct file *file, char __user *userbuf,
 				 size_t count, loff_t *ppos)
 {
@@ -442,7 +472,8 @@ static ssize_t osd_clear_write_file(struct file *file,
 		return -EFAULT;
 	buf[count] = 0;
 	ret = kstrtoint(buf, 0, &osd_clear);
-	osd_set_clear(osd_id, osd_clear);
+	if (osd_clear)
+		osd_set_clear(osd_id);
 	return count;
 }
 
@@ -450,12 +481,12 @@ static ssize_t osd_dump_read_file(struct file *file,
 				char __user *userbuf,
 				size_t count, loff_t *ppos)
 {
-	char __iomem *buf;
+	u8 __iomem *buf = NULL;
 	struct seq_file *s = file->private_data;
 	int osd_id = *(int *)s;
-	unsigned long len;
+	unsigned long len = 0;
 
-	osd_restore_screen_info(osd_id, &buf, &len);
+	len = get_vmap_addr(osd_id, &buf);
 	if (buf && len)
 		return simple_read_from_buffer(userbuf, count, ppos, buf, len);
 	else
@@ -466,7 +497,14 @@ static ssize_t osd_dump_write_file(struct file *file,
 				const char __user *userbuf,
 				size_t count, loff_t *ppos)
 {
+#if 1
 	return 0;
+#else
+	struct seq_file *s = file->private_data;
+	int osd_id = *(int *)s;
+
+	return dd_vmap_write(osd_id,  userbuf, count, ppos);
+#endif
 }
 
 static void parse_param(char *buf_orig, char **parm)
@@ -577,6 +615,12 @@ static const struct file_operations loglevel_file_ops = {
 	.write		= loglevel_write_file,
 };
 
+static const struct file_operations logmodule_file_ops = {
+	.open		= simple_open,
+	.read		= logmodule_read_file,
+	.write		= logmodule_write_file,
+};
+
 static const struct file_operations debug_file_ops = {
 	.open		= simple_open,
 	.read		= debug_read_file,
@@ -671,6 +715,7 @@ struct osd_drm_debugfs_files_s {
 
 static struct osd_drm_debugfs_files_s osd_drm_debugfs_files[] = {
 	{"loglevel", S_IFREG | 0640, &loglevel_file_ops},
+	{"logmodule", S_IFREG | 0640, &logmodule_file_ops},
 	{"debug", S_IFREG | 0640, &debug_file_ops},
 	{"osd_display_debug", S_IFREG | 0640, &osd_display_debug_file_ops},
 	{"reset_status", S_IFREG | 0440, &reset_status_file_ops},

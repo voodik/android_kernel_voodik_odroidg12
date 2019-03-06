@@ -1801,7 +1801,7 @@ static ssize_t amvecm_dnlp_debug_store(struct class *cla,
 					pr_info("%d\n",
 						dnlp_scurv_mid1_copy[val]);
 			}
-		} else if (!strcmp(parm[1], "scu v_mid2")) {
+		} else if (!strcmp(parm[1], "scurv_mid2")) {
 			if (parm[2] == NULL) {
 				pr_info("error cmd\n");
 				goto free_buf;
@@ -5421,7 +5421,10 @@ void init_pq_setting(void)
 	}
 	/*probe close sr0 peaking for switch on video*/
 	WRITE_VPP_REG_BITS(VPP_SRSHARP0_CTRL, 1, 0, 1);
-	WRITE_VPP_REG_BITS(VPP_SRSHARP1_CTRL, 0, 0, 1);
+	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TL1))
+		WRITE_VPP_REG_BITS(VPP_SRSHARP1_CTRL, 0, 0, 1);
+	else
+		WRITE_VPP_REG_BITS(VPP_SRSHARP1_CTRL, 1, 0, 1);
 	/*default dnlp off*/
 	WRITE_VPP_REG_BITS(SRSHARP0_PK_NR_ENABLE + sr_offset[0],
 		0, 1, 1);
@@ -5832,13 +5835,14 @@ static int aml_vecm_probe(struct platform_device *pdev)
 	/* box sdr_mode:auto, tv sdr_mode:off */
 	/* disable contrast and saturation adjustment for HDR on TV */
 	/* disable SDR to HDR convert on TV */
-	if (is_meson_gxl_cpu() || is_meson_gxm_cpu()) {
-		sdr_mode = 0;
+	if (is_meson_gxl_cpu() || is_meson_gxm_cpu())
 		hdr_flag = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
-	} else {
-		sdr_mode = 0;
+	else
 		hdr_flag = (1 << 0) | (1 << 1) | (0 << 2) | (0 << 3);
-	}
+
+	if (is_meson_g12a_cpu() || is_meson_g12b_cpu())
+		sdr_mode = 2;
+
 	/*config vlock mode*/
 	/*todo:txlx & g9tv support auto pll,*/
 	/*but support not good,need vlsi support optimize*/

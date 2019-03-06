@@ -1660,7 +1660,7 @@ static int dolby_core1_set(
 	}
 
 	if (dolby_vision_on_count
-		< dolby_vision_run_mode_delay) {
+		<= dolby_vision_run_mode_delay) {
 		VSYNC_WR_MPEG_REG(
 			VPP_VD1_CLIP_MISC0,
 			(0x200 << 10) | 0x200);
@@ -2166,7 +2166,7 @@ static void apply_stb_core_settings(
 			24, 256 * 5,
 			(uint32_t *)&new_dovi_setting.dm_reg2,
 			(uint32_t *)&new_dovi_setting.dm_lut2,
-			graphics_w, graphics_h, 1, 1);
+			graphics_h, graphics_w, 1, 1);
 	v_size = vinfo->height;
 	if (((vinfo->width == 720) &&
 		(vinfo->height == 480) &&
@@ -3503,9 +3503,29 @@ static int dolby_vision_policy_process(
 					*mode = DOLBY_VISION_OUTPUT_MODE_SDR8;
 					mode_change = 1;
 				}
+			} else if (src_format == FORMAT_HDR10
+				&& (!(dolby_vision_hdr10_policy & 1))) {
+				if (dolby_vision_mode !=
+				DOLBY_VISION_OUTPUT_MODE_BYPASS) {
+					/* HDR bypass */
+					pr_dolby_dbg("dovi output -> DOLBY_VISION_OUTPUT_MODE_BYPASS\n");
+					*mode = DOLBY_VISION_OUTPUT_MODE_BYPASS;
+					mode_change = 1;
+				}
+			} else if (is_meson_g12a_cpu() || is_meson_g12b_cpu()) {
+				/*g12 has a hardware bug. Therefore, dv cores
+				 *must keep working even if under sdr mode
+				 */
+				if (dolby_vision_mode !=
+					DOLBY_VISION_OUTPUT_MODE_SDR8) {
+					/* SDR to SDR */
+					pr_dolby_dbg("dovi output -> DOLBY_VISION_OUTPUT_MODE_SDR8\n");
+					*mode = DOLBY_VISION_OUTPUT_MODE_SDR8;
+					mode_change = 1;
+				}
 			} else if (dolby_vision_mode !=
-			DOLBY_VISION_OUTPUT_MODE_BYPASS) {
-				/* HDR/SDR bypass */
+				DOLBY_VISION_OUTPUT_MODE_BYPASS) {
+				/* SDR bypass */
 				pr_dolby_dbg("dovi output -> DOLBY_VISION_OUTPUT_MODE_BYPASS\n");
 				*mode = DOLBY_VISION_OUTPUT_MODE_BYPASS;
 				mode_change = 1;
@@ -3757,7 +3777,6 @@ static int parse_sei_and_meta(
 	|| (req->aux_size == 0))
 		return 1;
 
-
 	p = req->aux_buf;
 	while (p < req->aux_buf + req->aux_size - 8) {
 		size = *p++;
@@ -3859,6 +3878,11 @@ static int parse_sei_and_meta(
 				ret = 2;
 				break;
 			}
+			/*dolby type just appears once in metadata
+			 *after parsing dolby type,breaking the
+			 *circulation directly
+			 */
+			break;
 		}
 		p += size;
 	}
@@ -5098,7 +5122,9 @@ int dolby_vision_parse_metadata(
 		dst_format = FORMAT_SDR;
 #ifdef V2_4
 	if ((src_format != dovi_setting.src_format)
-		|| (dst_format != dovi_setting.dst_format))
+		|| (dst_format != dovi_setting.dst_format) ||
+		((!(dolby_vision_flags & FLAG_CERTIFICAION))
+		&& (frame_count == 0)))
 		p_funcs->control_path(
 			FORMAT_INVALID, 0,
 			comp_buf[currentId], 0,
@@ -5961,11 +5987,10 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 			("efuse_mode=%d reg_value = 0x%x\n",
 			efuse_mode,
 			reg_value);
-		/* r321 stb core doesn't need run mode*/
+		/*stb core doesn't need run mode*/
 		/*TV core need run mode and the value is 2*/
-		if (is_meson_gxm() || is_meson_g12())
-			dolby_vision_run_mode_delay = 3;
-		else if (force_stb_mode || is_meson_txlx_stbmode())
+		if (is_meson_gxm() || is_meson_g12() ||
+			is_meson_txlx_stbmode() || force_stb_mode)
 			dolby_vision_run_mode_delay = 0;
 		else
 			dolby_vision_run_mode_delay = RUN_MODE_DELAY;

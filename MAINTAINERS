@@ -13525,6 +13525,8 @@ AMLOGIC driver for memory extend
 M: Tao Zeng <tao.zeng@amlogic.com>
 F: drivers/amlogic/memory_ext/*
 F: include/linux/amlogic/ramdump.h
+F: include/linux/amlogic/vmap_stack.h
+F: drivers/amlogic/memory_ext/vmap_stack.c
 
 AMLOGIC driver for memory extend
 M: Tao Zeng <tao.zeng@amlogic.com>
@@ -13978,6 +13980,14 @@ F: sound/soc/codecs/amlogic/Kconfig
 F: sound/soc/codecs/amlogic/Makefile
 F: sound/soc/codecs/amlogic/tas5707.c
 F: sound/soc/codecs/amlogic/tas5707.h
+
+AMLOGIC Audio codec driver
+M: Yonghao Jiao <yonghao.jiao@amogic.com>
+F: arch/arm/configs/meson32_deconfig
+F: sound/soc/codecs/amlogic/Kconfig
+F: sound/soc/codecs/amlogic/Makefile
+F: sound/soc/codecs/amlogic/tas5805.c
+F: sound/soc/codecs/amlogic/tas5805.h
 
 AMLOGIC AXG ADD DTS FOR A113D SOCKET AND DEVELOPMENT BOARDS
 M:	Yun Cai <yun.cai@amlogic.com>
@@ -14482,14 +14492,18 @@ F:	drivers/amlogic/media/vout/backlight/aml_ldim/iw7027_bl.c
 F:	drivers/amlogic/media/vout/backlight/aml_ldim/iw7027_bl.h
 
 AMLOGIC DTV DEMOD DRIVER
-M:      Jihong Sui <jihong.sui@amlogic.com>
-F:      include/uapi/linux/dvb/aml_demod.h
-F:      drivers/amlogic/media/amldemod/*
+M:	Jihong Sui <jihong.sui@amlogic.com>
+F:	include/uapi/linux/dvb/aml_demod.h
+F:	drivers/amlogic/media/amldemod/*
 
 AMLOGIC DTV DEMOD DRIVER
 M:      Jihong Sui <jihong.sui@amlogic.com>
 F:      drivers/amlogic/media/amldemod/*
 F:      drivers/amlogic/media/dtv_demod/*
+
+AMLOGIC DTV DEMOD DRIVER
+M:      Zhiwei Yuan <zhiwei.yuan@amlogic.com>
+F:      drivers/amlogic/media/dtv_demod/include/addr_atsc*.h
 
 AMLOGIC DEFENDKEY DRIVER
 M:	Zhongfu Luo <zhongfu.luo@amlogic.com>
@@ -14662,15 +14676,15 @@ M:	Luan Yuan <luan.yuan@amlogic.com>
 F:	arch/arm/boot/dts/amlogic/partition_mbox_p241_P.dtsi
 
 AMLOGIC TL1 SOUND CARD
-M:      Xing Wang <xing.wang@amlogic.com
-F:	include/dt-bindings/clock/amlogic,tl1-audio-clk.h
-F:	sound/soc/amlogic/auge/*
-
 AMLOGIC TL1 AUDIO EXTERANL INPUT/OUTPUT DRIVERS
+AMLOGIC TL1 NEW EQDRC
+AMLOGIC TL1 MIXER CONTROLS
+AMLOGIC TL1 VAD DRIVER
 M:	Xing Wang <xing.wang@amlogic.com
-F:	sound/soc/amlogic/auge/extn.c
-F:	sound/soc/amlogic/auge/frhdmirx_hw.c
-F:	sound/soc/amlogic/auge/frhdmirx_hw.h
+F:	arch/arm/boot/dts/amlogic/tl1_pxp.dts
+F:	include/dt-bindings/clock/amlogic,tl1-audio-clk.h
+F:	include/linux/amlogic/media/sound/misc.h
+F:	include/linux/amlogic/major.h
 F:	sound/soc/amlogic/auge/*
 
 AMLOGIC LCD DRIVERS
@@ -14717,6 +14731,19 @@ F:	arch/arm64/boot/dts/amlogic/partition_mbox_ab_P_32.dtsi
 AMLOGIC BACKLIGHT LDIM DRIVER
 M:      Evoke Zhang <evoke.zhang@amlogic.com>
 F:      drivers/amlogic/media/vout/backlight/aml_ldim/ldim_spi.c
+
+AMLOGIC CAMERA DRIVER
+M:	Guosong Zhou <guosong.zhou@amlogic.com>
+F:	arch/arm64/boot/dts/amlogic/g12a_s905d2_u200.dts
+F:	arch/arm/boot/dts/amlogic/g12a_s905d2_u200.dts
+F:	arch/arm64/configs/meson64_defconfig
+F:	arch/arm/configs/meson64_a32_defconfig
+F:	drivers/amlogic/media/Kconfig
+F:	drivers/amlogic/media/Makefile
+F:	drivers/amlogic/media/camera/*
+F:	drivers/amlogic/media/common/canvas/canvas_mgr.c
+F:	drivers/amlogic/media/common/vfm/vfm.c
+F:	include/linux/amlogic/media/camera/*
 
 HARDKERNEL S922D odroidn2
 M: 	Joy Cho <joy.cho@hardkernel.com>

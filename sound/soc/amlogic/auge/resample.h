@@ -19,5 +19,8 @@
 
 extern int card_add_resample_kcontrols(struct snd_soc_card *card);
 
-extern int resample_set(int index);
+extern int resample_set(int id, int index);
+
+extern int get_resample_module_num(void);
+
 #endif

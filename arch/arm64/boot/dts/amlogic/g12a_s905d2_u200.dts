@@ -45,7 +45,7 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x0 0x100000 0x0 0x7ff00000>;
+		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
 	};
 
 	reserved-memory {
@@ -149,6 +149,12 @@
 			size = <0x0 0x04000000>;
 			alignment = <0x0 0x400000>;
 		};
+		vm0_cma_reserved:linux,vm0_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			size = <0x0 0x2000000>;
+			alignment = <0x0 0x400000>;
+		};
 	};
 
 	gpioleds {
@@ -228,13 +234,13 @@
 
 	wifi_pwm_conf:wifi_pwm_conf{
 		pwm_channel1_conf {
-			pwms = <&pwm_ef MESON_PWM_0 30040 0>;
-			duty-cycle = <15020>;
+			pwms = <&pwm_ef MESON_PWM_0 30541 0>;
+			duty-cycle = <15270>;
 			times = <10>;
 		};
 		pwm_channel2_conf {
-			pwms = <&pwm_ef MESON_PWM_2 30030 0>;
-			duty-cycle = <15015>;
+			pwms = <&pwm_ef MESON_PWM_2 30500 0>;
+			duty-cycle = <15250>;
 			times = <12>;
 		};
 	};
@@ -282,6 +288,54 @@
 		dev_name = "ionvideo";
 		status = "okay";
 	};
+	vm0 {
+		compatible = "amlogic, vm";
+		memory-region = <&vm0_cma_reserved>;
+		dev_name = "vm0";
+		status = "disabled";
+		vm_id = <0>;
+	};
+
+	amvdec_656in {
+		/*bt656 gpio conflict with i2c0*/
+		compatible = "amlogic, amvdec_656in";
+		dev_name = "amvdec_656in";
+		status = "disabled";
+		reg = <0x0 0xffe02000 0x0 0x7c>;
+		clocks = <&clkc CLKID_BT656_COMP>,
+		      <&clkc CLKID_BT656>;
+		clock-names = "cts_bt656_clk1",
+		      "clk_gate_bt656";
+		/* bt656in1, bt656in2 */
+		bt656in1 {
+		bt656_id = <1>;
+		status = "disabled";
+		};
+	};
+
+	aml_cams {
+		compatible = "amlogic, cams_prober";
+		status = "disabled";
+		pinctrl-names="default";
+		pinctrl-0=<&cam_dvp_pins &gen_clk_ee_z>;
+		clocks = <&clkc CLKID_GEN_CLK>;
+		clock-names = "g12a_24m";
+		cam_0{
+			cam_name = "gc2145";
+			front_back = <0>;
+			/*u200 i2c2 gpio conflict with ethmac*/
+			camera-i2c-bus = <&i2c2>;
+			gpio_pwdn-gpios = <&gpio GPIOZ_2 GPIO_ACTIVE_HIGH>;
+			gpio_rst-gpios = <&gpio GPIOZ_12 GPIO_ACTIVE_HIGH>;
+			mirror_flip = <1>;
+			vertical_flip = <1>;
+			spread_spectrum = <0>;
+			bt_path = "gpio";
+			bt_path_count = <1>;
+			vdin_path = <0>;
+			status = "okay";
+		};
+	};
 
 	gpio_keypad{
 		compatible = "amlogic, gpio_keypad";
@@ -310,7 +364,7 @@
 	unifykey{
 		compatible = "amlogic, unifykey";
 		status = "ok";
-		unifykey-num = <16>;
+		unifykey-num = <17>;
 		unifykey-index-0 = <&keysn_0>;
 		unifykey-index-1 = <&keysn_1>;
 		unifykey-index-2 = <&keysn_2>;
@@ -327,6 +381,7 @@
 		unifykey-index-13= <&keysn_13>;
 		unifykey-index-14= <&keysn_14>;
 		unifykey-index-15= <&keysn_15>;
+		unifykey-index-16= <&keysn_16>;
 
 		keysn_0: key_0{
 			key-name = "usid";
@@ -409,6 +464,11 @@
 		keysn_15:key_15{
 			key-name = "region_code";
 			key-device = "normal";
+			key-permit = "read","write","del";
+		};
+		keysn_16:key_16{
+			key-name = "netflix_mgkid";
+			key-device = "secure";
 			key-permit = "read","write","del";
 		};
 	};//End unifykey
@@ -781,6 +841,13 @@
 	};
 };
 
+&i2c2 {
+	status = "disabled";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c2_master_pins2>;
+	clock-frequency = <100000>;
+};
+
 &i2c3 {
 	status = "okay";
 	pinctrl-names="default";
@@ -1113,6 +1180,32 @@
 			pins = "GPIOH_5";
 			function = "gpio_periphs";
 			output-high;
+		};
+	};
+
+	clk12_24_z_pins:clk12_24_z_pins {
+		mux {
+			groups = "clk12_24_z";
+			function = "clk12_24_ee";
+			drive-strength = <3>;
+		};
+	};
+
+	gen_clk_ee_z: gen_clk_ee_z {
+		mux {
+			groups="gen_clk_ee_z";
+			function="gen_clk_ee";
+			drive-strength = <3>;
+		};
+	};
+
+	cam_dvp_pins:cam_dvp_pins {
+		mux {
+			groups = "bt656_a_vs", "bt656_a_hs", "bt656_a_clk",
+				"bt656_a_din0", "bt656_a_din1", "bt656_a_din2",
+				"bt656_a_din3", "bt656_a_din4", "bt656_a_din5",
+				"bt656_a_din6", "bt656_a_din7";
+			function = "bt656";
 		};
 	};
 

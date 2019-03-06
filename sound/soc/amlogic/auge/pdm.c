@@ -34,6 +34,7 @@
 #include "iomap.h"
 #include "regs.h"
 #include "ddr_mngr.h"
+#include "vad.h"
 
 /*#define __PTM_PDM_CLK__*/
 
@@ -55,8 +56,8 @@ static struct snd_pcm_hardware aml_pdm_hardware = {
 	.channels_min		=	PDM_CHANNELS_MIN,
 	.channels_max		=	PDM_CHANNELS_MAX,
 
-	.buffer_bytes_max	=	32 * 1024,
-	.period_bytes_max	=	16 * 1024,
+	.buffer_bytes_max	=	512 * 1024,
+	.period_bytes_max	=	256 * 1024,
 	.period_bytes_min	=	32,
 	.periods_min		=	2,
 	.periods_max		=	1024,
@@ -592,6 +593,10 @@ static int aml_pdm_dai_prepare(
 	unsigned int bitwidth;
 	unsigned int toddr_type, lsb;
 
+	if (vad_pdm_is_running()
+		&& pm_audio_is_suspend())
+		return 0;
+
 	/* set bclk */
 	bitwidth = snd_pcm_format_width(runtime->format);
 	lsb = 32 - bitwidth;
@@ -676,6 +681,9 @@ static int aml_pdm_dai_prepare(
 		}
 		p_pdm->filter_mode = s_pdm_filter_mode;
 		aml_pdm_filter_ctrl(osr, p_pdm->filter_mode);
+
+		if (p_pdm->chipinfo && p_pdm->chipinfo->truncate_data)
+			pdm_init_truncate_data(runtime->rate);
 	}
 
 	return 0;
@@ -687,12 +695,21 @@ static int aml_pdm_dai_trigger(
 {
 	struct aml_pdm *p_pdm = snd_soc_dai_get_drvdata(cpu_dai);
 
-	pr_info("%s\n", __func__);
+	pr_info("%s, cmd:%d\n", __func__, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+
+		if (vad_pdm_is_running()
+			&& pm_audio_is_suspend()) {
+			pm_audio_set_suspend(false);
+			/* VAD switch to alsa buffer */
+			vad_update_buffer(0);
+			break;
+		}
+
 		pdm_fifo_reset();
 
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
@@ -706,6 +723,13 @@ static int aml_pdm_dai_trigger(
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+			if (vad_pdm_is_running()
+				&& pm_audio_is_suspend()) {
+				/* switch to VAD buffer */
+				vad_update_buffer(1);
+				break;
+			}
+
 			dev_info(substream->pcm->card->dev, "pdm capture stop\n");
 			pdm_enable(0);
 			aml_toddr_enable(p_pdm->tddr, 0);
@@ -874,7 +898,7 @@ static struct pdm_chipinfo g12a_pdm_chipinfo = {
 
 static struct pdm_chipinfo tl1_pdm_chipinfo = {
 	.mute_fn         = true,
-	.truncate_data   = true,
+	.truncate_data   = false,
 };
 
 static const struct of_device_id aml_pdm_device_id[] = {
