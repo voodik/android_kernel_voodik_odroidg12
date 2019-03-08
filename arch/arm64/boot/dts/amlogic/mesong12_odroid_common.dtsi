@@ -551,3 +551,8 @@
 		};
 	};
 }; /* end of pinctrl_periphs */
+
+&gpio_intc {
+	compatible = "amlogic,meson-gpio-intc-ext",
+		   "amlogic,meson-g12a-gpio-intc";
+};
