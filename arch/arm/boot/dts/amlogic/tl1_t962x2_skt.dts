@@ -1205,6 +1205,7 @@
 				"tdma_dout2_z",
 				"tdma_dout3_z";
 			function = "tdma_out";
+			bias-disable;
 		};
 	};
 
