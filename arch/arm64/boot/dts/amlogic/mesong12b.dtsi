@@ -550,6 +550,14 @@
 		#thermal-sensor-cells = <1>;
 	};
 
+	ram-dump {
+		compatible = "amlogic, ram_dump";
+		status = "okay";
+		reg = <0x0 0xFF6345E0 0x0 4>;
+		reg-names = "PREG_STICKY_REG8";
+		store_device = "data";
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <2>;
