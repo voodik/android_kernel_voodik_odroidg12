@@ -3734,6 +3734,10 @@ static const struct of_device_id meson_mmc_of_match[] = {
 		.compatible = "amlogic, meson-mmc-sm1",
 		.data = &mmc_data_sm1,
 	},
+	{
+		.compatible = "amlogic, meson-mmc-tm2",
+		.data = &mmc_data_tm2,
+	},
 
 	{}
 };
