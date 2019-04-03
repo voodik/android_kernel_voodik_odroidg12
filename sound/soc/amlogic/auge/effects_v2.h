@@ -25,5 +25,6 @@ enum {
 
 extern int check_aed_version(void);
 extern int card_add_effect_v2_kcontrols(struct snd_soc_card *card);
+extern int get_aed_dst(void);
 
 #endif

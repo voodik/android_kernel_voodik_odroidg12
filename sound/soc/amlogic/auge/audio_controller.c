@@ -15,6 +15,9 @@
  *
  */
 
+
+/*#define DEBUG*/
+
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -30,6 +33,8 @@
 
 #include "audio_io.h"
 #include "regs.h"
+#include "audio_aed_reg_list.h"
+#include "audio_top_reg_list.h"
 
 #define DRV_NAME "aml-audio-controller"
 
