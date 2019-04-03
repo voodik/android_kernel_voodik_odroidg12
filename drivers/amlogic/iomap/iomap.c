@@ -40,7 +40,7 @@ static const struct of_device_id iomap_dt_match[] = {
 static void __iomem *meson_reg_map[IO_BUS_MAX] = { NULL };
 static uint meson_reg_max[IO_BUS_MAX] = { 0 };
 
-int aml_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
+inline int aml_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
 {
 	if (
 		bus_type < IO_BUS_MAX &&
@@ -53,7 +53,7 @@ int aml_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
 }
 EXPORT_SYMBOL(aml_reg_read);
 
-int aml_reg_write(u32 bus_type, unsigned int reg, unsigned int val)
+inline int aml_reg_write(u32 bus_type, unsigned int reg, unsigned int val)
 {
 	if (
 		bus_type < IO_BUS_MAX &&
