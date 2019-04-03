@@ -103,6 +103,21 @@ static const unsigned int hdmi_cable[] = {
 	EXTCON_NONE,
 };
 
+#ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
+static int suspend_hdmiphy = 1;
+
+static  int __init suspend_hdmiphy_setup(char *s)
+{
+	if (!strcmp(s, "true") || !strcmp(s, "1"))
+		suspend_hdmiphy = 1;
+	else
+		suspend_hdmiphy = 0;
+
+	return 0;
+}
+__setup("suspend_hdmiphy=", suspend_hdmiphy_setup);
+#endif
+
 struct extcon_dev *hdmitx_extcon_hdmi;
 struct extcon_dev *hdmitx_extcon_audio;
 struct extcon_dev *hdmitx_extcon_power;
@@ -4559,7 +4574,8 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	ret = device_create_file(dev, &dev_attr_valid_mode);
 
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
-	register_early_suspend(&hdmitx_early_suspend_handler);
+	if (suspend_hdmiphy)
+		register_early_suspend(&hdmitx_early_suspend_handler);
 #endif
 	hdmitx_device.nb.notifier_call = hdmitx_reboot_notifier;
 	register_reboot_notifier(&hdmitx_device.nb);
