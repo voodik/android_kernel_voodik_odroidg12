@@ -237,6 +237,11 @@ int rtl8211f_resume(struct phy_device *phydev)
 
 	return 0;
 }
+
+static void rtl8211f_remove(struct phy_device *phydev)
+{
+	rtl8211f_suspend(phydev);
+}
 #endif
 static struct phy_driver realtek_drvs[] = {
 	{
@@ -295,6 +300,7 @@ static struct phy_driver realtek_drvs[] = {
 #ifdef CONFIG_AMLOGIC_ETH_PRIVE
 		.suspend	= rtl8211f_suspend,
 		.resume		= rtl8211f_resume,
+		.remove		= rtl8211f_remove,
 #else
 		.suspend	= genphy_suspend,
 		.resume		= genphy_resume,
