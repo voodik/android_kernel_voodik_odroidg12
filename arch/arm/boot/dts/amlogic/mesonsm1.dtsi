@@ -801,6 +801,82 @@
 			};
 		};/* end of audiobus*/
 
+		/* eARC */
+		audio_earc: bus@ff663000 {
+			compatible = "simple-bus";
+			reg = <0xff663000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0xff663000 0x1000>;
+
+			earc: earc@0 {
+				compatible = "amlogic, sm1-snd-earc";
+				#sound-dai-cells = <0>;
+
+				status = "disabled";
+
+				reg =
+					<0x800 0x400>,
+					<0xc00 0x200>,
+					<0xe00 0x200>;
+				reg-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_top";
+
+				clocks = < &clkaudio CLKID_EARCRX_CMDC
+					&clkaudio CLKID_EARCRX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_FCLK_DIV4
+					&clkaudio CLKID_EARCTX_CMDC
+					&clkaudio CLKID_EARCTX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_MPLL1
+					>;
+				clock-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_cmdc_srcpll",
+					"rx_dmac_srcpll";
+
+				interrupts = <
+					GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-names = "earc_rx";
+			};
+		};
+
+		/* Sound iomap */
+		aml_snd_iomap {
+			compatible = "amlogic, snd-iomap";
+			status = "okay";
+			#address-cells=<1>;
+			#size-cells=<1>;
+			ranges;
+			pdm_bus {
+				reg = <0xFF661000 0x400>;
+			};
+			audiobus_base {
+				reg = <0xFF660000 0x1000>;
+			};
+			audiolocker_base {
+				reg = <0xFF661400 0x400>;
+			};
+			eqdrc_base {
+				reg = <0xFF662000 0x1000>;
+			};
+			reset_base {
+				reg = <0xFFD01000 0x1000>;
+			};
+			vad_base {
+				reg = <0xFF661800 0x400>;
+			};
+			resampleA_base {
+				reg = <0xFF661c00 0x104>;
+			};
+			resampleB_base {
+				reg = <0xFF664000 0x104>;
+			};
+		};
 	}; /* end of soc*/
 
 	remote:rc@0xff808040 {

@@ -175,8 +175,6 @@ struct toddr {
 	enum toddr_src src;
 	unsigned int fifo_id;
 
-	enum toddr_src asrc_src_sel;
-
 	int is_lb; /* check whether for loopback */
 	int irq;
 	bool in_use: 1;
@@ -198,6 +196,7 @@ struct toddr_attach {
 	 * check which toddr in use should be attached
 	 */
 	enum toddr_src attach_module;
+	int resample_version;
 };
 
 struct frddr_attach {

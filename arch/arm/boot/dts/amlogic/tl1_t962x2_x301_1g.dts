@@ -1686,7 +1686,7 @@
 		 * 7: "Enable:192K",
 		 */
 		asrc_id = <0>;
-		auto_asrc = <3>;
+		auto_asrc = <0>;
 
 		status = "okay";
 	};
