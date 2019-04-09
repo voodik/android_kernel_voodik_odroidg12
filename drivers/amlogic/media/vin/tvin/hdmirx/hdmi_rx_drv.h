@@ -34,7 +34,7 @@
 #include "hdmi_rx_edid.h"
 
 
-#define RX_VER0 "ver.2019-04-02"
+#define RX_VER0 "ver.2019-04-09"
 /*
  *
  *
@@ -86,6 +86,7 @@ enum chip_id_e {
 	CHIP_ID_TXLX,
 	CHIP_ID_TXHD,
 	CHIP_ID_TL1,
+	CHIP_ID_TM2,
 };
 
 enum phy_ver_e {
