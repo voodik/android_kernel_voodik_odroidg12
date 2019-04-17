@@ -203,7 +203,7 @@
 			};
 			tdmacodec: codec {
 				//sound-dai = <&dummy_codec>;
-				sound-dai = <&ad82584f &tl1_codec>;
+				sound-dai = </*&ad82584f*/ &tl1_codec>;
 			};
 		};
 
