@@ -527,6 +527,11 @@ int __init ddr_find_port_desc(int cpu_type, struct ddr_port_desc **desc)
 		desc_size = ARRAY_SIZE(ddr_port_desc_g12b);
 		break;
 
+	case MESON_CPU_MAJOR_ID_SM1:
+		*desc = ddr_port_desc_sm1;
+		desc_size = ARRAY_SIZE(ddr_port_desc_sm1);
+		break;
+
 	default:
 		return -EINVAL;
 	}

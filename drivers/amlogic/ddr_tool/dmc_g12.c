@@ -111,6 +111,7 @@ static void check_violation(struct dmc_monitor *mon)
 		off1 = 24;
 		off2 = 13;
 		break;
+	case MESON_CPU_MAJOR_ID_SM1:
 	case MESON_CPU_MAJOR_ID_TL1:
 		/* bit fix for SM1/TL1 */
 		off1 = 22;
