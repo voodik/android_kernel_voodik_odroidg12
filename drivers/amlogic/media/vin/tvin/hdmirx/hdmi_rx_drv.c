@@ -1727,6 +1727,7 @@ static void rx_phy_suspend(void)
 		/* phy powerdown */
 		rx_phy_power_on(0);
 	}
+	hdmirx_top_irq_en(false);
 }
 
 static void rx_phy_resume(void)
@@ -1743,6 +1744,7 @@ static void rx_phy_resume(void)
 	hdmirx_phy_init();
 	pre_port = 0xff;
 	rx.boot_flag = true;
+	hdmirx_top_irq_en(true);
 }
 
 void rx_emp_resource_allocate(struct device *dev)
@@ -2524,6 +2526,7 @@ static void hdmirx_shutdown(struct platform_device *pdev)
 	rx_phy_power_on(0);
 	if (hdcp22_on)
 		hdcp_22_off();
+	hdmirx_top_irq_en(false);
 	rx_pr("[hdmirx]: shutdown success\n");
 }
 
