@@ -13821,9 +13821,10 @@ F: drivers/amlogic/clk/clk_misc.c
 F: drivers/amlogic/clk/clkc.h
 F: drivers/amlogic/clk/gxl.c
 F: drivers/amlogic/media/vout/hdmitx/hdmi_tx_20/hdmi_tx_main.c
-F: drivers/amlogic/pinctrl/pinctrl_gxl.c
-F: include/dt-bindings/clock/amlogic,gxl-clkc.h
-F: include/linux/amlogic/media/sound/audin_regs.h
+F: drivers/amlogic/pinctrl/*
+F: drivers/amlogic/*
+F: include/dt-bindings/clock/*
+F: include/linux/amlogic/media/sound/*
 F: sound/soc/Kconfig
 F: sound/soc/Makefile
 F: sound/soc/amlogic/auge/*
