@@ -1334,6 +1334,11 @@ CONFIG_AMLOGIC_IONVIDEO=y
 CONFIG_AMLOGIC_PIC_DEC=y
 
 #
+# Amlogic videosync support
+#
+CONFIG_AMLOGIC_VIDEOSYNC=y
+
+#
 # Amlogic Enhancement drivers
 #
 CONFIG_AMLOGIC_MEDIA_ENHANCEMENT=y
@@ -1456,6 +1461,10 @@ CONFIG_AMLOGIC_ESM=y
 #
 # DVB COMPAT support
 #
+CONFIG_AMLOGIC_POWER=y
+# CONFIG_AMLOGIC_PMU_OF is not set
+# CONFIG_AMLOGIC_PMU is not set
+# CONFIG_AMLOGIC_M8B_DVFS is not set
 
 #
 # Multimedia Card support
