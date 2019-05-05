@@ -3804,7 +3804,6 @@ void aml_phy_pll_setting(void)
 			(M <= 80)) {
 			data2 = 0x300b8f30 | od2;
 			m_div = 2;
-			rx_pr("1-m=%d\n", m_div);
 		} else {
 			data2 = 0x300d8f30 | od2;
 			m_div = 1;
@@ -3821,25 +3820,24 @@ void aml_phy_pll_setting(void)
 		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL4, data2);
 		udelay(1);
 		/*cntl0 M <7:0> N<14:10>*/
-		data = 0x00090000 & 0xffff8300;
+		data = 0x00090000;
 		data |= M * m_div;
 		data |= (N << 10);
-		rx_pr("2-m=%d\n", m_div);
-		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data|0x20000000);
-		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data|0x30000000);
+		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data | 0x20000000);
+		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data | 0x30000000);
 		udelay(5);
-		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL4, data2|0x00800000);
+		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL4, data2 | 0x00800000);
 		udelay(5);
-		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data|0x34000000);
+		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data | 0x34000000);
 		udelay(5);
 		if (m_div == 2) {
 			m_div = 1;
 			data &= 0xffffff00;
 			data |= M * m_div;
-			wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data|0x34000000);
+			wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data | 0x34000000);
 		}
 		data &= 0xdfffffff;
-		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data|0x14000000);
+		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL0, data | 0x14000000);
 		/* bit'5: force lock bit'2: improve phy ldo voltage */
 		wr_reg_hhi(HHI_HDMIRX_APLL_CNTL2, 0x0000303c);
 
