@@ -714,11 +714,19 @@ void aml_set_resample(enum resample_idx id,
 	p_attach_resample->attach_module = resample_module;
 	p_attach_resample->resample_version = get_resample_version_id(id);
 
+	mutex_lock(&ddr_mutex);
 	to = fetch_toddr_by_src(
 		p_attach_resample->attach_module);
+	if (to == NULL) {
+		pr_info("%s(), toddr NULL\n", __func__);
+		goto exit;
+	}
 
 	if (p_attach_resample->status == RUNNING)
 		aml_resample_enable(to, p_attach_resample, enable);
+
+exit:
+	mutex_unlock(&ddr_mutex);
 }
 
 /*
