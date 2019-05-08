@@ -41,7 +41,7 @@ unsigned int aud_std = AUDIO_STANDARD_NICAM_DK;
 unsigned int aud_mode = AUDIO_OUTMODE_STEREO;
 bool aud_auto = true;
 bool aud_reinit;
-bool aud_mono_only;
+bool aud_mono_only = true;
 unsigned long over_threshold = 0xffff;
 unsigned long input_amplitude = 0xffff;
 
