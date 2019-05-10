@@ -370,7 +370,7 @@ static void datain_pdm_shutdown(struct loopback *p_loopback)
 	clk_disable_unprepare(p_loopback->pdm_dclk_srcpll);
 	clk_disable_unprepare(p_loopback->pdm_clk_gate);
 }
-
+#if 0
 static int tdminlb_startup(struct loopback *p_loopback)
 {
 	int ret;
@@ -400,7 +400,7 @@ static void tdminlb_shutdown(struct loopback *p_loopback)
 	clk_disable_unprepare(p_loopback->tdminlb_mclk);
 	clk_disable_unprepare(p_loopback->tdminlb_mpll);
 }
-
+#endif
 static int loopback_dai_startup(
 	struct snd_pcm_substream *ss,
 	struct snd_soc_dai *dai)
@@ -492,8 +492,8 @@ static void loopback_dai_shutdown(
 static void loopback_set_clk(struct loopback *p_loopback,
 	int rate, bool enable)
 {
-	unsigned int mul = 2;
-	unsigned int mpll_freq, mclk_freq;
+	/* unsigned int mul = 2; */
+	/* unsigned int mpll_freq, mclk_freq; */
 	/* assume datain_lb in i2s format, 2ch, 32bit */
 	unsigned int bit_depth = 32, i2s_ch = 2;
 	unsigned int sclk_div = 4 - 1;
@@ -502,7 +502,7 @@ static void loopback_set_clk(struct loopback *p_loopback,
 	/* lb_datain clk is set
 	 * prepare clocks for tdmin_lb
 	 */
-
+#if 0
 	/* mpll, mclk */
 	if (p_loopback->datalb_src >= 3) {
 		mclk_freq = rate * p_loopback->mclk_fs_ratio;
@@ -517,7 +517,7 @@ static void loopback_set_clk(struct loopback *p_loopback,
 			clk_get_rate(p_loopback->tdminlb_mclk),
 			clk_get_rate(p_loopback->tdminlb_mpll));
 	}
-
+#endif
 #ifdef __PTM_TDM_CLK__
 	ratio = 18 * 2;
 #endif
@@ -847,7 +847,7 @@ static void datain_pdm_set_clk(struct loopback *p_loopback)
 		clk_get_rate(p_loopback->pdm_sysclk),
 		clk_get_rate(p_loopback->pdm_dclk));
 }
-
+#if 0
 static void datalb_tdminlb_set_clk(struct loopback *p_loopback)
 {
 	int mpll_freq = p_loopback->sysclk_freq * 2;
@@ -859,7 +859,7 @@ static void datalb_tdminlb_set_clk(struct loopback *p_loopback)
 		clk_get_rate(p_loopback->tdminlb_mpll),
 		clk_get_rate(p_loopback->tdminlb_mclk));
 }
-
+#endif
 static int loopback_dai_hw_params(
 	struct snd_pcm_substream *ss,
 	struct snd_pcm_hw_params *params,
