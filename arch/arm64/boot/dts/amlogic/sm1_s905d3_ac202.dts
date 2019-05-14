@@ -1173,6 +1173,12 @@
 		/*tdm clk tuning enable*/
 		clk_tuning_enable = <1>;
 
+		/*enable default mclk(12.288M), before extern codec start*/
+		start_clk_enable = <1>;
+
+		/*tdm clk tuning enable*/
+		clk_tuning_enable = <1>;
+
 		status = "okay";
 	};
 
@@ -1261,6 +1267,9 @@
 		interrupt-names = "irq_spdifin";
 		pinctrl-names = "spdif_pins";
 		pinctrl-0 = <&spdifout>;/* bob remove &spdifin*/
+
+		/*spdif clk tuning enable*/
+		clk_tuning_enable = <1>;
 
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;

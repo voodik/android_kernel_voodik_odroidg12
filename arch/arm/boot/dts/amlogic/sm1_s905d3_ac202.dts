@@ -1269,6 +1269,9 @@
 		/*spdif clk tuning enable*/
 		clk_tuning_enable = <1>;
 
+		/*spdif clk tuning enable*/
+		clk_tuning_enable = <1>;
+
 		status = "okay";
 	};
 	spdifb: spdif@1 {
