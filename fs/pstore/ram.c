@@ -534,6 +534,7 @@ static int ramoops_parse_dt(struct platform_device *pdev,
 
 #define parse_size(name, field) {					\
 		ret = ramoops_parse_dt_size(pdev, name, &value);	\
+		pr_info(" <%s> %s  %d", __func__, name, value);		\
 		if (ret < 0)						\
 			return ret;					\
 		field = value;						\
@@ -685,8 +686,8 @@ static int ramoops_probe(struct platform_device *pdev)
 	}
 	pr_info("ramoops_io_en:%d %d old:0x%lx ftrace_size:0x%lx",
 		ramoops_io_en, ramoops_ftrace_en,
-		(unsigned long)persistent_ram_old_size(cxt->fprz),
-		ramoops_ftrace_size);
+		cxt->fprz ? (unsigned long)persistent_ram_old_size(cxt->fprz)
+		: 0, ramoops_ftrace_size);
 #endif
 
 	return 0;
