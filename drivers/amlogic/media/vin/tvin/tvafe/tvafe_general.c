@@ -341,11 +341,10 @@ for (i = 0; i < p->length; i++) {
 		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
 			tvafe_pr_info("%s: cbus: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
 				__func__, p->am_reg[i].addr, p->am_reg[i].addr,
-					(p->am_reg[i].val & p->am_reg[i].mask),
-					(p->am_reg[i].val & p->am_reg[i].mask),
-					p->am_reg[i].val, p->am_reg[i].val,
-					p->am_reg[i].mask, p->am_reg[i].mask);
-		#endif
+				(p->am_reg[i].val & p->am_reg[i].mask),
+				(p->am_reg[i].val & p->am_reg[i].mask),
+				p->am_reg[i].val, p->am_reg[i].val,
+				p->am_reg[i].mask, p->am_reg[i].mask);
 		break;
 	case REG_TYPE_APB:
 		if (p->am_reg[i].mask == 0xffffffff)
@@ -367,7 +366,6 @@ for (i = 0; i < p->length; i++) {
 		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
 			tvafe_pr_info("%s: bus type error!!!bustype = 0x%x................\n",
 				__func__, p->am_reg[i].type);
-	    #endif
 		break;
 		}
 	}
