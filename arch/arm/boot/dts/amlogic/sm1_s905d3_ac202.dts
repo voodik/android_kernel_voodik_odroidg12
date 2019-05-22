@@ -1530,6 +1530,15 @@
 		};
 	};
 
+	tdmout_a_gpio: tdmout_a_gpio {
+		mux { /* GPIOZ_1, GPIOZ_2, GPIOZ_3 */
+			groups = "GPIOZ_1",
+				"GPIOZ_2",
+				"GPIOZ_3";
+			function = "gpio_periphs";
+			output-low;
+		};
+	};
 	tdmin_a: tdmin_a {
 		mux { /* GPIOX_8 */
 			groups = "tdma_din0",
