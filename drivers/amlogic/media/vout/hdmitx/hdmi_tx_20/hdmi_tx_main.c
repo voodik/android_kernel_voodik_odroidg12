@@ -3816,7 +3816,8 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	}
 	mutex_lock(&setclk_mutex);
 	pr_info(SYS "plugin\n");
-	hdev->HWOp.CntlMisc(hdev, MISC_I2C_REACTIVE, 0);
+	if (hdev->chip_type >= MESON_CPU_ID_G12A)
+		hdev->HWOp.CntlMisc(hdev, MISC_I2C_RESET, 0);
 	hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGIN;
 	/* start reading E-EDID */
 	if (hdev->repeater_tx)
@@ -3845,6 +3846,8 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	}
 
 	mutex_lock(&getedid_mutex);
+	if (hdev->chip_type < MESON_CPU_ID_G12A)
+		hdev->HWOp.CntlMisc(hdev, MISC_I2C_REACTIVE, 0);
 	mutex_unlock(&getedid_mutex);
 	if (hdev->repeater_tx) {
 		if (check_fbc_special(&hdev->EDID_buf[0])
