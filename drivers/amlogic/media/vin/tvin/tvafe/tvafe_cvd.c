@@ -2437,12 +2437,7 @@ inline void tvafe_cvd2_adj_hs_ntsc(struct tvafe_cvd2_s *cvd2,
 {
 	struct tvafe_user_param_s *user_param = tvafe_get_user_param();
 	unsigned int hcnt64_max, hcnt64_min;
-	unsigned int diff, hcnt64_ave, i, hcnt64_standard;
-
-	if (cpu_after_eq(MESON_CPU_MAJOR_ID_GXTVBB))
-		hcnt64_standard = 0x30e0e;
-	else
-		hcnt64_standard = 0x17a00;
+	unsigned int diff, hcnt64_ave, i, hcnt64_standard = 0x30e0e;
 
 	if ((user_param->auto_adj_en & TVAFE_AUTO_HS) == 0)
 		return;

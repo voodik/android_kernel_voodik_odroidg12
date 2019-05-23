@@ -784,12 +784,14 @@ int tvafe_device_create_file(struct device *dev)
 	ret |= device_create_file(dev, &dev_attr_cvd_reg8a);
 	ret |= device_create_file(dev, &dev_attr_dumpmem);
 	ret |= device_create_file(dev, &dev_attr_reg);
+	ret |= device_create_file(dev, &dev_attr_cutwin);
 
 	return ret;
 }
 
 void tvafe_remove_device_files(struct device *dev)
 {
+	device_remove_file(dev, &dev_attr_cutwin);
 	device_remove_file(dev, &dev_attr_debug);
 	device_remove_file(dev, &dev_attr_dumpmem);
 	device_remove_file(dev, &dev_attr_cvd_reg8a);

@@ -824,6 +824,7 @@ void tvafe_get_sig_property(struct tvin_frontend_s *fe,
 				prop->ve = user_param->cutwindow_val_vs_ve;
 			} else {
 				hs_adj_lev = 0;
+			}
 			if (tvafe->cvd2.info.hs_adj_dir == true) {
 				prop->hs = 0;
 				prop->he = hs_adj_lev;
@@ -1410,7 +1411,7 @@ static int tvafe_drv_probe(struct platform_device *pdev)
 	}
 
 	/*reg mem*/
-	tvafe_pr_info("%s:tvafe start get  ioremap .\n", __func__);
+	/*tvafe_pr_info("%s:tvafe start get  ioremap .\n", __func__);*/
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		dev_err(&pdev->dev, "missing memory resource\n");
@@ -1597,7 +1598,7 @@ static int __init tvafe_drv_init(void)
 		tvafe_pr_err("%s: failed to register driver\n", __func__);
 		goto fail_pdrv_register;
 	}
-	tvafe_pr_info("tvafe_drv_init.\n");
+	/*tvafe_pr_info("tvafe_drv_init.\n");*/
 	return 0;
 
 fail_pdrv_register:
@@ -1660,40 +1661,6 @@ RESERVEDMEM_OF_DECLARE(tvafe, "amlogic, tvafe_memory",
 	tvafe_mem_setup);
 
 MODULE_VERSION(TVAFE_VER);
-
-/*only for develop debug*/
-#ifdef TVAFE_DEBUG
-module_param(cutwindow_val_v, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_v, "cutwindow_val_v");
-
-module_param(cutwindow_val_v_level0, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_v_level0, "cutwindow_val_v_level0");
-
-module_param(cutwindow_val_v_level1, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_v_level1, "cutwindow_val_v_level1");
-
-module_param(cutwindow_val_v_level2, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_v_level2, "cutwindow_val_v_level2");
-
-module_param(cutwindow_val_v_level3, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_v_level3, "cutwindow_val_v_level3");
-
-module_param(cutwindow_val_v_level4, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_v_level4, "cutwindow_val_v_level4");
-
-module_param(cutwindow_val_h_level1, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_h_level1, "cutwindow_val_h_level1");
-
-module_param(cutwindow_val_h_level2, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_h_level2, "cutwindow_val_h_level2");
-
-module_param(cutwindow_val_h_level3, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_h_level3, "cutwindow_val_h_level3");
-
-module_param(cutwindow_val_h_level4, int, 0664);
-MODULE_PARM_DESC(cutwindow_val_h_level4, "cutwindow_val_h_level4");
-#endif
-
 MODULE_DESCRIPTION("AMLOGIC TVAFE driver");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Xu Lin <lin.xu@amlogic.com>");
