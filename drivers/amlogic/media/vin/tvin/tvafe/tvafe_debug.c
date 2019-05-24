@@ -199,11 +199,10 @@ static ssize_t tvafe_store(struct device *dev,
 		struct device_attribute *attr, const char *buff, size_t count)
 {
 	unsigned char fmt_index = 0;
-
 	struct tvafe_dev_s *devp;
 	unsigned long tmp = 0;
 	char *buf_orig, *parm[47] = {NULL};
-	long val;
+	unsigned int val;
 
 	devp = dev_get_drvdata(dev);
 	if (!buff)
@@ -234,17 +233,15 @@ static ssize_t tvafe_store(struct device *dev,
 		else
 			tvafe_pr_info("%s:invaild command.", buff);
 	} else if (!strncmp(buff, "disableapi", strlen("disableapi"))) {
-		if (kstrtoul(buff+strlen("disableapi")+1, 10, &tmp) == 0)
-			disableapi = tmp;
+		if (kstrtouint(buff+strlen("disableapi")+1, 10, &val) == 0)
+			disableapi = val;
 
 	} else if (!strncmp(buff, "force_stable", strlen("force_stable"))) {
-		if (kstrtoul(buff+strlen("force_stable")+1, 10, &tmp) == 0)
-			force_stable = tmp;
+		if (kstrtouint(buff+strlen("force_stable")+1, 10, &val) == 0)
+			force_stable = val;
 	} else if (!strncmp(buff, "tvafe_enable", strlen("tvafe_enable"))) {
-		if (kstrtoul(parm[1], 10, &val) < 0) {
-			kfree(buf_orig);
-			return -EINVAL;
-		}
+		if (kstrtouint(parm[1], 10, &val) < 0)
+			goto tvafe_store_err;
 		if (val) {
 			tvafe_enable_module(true);
 			devp->flags &= (~TVAFE_POWERDOWN_IN_IDLE);
@@ -300,10 +297,8 @@ static ssize_t tvafe_store(struct device *dev,
 		/*patch for Very low probability hanging issue on atv close*/
 		/*only appeared in one project,this for reserved debug*/
 		/*default setting to disable the nonstandard signal detect*/
-		if (kstrtoul(parm[1], 10, &val) < 0) {
-			kfree(buf_orig);
-			return -EINVAL;
-		}
+		if (kstrtouint(parm[1], 10, &val) < 0)
+			goto tvafe_store_err;
 		if (val) {
 			devp->tvafe.cvd2.nonstd_detect_dis = true;
 			pr_info("[tvafe..]%s:disable nonstd detect\n",
@@ -331,6 +326,10 @@ static ssize_t tvafe_store(struct device *dev,
 		tvafe_pr_info("[%s]:invaild command.\n", __func__);
 	kfree(buf_orig);
 	return count;
+
+tvafe_store_err:
+	kfree(buf_orig);
+	return -EINVAL;
 }
 
 static ssize_t tvafe_show(struct device *dev,
