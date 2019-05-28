@@ -472,6 +472,7 @@ static void aml_sd_emmc_set_power_v3(struct amlsd_platform *pdata,
 		writel(0, host->base + SD_EMMC_DELAY2_V3);
 		writel(0, host->base + SD_EMMC_ADJUST_V3);
 		writel(0, host->base + SD_EMMC_INTF3);
+		host->cmd_retune = 0;
 		break;
 	default:
 		if (pdata->pwr_pre)
