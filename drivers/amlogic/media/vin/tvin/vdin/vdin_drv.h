@@ -410,7 +410,7 @@ struct vdin_v4l2_param_s {
 extern unsigned int max_recycle_frame_cnt;
 extern unsigned int max_ignore_frame_cnt;
 extern unsigned int skip_frame_debug;
-
+extern unsigned int vdin_drop_cnt;
 extern unsigned int vdin0_afbce_debug_force;
 
 extern struct vframe_provider_s *vf_get_provider_by_name(
