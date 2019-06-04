@@ -800,8 +800,14 @@ static int loopback_dai_trigger(
 			/* tdminLB */
 			tdminlb_fifo_enable(false);
 			tdminlb_enable(p_loopback->datalb_src, false);
+			dev_info(ss->pcm->card->dev, "Loopback Capture disable\n");
 
-			aml_toddr_enable(p_loopback->tddr, false);
+			toddr_stopped =
+				aml_toddr_burst_finished(p_loopback->tddr);
+			if (toddr_stopped)
+				aml_toddr_enable(p_loopback->tddr, false);
+			else
+				pr_err("%s(), toddr may be stuck\n", __func__);
 		}
 		break;
 	default:
