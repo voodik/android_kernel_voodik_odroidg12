@@ -25,6 +25,7 @@
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
 #include "../tvin_global.h"
 #include "../tvin_format_table.h"
+#include "tvafe.h"
 #include "tvafe_regs.h"
 #include "tvafe_cvd.h"
 #include "tvafe_debug.h"
@@ -326,9 +327,8 @@ void tvafe_set_regmap(struct am_regs_s *p)
 for (i = 0; i < p->length; i++) {
 	switch (p->am_reg[i].type) {
 	case REG_TYPE_PHY:
-		#ifdef PQ_DEBUG_EN
-		    tvafe_pr_info("%s: bus type: phy..\n", __func__);
-		#endif
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: bus type: phy..\n", __func__);
 		break;
 	case REG_TYPE_CBUS:
 		if (p->am_reg[i].mask == 0xffffffff)
@@ -338,8 +338,8 @@ for (i = 0; i < p->length; i++) {
 			(aml_read_cbus(p->am_reg[i].addr) &
 			(~(p->am_reg[i].mask))) |
 			(p->am_reg[i].val & p->am_reg[i].mask));
-		#ifdef PQ_DEBUG_EN
-					tvafe_pr_info("%s: cbus: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: cbus: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
 				__func__, p->am_reg[i].addr, p->am_reg[i].addr,
 					(p->am_reg[i].val & p->am_reg[i].mask),
 					(p->am_reg[i].val & p->am_reg[i].mask),
@@ -355,18 +355,17 @@ for (i = 0; i < p->length; i++) {
 			(R_APB_REG(p->am_reg[i].addr<<2) &
 			(~(p->am_reg[i].mask))) |
 			(p->am_reg[i].val & p->am_reg[i].mask));
-		#ifdef PQ_DEBUG_EN
-					tvafe_pr_info("%s: apb: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: apb: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
 				__func__, p->am_reg[i].addr, p->am_reg[i].addr,
 					(p->am_reg[i].val & p->am_reg[i].mask),
 					(p->am_reg[i].val & p->am_reg[i].mask),
 					p->am_reg[i].val, p->am_reg[i].val,
 					p->am_reg[i].mask, p->am_reg[i].mask);
-		#endif
 		break;
 	default:
-	    #ifdef PQ_DEBUG_EN
-		tvafe_pr_info("%s: bus type error!!!bustype = 0x%x................\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: bus type error!!!bustype = 0x%x................\n",
 				__func__, p->am_reg[i].type);
 	    #endif
 		break;
@@ -623,8 +622,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_lock(&pll_mutex);
 		adc_pll_chg &= ~module_sel;
 		mutex_unlock(&pll_mutex);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: init flag on:%d,module:0x%x,flag:0x%x\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: init flag on:%d,module:0x%x,flag:0x%x\n",
 				__func__, on, module_sel, adc_pll_chg);
 		return ret;
 	}
@@ -693,8 +692,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt == 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 		break;
 	case ADC_EN_TVAFE: /* tvafe */
@@ -783,8 +782,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt == 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 
 		break;
@@ -859,8 +858,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt >= 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 		break;
 	case ADC_EN_DTV_DEMODPLL: /* dtv demod default*/
@@ -934,7 +933,7 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt == 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
 			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 		break;
