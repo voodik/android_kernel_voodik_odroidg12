@@ -345,11 +345,6 @@
 	};
 };
 
-&amhdmitx {
-	/*0:SPDIF, 1:I2S*/
-	tx_aud_src = <1>;
-};
-
 &audiobus {
 	/* tdmc to internal DAC output, no pinmux */
 	aml_tdmc: tdmc {
