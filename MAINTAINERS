@@ -14879,6 +14879,11 @@ HARDKERNEL S922D odroidn2
 M: 	Pierluigi Passaro <info@phoenixsoftware.it>
 F:      drivers/input/touchscreen/sx8650.c
 
+AMLOGIC TL1 PIXEL PROBE
+M:  Yan Wang <yan.wang@amlogic.com>
+F:	drivers/amlogic/pixel_probe/*
+F:	include/linux/amlogic/pixel_probe.h
+
 HARDKERNEL S922D odroidn2
 M: 	charles park <charles.park@hardkernel.com>
 F:      Documentation/devicetree/binding/input/touchscreen/sx8650.txt
