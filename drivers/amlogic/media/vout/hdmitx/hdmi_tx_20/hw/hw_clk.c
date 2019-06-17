@@ -1062,6 +1062,10 @@ next:
 			p_enc[j].od2 = 1;
 			p_enc[j].od3 = 2;
 		}
+
+		pr_info("[N2] hpll_clk_out %d, od1 %d, od2 %d, od3 %d\n",
+			p_enc[j].hpll_clk_out,
+			p_enc[j].od1, p_enc[j].od2, p_enc[j].od3);
 	}
 
 	hdmitx_set_cts_sys_clk(hdev);
