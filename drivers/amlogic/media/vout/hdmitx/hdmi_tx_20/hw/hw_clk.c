@@ -1049,8 +1049,8 @@ next:
 		p_enc[j].hpll_clk_out = (custom_timing->frac_freq * 10);
 		pr_info("[N2][%s] vic == HDMI_CUSTOMBUILT, frac_freq %d\n",
 				__func__, custom_timing->frac_freq);
-		/* check if hpll clk output is under (100*10)MHz */
-		if (p_enc[j].hpll_clk_out < 1000000) {
+		/* check if hpll clk output is under (140*10)MHz */
+		if (p_enc[j].hpll_clk_out < 1400000) {
 			p_enc[j].hpll_clk_out *= 4;
 			/* control od dividers */
 			p_enc[j].od1 = 4;
