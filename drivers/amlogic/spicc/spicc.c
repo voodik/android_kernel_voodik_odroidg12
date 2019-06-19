@@ -726,6 +726,12 @@ void dirspi_stop(struct spi_device *spi)
 }
 EXPORT_SYMBOL(dirspi_stop);
 
+int dirspi_register_board_info(struct spi_board_info const *info,
+			       unsigned int n)
+{
+	return spi_register_board_info(info, n);
+}
+EXPORT_SYMBOL_GPL(dirspi_register_board_info);
 
 /* setting clock and pinmux here */
 static int spicc_setup(struct spi_device *spi)
@@ -1084,6 +1090,7 @@ static int of_spicc_get_data(
 	if (spicc->clk_rate) {
 		clk_set_rate(spicc->clk, spicc->clk_rate);
 		clk_prepare_enable(spicc->clk);
+		clk_prepare_enable(spicc->hclk);
 	}
 
 	if (spicc_get_flag(spicc, FLAG_ENHANCE)) {
