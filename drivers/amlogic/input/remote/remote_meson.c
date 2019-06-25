@@ -773,7 +773,6 @@ static int ir_hardware_init(struct platform_device *pdev)
 		goto error_irq;
 
 	chip->irq_cpumask = 1;
-	irq_set_affinity(chip->irqno, cpumask_of(chip->irq_cpumask));
 
 	tasklet_enable(&tasklet);
 	tasklet.data = (unsigned long)chip;
@@ -947,7 +946,6 @@ static int remote_resume(struct device *dev)
 	}
 #endif
 
-	irq_set_affinity(chip->irqno, cpumask_of(chip->irq_cpumask));
 	enable_irq(chip->irqno);
 	return 0;
 }
