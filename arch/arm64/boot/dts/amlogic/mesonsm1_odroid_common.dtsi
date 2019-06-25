@@ -284,10 +284,10 @@
 	status = "okay";
 };
 
-&i2c3 {
+&i2c2 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c3_master_pins2>;
+	pinctrl-0 = <&i2c2_master_pins1>;
 	clock-frequency = <100000>;		/* default 100k */
 
 	pcf8563: rtc@51 {
