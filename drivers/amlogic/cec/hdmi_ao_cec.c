@@ -2333,6 +2333,8 @@ static ssize_t fun_cfg_store(struct class *cla, struct class_attribute *attr,
 	cnt = kstrtouint(bu, 16, &val);
 	if (cnt < 0 || val > 0xff)
 		return -EINVAL;
+	if ((val&&CEC_FUNC_CFG_CEC_ON) == CEC_FUNC_CFG_CEC_ON)
+		val |= CEC_FUNC_CFG_STREAMPATH_POWER_ON;
 	cec_config(val, 1);
 	if (val == 0)
 		cec_clear_all_logical_addr(ee_cec);/*cec_keep_reset();*/
