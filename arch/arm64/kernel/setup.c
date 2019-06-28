@@ -64,13 +64,23 @@
 #include <asm/xen/hypervisor.h>
 #include <asm/mmu_context.h>
 
+#include <linux/platform_data/board_odroid.h>
+
 phys_addr_t __fdt_pointer __initdata;
 
-const char *machine_name;
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+const char *machine_name = "Hardkernel ODROID Ref.";
 EXPORT_SYMBOL(machine_name);
 
-unsigned int system_rev;
+unsigned int system_rev = 0;
 EXPORT_SYMBOL(system_rev);
+
+static u32 __odroid_model = 0;
+u32 odroid_model(void)
+{
+	return __odroid_model;
+}
+#endif
 
 /*
  * Standard memory resources
@@ -206,6 +216,16 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
 
 	pr_info("Machine model: %s\n", name);
 	dump_stack_set_arch_desc("%s (DT)", name);
+
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	if (!strcmp(machine_name, "Hardkernel ODROID-N2")) {
+		system_rev = 0x0400;
+		__odroid_model = BOARD_ODROIDN2;
+	} else if (!strcmp(machine_name, "Hardkernel ODROID-C4")) {
+		system_rev = 0x0500;
+		__odroid_model = BOARD_ODROIDC4;
+	}
+#endif
 }
 
 static void __init request_standard_resources(void)
