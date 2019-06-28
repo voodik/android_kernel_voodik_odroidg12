@@ -664,6 +664,10 @@ void spdifout_play_with_zerodata(unsigned int spdif_id, bool reenable)
 		/* spdif clk */
 		//spdifout_clk_ctrl(spdif_id, true);
 		/* spdif to hdmitx */
+#if defined(CONFIG_ARCH_MESON64_ODROIDN2)
+		/* ODROID spdif_b only to hdmitx */
+		if (spdif_id == 1)
+#endif
 		spdifout_to_hdmitx_ctrl(spdif_id);
 
 		/* spdif ctrl */
