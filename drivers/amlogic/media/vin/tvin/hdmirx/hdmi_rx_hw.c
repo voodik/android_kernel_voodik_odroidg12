@@ -1949,49 +1949,44 @@ void clk_init(void)
 */
 void hdmirx_20_init(void)
 {
-unsigned long data32;
+	unsigned long data32;
+	unsigned long scdc_en = rx.edid_ver;
 
-data32 = 0;
-data32 |= 1	<< 12; /* [12]     vid_data_checken */
-data32 |= 1	<< 11; /* [11]     data_island_checken */
-data32 |= 1	<< 10; /* [10]     gb_checken */
-data32 |= 1	<< 9;  /* [9]      preamb_checken */
-data32 |= 1	<< 8;  /* [8]      ctrl_checken */
-data32 |= 1	<< 4;  /* [4]      scdc_enable */
-/* To support some TX that sends out SSCP even when not scrambling:
- * 0: Original behaviour
- * 1: During TMDS character error detection, treat SSCP character
- *	as normal TMDS character.
- * Note: If scramble is turned on, this bit will not take effect,
- *	revert to original IP behaviour.
- */
-data32 |= ignore_sscp_charerr << 3; /* [3]ignore sscp character err */
-/* To support some TX that sends out SSCP even when not scrambling:
- * 0: Original behaviour
- * 1: During TMDS decoding, treat SSCP character
- * as normal TMDS character
- * Note: If scramble is turned on, this bit will not take effect,
- * revert to original IP behaviour.
- */
-data32 |= ignore_sscp_tmds << 2;  /* [2]	   ignore sscp tmds */
-data32 |= SCRAMBLE_SEL	<< 0;  /* [1:0]    scramble_sel */
-hdmirx_wr_dwc(DWC_HDMI20_CONTROL,    data32);
-
-data32  = 0;
-data32 |= 1	<< 24; /* [25:24]  i2c_spike_suppr */
-data32 |= 0	<< 20; /* [20]     i2c_timeout_en */
-data32 |= 0	<< 0;  /* [19:0]   i2c_timeout_cnt */
-hdmirx_wr_dwc(DWC_SCDC_I2CCONFIG,    data32);
+	data32 = 0;
+	data32 |= 1	<< 12; /* [12]     vid_data_checken */
+	data32 |= 1	<< 11; /* [11]     data_island_checken */
+	data32 |= 1	<< 10; /* [10]     gb_checken */
+	data32 |= 1	<< 9;  /* [9]      preamb_checken */
+	data32 |= 1	<< 8;  /* [8]      ctrl_checken */
+	data32 |= scdc_en	<< 4;  /* [4]      scdc_enable */
+	/* To support some TX that sends out SSCP even when not scrambling:
+	 * 0: Original behaviour
+	 * 1: During TMDS character error detection, treat SSCP character
+	 *	as normal TMDS character.
+	 * Note: If scramble is turned on, this bit will not take effect,
+	 *	revert to original IP behaviour.
+	 */
+	data32 |= ignore_sscp_charerr << 3; /* [3]ignore sscp character err */
+	/* To support some TX that sends out SSCP even when not scrambling:
+	 * 0: Original behaviour
+	 * 1: During TMDS decoding, treat SSCP character
+	 * as normal TMDS character
+	 * Note: If scramble is turned on, this bit will not take effect,
+	 * revert to original IP behaviour.
+	 */
+	data32 |= ignore_sscp_tmds << 2;  /* [2]	   ignore sscp tmds */
+	data32 |= SCRAMBLE_SEL	<< 0;  /* [1:0]    scramble_sel */
+	hdmirx_wr_dwc(DWC_HDMI20_CONTROL,    data32);
 
 data32  = 0;
 data32 |= 0    << 1;  /* [1]      hpd_low */
 data32 |= 1    << 0;  /* [0]      power_provided */
 hdmirx_wr_dwc(DWC_SCDC_CONFIG,   data32);
 
-data32  = 0;
-data32 |= 0xabcdef << 8;  /* [31:8]   manufacture_oui */
-data32 |= 1	<< 0;  /* [7:0]    sink_version */
-hdmirx_wr_dwc(DWC_SCDC_WRDATA0,	data32);
+	data32  = 0;
+	data32 |= 1    << 1;  /* [1]      hpd_low */
+	data32 |= 0    << 0;  /* [0]      power_provided */
+	hdmirx_wr_dwc(DWC_SCDC_CONFIG,   data32);
 
 data32  = 0;
 data32 |= 10	<< 20; /* [29:20]  chlock_max_err */
