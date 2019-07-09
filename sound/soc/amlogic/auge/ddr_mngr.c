@@ -441,8 +441,8 @@ void aml_toddr_set_format(struct toddr *to, struct toddr_fmt *fmt)
 
 	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL0, reg_base);
 	aml_audiobus_update_bits(actrl, reg,
-		0x7 << 24 | 0x1fff << 3,
-		fmt->endian << 24 | fmt->type << 13 |
+		0x1 << 27 | 0x7 << 24 | 0x1fff << 3,
+		0x1 << 27 | fmt->endian << 24 | fmt->type << 13 |
 		fmt->msb << 8 | fmt->lsb << 3);
 }
 
@@ -651,9 +651,6 @@ static void aml_resample_enable(
 		}
 	}
 
-	/* resample enable or not */
-	resample_enable(p_attach_resample->id, enable);
-
 	/* select reample data */
 	if (to->chipinfo
 			&& to->chipinfo->asrc_src_sel_ctrl)
@@ -673,7 +670,6 @@ void aml_set_resample(enum resample_idx id,
 {
 	struct toddr_attach *p_attach_resample;
 	struct toddr *to;
-	bool update_running = false;
 
 	if (id == RESAMPLE_A)
 		p_attach_resample = &attach_resample_a;
@@ -688,26 +684,7 @@ void aml_set_resample(enum resample_idx id,
 	to = fetch_toddr_by_src(
 		p_attach_resample->attach_module);
 
-	if (enable) {
-		if ((p_attach_resample->status == DISABLED)
-			|| (p_attach_resample->status == READY)) {
-
-			if (!to) {
-				p_attach_resample->status = READY;
-			} else {
-				p_attach_resample->status = RUNNING;
-				update_running = true;
-				pr_info("Capture with resample\n");
-			}
-		}
-	} else {
-		if (p_attach_resample->status == RUNNING)
-			update_running = true;
-
-		p_attach_resample->status = DISABLED;
-	}
-
-	if (update_running && to)
+	if (p_attach_resample->status == RUNNING)
 		aml_resample_enable(to, p_attach_resample, enable);
 }
 

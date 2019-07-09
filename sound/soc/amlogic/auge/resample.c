@@ -156,12 +156,6 @@ static int resample_clk_set(struct audioresample *p_resample, int output_sr)
 	return ret;
 }
 
-static void audio_resample_init(struct audioresample *p_resample)
-{
-	aml_set_resample(p_resample->id, p_resample->enable,
-		p_resample->resample_module);
-}
-
 static int audio_resample_set(
 	struct audioresample *p_resample,
 	bool enable, int rate)
@@ -171,7 +165,9 @@ static int audio_resample_set(
 
 	p_resample->enable = enable;
 	p_resample->out_rate = rate;
-	audio_resample_init(p_resample);
+	aml_set_resample(
+		p_resample->id, p_resample->enable,
+		p_resample->resample_module);
 
 	return 0;
 }

@@ -317,7 +317,7 @@ int resample_set_hw_param(enum resample_idx id,
 	offset = EE_AUDIO_RESAMPLEB_CTRL2 - EE_AUDIO_RESAMPLEA_CTRL2;
 	reg = EE_AUDIO_RESAMPLEA_CTRL2 + offset * id;
 
-	audiobus_update_bits(reg, 1 << 25, 1 << 25);
+	audiobus_update_bits(reg, 3 << 26 | 1 << 25, 3 << 26 | 1 << 25);
 	resample_set_hw_pause_thd(id, 128);
 
 	return 0;
