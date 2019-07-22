@@ -77,6 +77,7 @@ struct tvafe_user_param_s {
 	unsigned int force_vs_th_flag;
 	unsigned int nostd_stable_cnt;
 	unsigned int skip_vf_num;
+	unsigned int avout_en;
 };
 
 /* tvafe device structure */

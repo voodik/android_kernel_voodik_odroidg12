@@ -195,9 +195,17 @@ static void tvafe_state(struct tvafe_dev_s *devp)
 		user_param->cutwindow_val_vs_ve);
 	tvafe_pr_info("auto_adj_en:%d\n", user_param->auto_adj_en);
 	tvafe_pr_info("nostd_vs_th:0x%x\n", user_param->nostd_vs_th);
-	tvafe_pr_info("force_vs_th_flag:0x%x\n", user_param->force_vs_th_flag);
-	tvafe_pr_info("nostd_stable_cnt:0x%x\n", user_param->nostd_stable_cnt);
-	tvafe_pr_info("skip_vf_num:0x%x\n", user_param->skip_vf_num);
+	tvafe_pr_info("nostd_no_vs_th:0x%x\n", user_param->nostd_no_vs_th);
+	tvafe_pr_info("nostd_vs_cntl:0x%x\n", user_param->nostd_vs_cntl);
+	tvafe_pr_info("nostd_vloop_tc:0x%x\n", user_param->nostd_vloop_tc);
+	tvafe_pr_info("force_vs_th_flag:%d\n", user_param->force_vs_th_flag);
+	tvafe_pr_info("nostd_stable_cnt:%d\n", user_param->nostd_stable_cnt);
+	tvafe_pr_info("nostd_dmd_clp_step:0x%x\n",
+		user_param->nostd_dmd_clp_step);
+	tvafe_pr_info("skip_vf_num:%d\n", user_param->skip_vf_num);
+	tvafe_pr_info("try_fmt_max_atv:%d\n", try_fmt_max_atv);
+	tvafe_pr_info("try_fmt_max_av:%d\n", try_fmt_max_av);
+	tvafe_pr_info("avout_en:%d\n", user_param->avout_en);
 	tvafe_pr_info("tvafe version :  %s\n", TVAFE_VER);
 }
 
@@ -397,6 +405,25 @@ static ssize_t tvafe_store(struct device *dev,
 		}
 		pr_info("[tvafe..]%s: skip_vf_num = %d\n",
 			__func__, user_param->skip_vf_num);
+	} else if (!strncmp(buff, "try_fmt_max_atv",
+		strlen("try_fmt_max_atv"))) {
+		if (kstrtouint(parm[1], 10, &try_fmt_max_atv) < 0)
+			goto tvafe_store_err;
+		pr_info("[tvafe..]%s: set try_fmt_max_atv = %d\n",
+			__func__, try_fmt_max_atv);
+	} else if (!strncmp(buff, "try_fmt_max_av",
+		strlen("try_fmt_max_av"))) {
+		if (kstrtouint(parm[1], 10, &try_fmt_max_av) < 0)
+			goto tvafe_store_err;
+		pr_info("[tvafe..]%s: set try_fmt_max_av = %d\n",
+			__func__, try_fmt_max_av);
+	} else if (!strncmp(buff, "avout_en", strlen("avout_en"))) {
+		if (parm[1]) {
+			if (kstrtouint(parm[1], 16, &user_param->avout_en) < 0)
+				goto tvafe_store_err;
+		}
+		pr_info("[tvafe..]%s: avout_en = 0x%x\n",
+			__func__, user_param->avout_en);
 	} else if (!strncmp(buff, "dbg_print", strlen("dbg_print"))) {
 		if (parm[1]) {
 			if (kstrtouint(parm[1], 16, &tvafe_dbg_print) < 0)
@@ -442,7 +469,9 @@ static const char *tvafe_debug_usage_str = {
 "\n"
 "    echo skip_vf_num val(d) > /sys/class/tvafe/tvafe0/debug;set skip_vf_num for vdin\n"
 "\n"
-"    echo dbg_print val(h) > /sys/class/tvafe/tvafe0/debug;enable debug print\n"
+"    echo avout_en val(d) > /sys/class/tvafe/tvafe0/debug;set avout\n"
+"\n"
+"    echo print val(h) > /sys/class/tvafe/tvafe0/debug;enable debug print\n"
 "    bit[0]: normal debug info\n"
 "    bit[4]: vsync isr debug info\n"
 "    bit[8]: smr debug info\n"
