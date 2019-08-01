@@ -273,6 +273,13 @@ MODULE_PARM_DESC(vtotal_add, "\n vtotal_add\n");
 module_param(vpotch, uint, 0664);
 MODULE_PARM_DESC(vpotch, "\n vpotch\n");
 
+/* for core2 timing setup tuning */
+/* g_vtotal_add << 24 | g_vsize_add << 16 */
+/* | g_vwidth << 8 | g_vpotch */
+static unsigned int g_vtiming;
+module_param(g_vtiming, uint, 0664);
+MODULE_PARM_DESC(g_vtiming, "\n vpotch\n");
+
 static unsigned int dolby_vision_target_min = 50; /* 0.0001 */
 #ifdef V2_4
 static unsigned int dolby_vision_target_max[3][3] = {
@@ -1012,7 +1019,14 @@ MODULE_PARM_DESC(debug_dolby_frame, "\n debug_dolby_frame\n");
 #define dump_enable \
 	((debug_dolby_frame >= 0xffff) || \
 	(debug_dolby_frame + 1 == frame_count))
-
+static int is_graphics_output_off(void)
+{
+	if (is_meson_g12() || is_meson_tm2_stbmode())
+		return !(READ_VPP_REG(OSD1_BLEND_SRC_CTRL) & (0xf<<8))
+		&& !(READ_VPP_REG(OSD2_BLEND_SRC_CTRL) & (0xf<<8));
+	else
+		return (!(READ_VPP_REG(VPP_MISC) & (1<<12)));
+}
 #define single_step_enable \
 	(((debug_dolby_frame >= 0xffff) || \
 	((debug_dolby_frame + 1) == frame_count)) && \
@@ -1129,6 +1143,7 @@ bool is_meson_tm2(void)
 	else
 		return false;
 }
+
 bool is_meson_tm2_tvmode(void)
 {
 	if ((is_meson_tm2()) && (tv_mode == 1))
@@ -1244,14 +1259,6 @@ static unsigned int amdolby_vision_poll(struct file *file, poll_table *wait)
 	mask = (POLLIN | POLLRDNORM);
 
 	return mask;
-}
-
-static int is_graphics_output_off(void)
-{
-	if (is_meson_g12() || is_meson_tm2_stbmode())
-		return !(READ_VPP_DV_REG(OSD1_BLEND_SRC_CTRL) & (1<<8));
-	else
-		return (!(READ_VPP_DV_REG(VPP_MISC) & (1<<12)));
 }
 
 static void dump_tv_setting(
@@ -2144,18 +2151,25 @@ static int dolby_core2_set(
 	VSYNC_WR_DV_REG(DOLBY_CORE2A_SWAP_CTRL0, 0);
 	if (is_meson_box() || is_meson_tm2_stbmode()  || reset) {
 		VSYNC_WR_DV_REG(DOLBY_CORE2A_SWAP_CTRL1,
-			((hsize + g_htotal_add) << 16)
-			| (vsize + g_vtotal_add + g_vsize_add));
+			((hsize + g_htotal_add) << 16) | (vsize
+			+ ((g_vtiming & 0xff000000) ?
+				((g_vtiming >> 24) & 0xff) : g_vtotal_add)
+			+ ((g_vtiming & 0xff0000) ?
+				((g_vtiming >> 16) & 0xff) : g_vsize_add)));
 		VSYNC_WR_DV_REG(DOLBY_CORE2A_SWAP_CTRL2,
-			(hsize << 16) | (vsize + g_vsize_add));
+			(hsize << 16) | (vsize
+			+ ((g_vtiming & 0xff0000) ?
+				((g_vtiming >> 16) & 0xff) : g_vsize_add)));
 	}
 	if (debug_dolby & 2)
 		pr_dolby_dbg("g_hpotch %x, g_vpotch %x\n",
 		g_hpotch, g_vpotch);
 	VSYNC_WR_DV_REG(DOLBY_CORE2A_SWAP_CTRL3,
-		(g_hwidth << 16) | g_vwidth);
+		(g_hwidth << 16) | ((g_vtiming & 0xff00) ?
+				((g_vtiming >> 8) & 0xff) : g_vwidth));
 	VSYNC_WR_DV_REG(DOLBY_CORE2A_SWAP_CTRL4,
-		(g_hpotch << 16) | g_vpotch);
+		(g_hpotch << 16) | ((g_vtiming & 0xff) ?
+				(g_vtiming & 0xff) : g_vpotch));
 	if (is_meson_txlx_stbmode() || force_stb_mode)
 		VSYNC_WR_DV_REG(DOLBY_CORE2A_SWAP_CTRL5, 0xf8000000);
 	else if (is_meson_g12() || is_meson_tm2_stbmode())
@@ -2457,26 +2471,10 @@ void update_graphic_width_height(unsigned int width,
 	osd_graphic_width = width;
 	osd_graphic_height = height;
 }
-
-static void apply_stb_core_settings(
-	int enable, unsigned int mask,
-	bool reset, u32 frame_size, u8 pps_state)
+static void adjust_vpotch(void)
 {
 	const struct vinfo_s *vinfo = get_current_vinfo();
-	u32 h_size = (frame_size >> 16) & 0xffff;
-	u32 v_size = frame_size & 0xffff;
-#ifdef V2_4
-	u32 core1_dm_count = 27;
-#else
-	u32 core1_dm_count = 24;
-#endif
-	u32 graphics_w = osd_graphic_width;
-	u32 graphics_h = osd_graphic_height;
-	if (is_dolby_vision_stb_mode()
-		&& (dolby_vision_flags & FLAG_CERTIFICAION)) {
-		graphics_w = dv_cert_graphic_width;
-		graphics_h = dv_cert_graphic_height;
-	}
+
 	if (is_meson_txlx_stbmode()
 		|| force_stb_mode) {
 		if (vinfo && (vinfo->width >= 1920) &&
@@ -2512,8 +2510,50 @@ static void apply_stb_core_settings(
 				htotal_add = 0x140;
 		} else
 			g_vpotch = 0x20;
+	} else if (is_meson_tm2_stbmode()) {
+		if (vinfo) {
+			if (debug_dolby & 2)
+				pr_dolby_dbg("vinfo %d %d %d\n",
+					vinfo->width,
+					vinfo->height,
+					vinfo->field_height);
+			if ((vinfo->width < 1280) &&
+				(vinfo->height < 720) &&
+				(vinfo->field_height < 720))
+				g_vpotch = 0x60;
+			else if ((vinfo->width <= 1920) &&
+				(vinfo->height <= 1080) &&
+				(vinfo->field_height <= 1080))
+				g_vpotch = 0x50;
+			else
+				g_vpotch = 0x20;
+		} else
+			g_vpotch = 0x20;
 	}
 
+}
+
+static void apply_stb_core_settings(
+	int enable, unsigned int mask,
+	bool reset, u32 frame_size, u8 pps_state)
+{
+	const struct vinfo_s *vinfo = get_current_vinfo();
+	u32 h_size = (frame_size >> 16) & 0xffff;
+	u32 v_size = frame_size & 0xffff;
+#ifdef V2_4
+	u32 core1_dm_count = 27;
+#else
+	u32 core1_dm_count = 24;
+#endif
+	u32 graphics_w = osd_graphic_width;
+	u32 graphics_h = osd_graphic_height;
+
+	if (is_dolby_vision_stb_mode()
+		&& (dolby_vision_flags & FLAG_CERTIFICAION)) {
+		graphics_w = dv_cert_graphic_width;
+		graphics_h = dv_cert_graphic_height;
+	}
+	adjust_vpotch();
 	if (mask & 1) {
 		if (is_meson_txlx_stbmode()
 			|| force_stb_mode) {
@@ -3833,12 +3873,16 @@ static int sink_support_dolby_vision(const struct vinfo_s *vinfo)
 		return 0;
 	if (dolby_vision_flags & FLAG_DISABLE_DOVI_OUT)
 		return 0;
-	if ((vinfo->width >= 1920) &&
-		(vinfo->height >= 1080) &&
-		(vinfo->field_height >= 1080))
-		return 1;
-	else
+	/* for sink not support 60 dovi */
+	if ((strstr(vinfo->name, "2160p60hz") != NULL) ||
+		(strstr(vinfo->name, "2160p50hz") != NULL)) {
+		if (!vinfo->vout_device->dv_info->sup_2160p60hz)
+			return 0;
+	}
+	/* for interlace output */
+	if (vinfo->height != vinfo->field_height)
 		return 0;
+	return 1;
 }
 
 static int sink_support_hdr(const struct vinfo_s *vinfo)
@@ -6539,8 +6583,7 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 	int ret = -1;
 	unsigned int reg_clk;
 	unsigned int reg_value;
-	 struct pq_config_s *pq_config;
-	 const struct vinfo_s *vinfo = get_current_vinfo();
+	struct pq_config_s *pq_config;
 
 	if ((!p_funcs_stb || !p_funcs_tv) && func) {
 		if (func->control_path && !p_funcs_stb) {
@@ -6593,21 +6636,7 @@ int register_dv_functions(const struct dolby_vision_func_s *func)
 			if (!tv_dovi_setting)
 			return -ENOMEM;
 		}
-		/* adjust core2 setting to work around fixing with 1080p24hz */
-		if (is_meson_txlx())
-			g_vpotch = 0x20;
-		else if (is_meson_g12() || is_meson_tm2_stbmode()) {
-			if (vinfo) {
-				if ((vinfo->width < 1280) &&
-					(vinfo->height < 720) &&
-					(vinfo->field_height < 720))
-					g_vpotch = 0x60;
-				else
-					g_vpotch = 0x20;
-			} else
-				g_vpotch = 0x20;
-		} else
-			g_vpotch = 0x8;
+		adjust_vpotch();
 	}
 	return ret;
 }
