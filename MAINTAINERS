@@ -15006,3 +15006,31 @@ F:	arch/arm64/boot/dts/amlogic/mesonsm1_drm.dtsi
 F:	arch/arm/boot/dts/amlogic/sm1_s905d3_ac200_drm_buildroot.dts
 F:	arch/arm64/boot/dts/amlogic/sm1_s905d3_ac200_drm_buildroot.dts
 F:	drivers/amlogic/drm/meson_vpu.c
+
+AMLOGIC ADD DTS FOR T312 PLATFORM
+M:  hualing chen <hualing.chen@amlogic.com>
+F:  arch/arm64/boot/dts/amlogic/mesontm2_t962x3_t312-panel.dtsi
+F:  arch/arm/boot/dts/amlogic/mesontm2_t962x3_t312-panel.dtsi
+
+AMLOGIC ADD DRM FOR P212
+M: lingjie li <lingjie.li@amlogic.com>
+F: arch/arm/boot/dts/amlogic/gxl_p212_2g_drm_buildroot.dts
+
+AMLOGIC ADD DTS FOR AC223 PLATFORM
+M:  huijie huang <huijie.huang@amlogic.com>
+F:  arch/arm/boot/dts/amlogic/sm1_s905y3_ac223.dts
+F:  arch/arm64/boot/dts/amlogic/sm1_s905y3_ac223.dts
+
+AMLOGIC DEINTERLACE DRIVER
+M:	Jihong Sui <jihong.sui@amlogic.com>
+F:	drivers/amlogic/media/deinterlace/di_pqa.h
+F:	drivers/amlogic/media/di_local/*
+
+AMLOGIC ADD DI_MULTI DRIVER
+M:	Jihong Sui <jihong.sui@amlogic.com>
+F:	drivers/amlogic/media/di_multi/*
+
+AMLOGIC DRM
+M:	Ao Xu <ao.xu@amlogic.com>
+F:	drivers/amlogic/drm/meson_debugfs.c
+
