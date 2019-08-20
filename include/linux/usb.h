@@ -4,6 +4,10 @@
 #include <linux/mod_devicetable.h>
 #include <linux/usb/ch9.h>
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+#include <linux/platform_data/board_odroid.h>
+#endif
+
 #define USB_MAJOR			180
 #define USB_DEVICE_MAJOR		189
 

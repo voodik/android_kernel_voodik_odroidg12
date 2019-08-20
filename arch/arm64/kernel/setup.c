@@ -80,6 +80,13 @@ u32 odroid_model(void)
 {
 	return __odroid_model;
 }
+
+static bool __odroid_amlogic_usb3 = true;
+
+bool odroid_amlogic_usb3(void)
+{
+	return __odroid_amlogic_usb3;
+}
 #endif
 
 /*
@@ -221,9 +228,11 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
 	if (!strcmp(machine_name, "Hardkernel ODROID-N2")) {
 		system_rev = 0x0400;
 		__odroid_model = BOARD_ODROIDN2;
+		__odroid_amlogic_usb3 = true;
 	} else if (!strcmp(machine_name, "Hardkernel ODROID-C4")) {
 		system_rev = 0x0500;
 		__odroid_model = BOARD_ODROIDC4;
+		__odroid_amlogic_usb3 = false;
 	}
 #endif
 }
