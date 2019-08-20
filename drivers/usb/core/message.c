@@ -2175,7 +2175,7 @@ free_interfaces:
 	usb_enable_ltm(dev);
 
 #ifdef CONFIG_AMLOGIC_USB
-	if (usb_host_test_vid > 0) {
+	if (odroid_amlogic_usb3() && (usb_host_test_vid > 0)) {
 		if (dev->descriptor.idVendor == USB_HSET_TEST_VID) {
 			usb_host_test_vid = dev->descriptor.idVendor;
 			usb_host_test_pid = dev->descriptor.idProduct;

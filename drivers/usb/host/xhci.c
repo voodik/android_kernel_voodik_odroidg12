@@ -1411,9 +1411,11 @@ int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)
 		if (xhci->xhc_state & XHCI_STATE_DYING)
 			goto dying;
 
-#ifdef CONFIG_AMLOGIC_USB
+#ifdef CONFIG_AMLOGIC_USB	// FIXME:
 		setup = (struct usb_ctrlrequest *) urb->setup_packet;
-		if ((setup->bRequestType == 0x80) && (setup->bRequest == 0x06)
+		if (odroid_amlogic_usb3()
+			&& (setup->bRequestType == 0x80)
+			&& (setup->bRequest == 0x06)
 			&& (setup->wValue == 0x0100)
 			&& (setup->wIndex != 0x0)) {
 			if ((((setup->wIndex)>>8) & 0xff) == 7) {
@@ -3663,7 +3665,8 @@ void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)
 	}
 
 #ifdef CONFIG_AMLOGIC_USB
-	virt_dev->udev = NULL;
+	if (odroid_amlogic_usb3())
+		virt_dev->udev = NULL;
 #endif
 
 	spin_lock_irqsave(&xhci->lock, flags);
@@ -4884,9 +4887,11 @@ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)
 	hcd->self.sg_tablesize = ~0;
 
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-	if (kpara_sg_tablesize > 0)
-		hcd->self.sg_tablesize = kpara_sg_tablesize;
-	pr_info("usb: xhci: determined sg_tablesize: %u", hcd->self.sg_tablesize);
+	if (odroid_amlogic_usb3()) {
+		if (kpara_sg_tablesize > 0)
+			hcd->self.sg_tablesize = kpara_sg_tablesize;
+		pr_info("usb: xhci: determined sg_tablesize: %u", hcd->self.sg_tablesize);
+	}
 #endif
 
 	/* support to build packet from discontinuous buffers */
