@@ -1700,10 +1700,11 @@ hdmirx_wr_dwc(DWC_DMI_SW_RST,	0x0000001F);
 
 void rx_esm_tmdsclk_en(bool en)
 {
-hdmirx_wr_bits_top(TOP_CLK_CNTL, HDCP22_TMDSCLK_EN, en);
-
-if (log_level & HDCP_LOG)
-	rx_pr("%s:%d\n", __func__, en);
+	hdmirx_wr_bits_top(TOP_CLK_CNTL, HDCP22_TMDSCLK_EN, en);
+	if (hdcp22_on)
+		hdmirx_hdcp22_hpd(en);
+	if (log_level & HDCP_LOG)
+		rx_pr("%s:%d\n", __func__, en);
 }
 
 /*
@@ -1993,11 +1994,12 @@ data32 |= 10	<< 20; /* [29:20]  chlock_max_err */
 data32 |= 24000	<< 0;  /* [15:0]   milisec_timer_limit */
 hdmirx_wr_dwc(DWC_CHLOCK_CONFIG, data32);
 
-/* hdcp2.2 ctl */
-if (hdcp22_on)
-	hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 0x1000);
-else
-	hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 2);
+	/* hdcp2.2 ctl */
+	if (hdcp22_on)
+		/* set hdcp_hpd high later */
+		hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 0);
+	else
+		hdmirx_wr_dwc(DWC_HDCP22_CONTROL, 2);
 }
 
 
