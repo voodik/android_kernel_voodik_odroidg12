@@ -263,7 +263,7 @@ int resample_set(enum resample_idx id, enum samplerate_index index)
 		auge_resample_texts[p_resample->asrc_in_sr_idx]);
 
 	resample_rate = resample_idx2rate(index);
-	ret = audio_resample_set(p_resample, (bool)index, resample_rate);
+	ret = audio_resample_set(p_resample, index, resample_rate);
 	if (ret)
 		return ret;
 
