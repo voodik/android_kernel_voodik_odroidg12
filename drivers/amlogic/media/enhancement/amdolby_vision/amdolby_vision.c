@@ -6062,7 +6062,7 @@ int dolby_vision_wait_metadata(struct vframe_s *vf)
 	return ret;
 }
 
-int dolby_vision_update_metadata(struct vframe_s *vf)
+int dolby_vision_update_metadata(struct vframe_s *vf, bool drop_flag)
 {
 	int ret = -1;
 
@@ -6071,7 +6071,8 @@ int dolby_vision_update_metadata(struct vframe_s *vf)
 	if (vf && dolby_vision_vf_check(vf)) {
 		ret = dolby_vision_parse_metadata(
 			vf, 1, false);
-		frame_count++;
+		if (!drop_flag)
+			frame_count++;
 	}
 
 	return ret;
