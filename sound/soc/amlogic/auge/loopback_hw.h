@@ -70,4 +70,6 @@ extern void lb_set_datalb_cfg(int id, struct data_cfg *datalb_cfg);
 
 extern void lb_enable(int id, bool enable);
 
+void lb_set_chnum_en(int id, bool en);
+
 #endif
