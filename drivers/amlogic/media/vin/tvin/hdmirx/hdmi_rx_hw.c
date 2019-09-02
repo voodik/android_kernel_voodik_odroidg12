@@ -1815,7 +1815,6 @@ hdmirx_wr_dwc(DWC_HDCP22_CONTROL, data32);
  */
 void hdcp_22_off(void)
 {
-	hdcp22_clk_en(0);
 	/* note: can't pull down hpd before enter suspend */
 	/* it will stop cec wake up func if EE domain still working */
 	/* rx_set_cur_hpd(0); */
@@ -1826,6 +1825,7 @@ void hdcp_22_off(void)
 		hdmirx_hdcp22_esm_rst();
 	else
 		hdcp22_kill_esm = 0;
+	hdcp22_clk_en(0);
 	rx_pr("hdcp22 off\n");
 }
 
@@ -3075,8 +3075,8 @@ void rx_debug_load22key(void)
 		extcon_set_state_sync(rx.rx_excton_rx22,
 			EXTCON_DISP_HDMI, 1);
 		mdelay(100);
-		hdmirx_hw_config();
 		hdmi_rx_top_edid_update();
+		hdmirx_hw_config();
 		hpd_to_esm = 1;
 		/* mdelay(900); */
 		rx_set_cur_hpd(1, 4);
@@ -3087,8 +3087,8 @@ void rx_debug_load22key(void)
 void rx_debug_loadkey(void)
 {
 	rx_pr("load hdcp key\n");
-	hdmirx_hw_config();
 	hdmi_rx_top_edid_update();
+	hdmirx_hw_config();
 	pre_port = 0xfe;
 }
 
