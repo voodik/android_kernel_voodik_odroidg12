@@ -1,5 +1,5 @@
 /*
- * arch/arm/boot/dts/amlogic/gxl_p241_v2-1g.dts
+ * arch/arm64/boot/dts/amlogic/gxl_p281_1g.dts
  *
  * Copyright (C) 2017 Amlogic, Inc. All rights reserved.
  *
@@ -18,20 +18,20 @@
 /dts-v1/;
 
 #include "mesongxl.dtsi"
-#include "partition_mbox_p241.dtsi"
+#include "partition_mbox_normal.dtsi"
 / {
 	model = "Amlogic";
-	amlogic-dt-id = "gxl_p241_v2-1g";
+	amlogic-dt-id = "gxl_p281_1g";
 	compatible = "amlogic, Gxl";
 	interrupt-parent = <&gic>;
-	#address-cells = <1>;
-	#size-cells = <1>;
+	#address-cells = <2>;
+	#size-cells = <2>;
 
 	aliases {
 		serial0 = &uart_AO;
-		serial1 = &uart_C;
+		serial1 = &uart_A;
 		serial2 = &uart_B;
-		serial3 = &uart_A;
+		serial3 = &uart_C;
 		serial4 = &uart_AO_B;
 	};
 
@@ -42,78 +42,54 @@
 
 	memory@00000000 {
 		device_type = "memory";
-		linux,usable-memory = <0x0100000 0x3ff00000>;
+		linux,usable-memory = <0x0 0x0100000 0x0 0x3ff00000>;
 	};
 
 	reserved-memory {
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <2>;
 		ranges;
 		/* global autoconfigured region for contiguous allocations */
-		ramoops@0x07400000 {
-			compatible = "ramoops";
-			reg = <0x07400000 0x00100000>;
-			record-size = <0x8000>;
-			console-size = <0x8000>;
-			ftrace-size = <0x0>;
-			pmsg-size = <0x8000>;
-		};
-
 		secmon_reserved:linux,secmon {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x05000000 0x400000>;
+			size = <0x0 0x400000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x05000000 0x0 0x400000>;
 		};
 		secos_reserved:linux,secos {
 			status = "disable";
 			compatible = "amlogic, aml_secos_memory";
-			reg = <0x05300000 0x2000000>;
+			reg = <0x0 0x05300000 0x0 0x2000000>;
 			no-map;
 		};
 		logo_reserved:linux,meson-fb {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x3fc00000 0x400000>;
-		};
-
-		codec_mm_cma:linux,codec_mm_cma {
-			compatible = "shared-dma-pool";
-			reusable;
-			/* ion_codec_mm max can alloc size 80M*/
-			size = <0xd000000>;
-			alignment = <0x400000>;
-			linux,contiguous-region;
-			alloc-ranges = <0x30000000 0x10000000>;
+			size = <0x0 0x400000>;
+			alignment = <0x0 0x400000>;
+			alloc-ranges = <0x0 0x3fc00000 0x0 0x400000>;
 		};
 		//don't put other dts in front of logo_reserved
 
 		//di_reserved:linux,di {
 		//	compatible = "amlogic, di-mem";
 			/** 10x3133440=30M(0x1e) support 8bit **/
-		//	size = <0x1e00000>;
+		//	size = <0x0 0x1e00000>;
 			//no-map;
 		//};
-		/*di CMA pool */
 		di_cma_reserved:linux,di_cma {
 			compatible = "shared-dma-pool";
 			reusable;
-			/** 10x3552320=34M(0x22) support 8bit **/
-			/** 10x44596800=44M(0x2c) support 12bit **/
-			/** 10x4074560=39M(0x27) support 10bit **/
-			size = <0x02400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x30000000 0x10000000>;
+			/** 10x3133440=30M(0x1e) support 8bit **/
+			size = <0x0 0x2000000>;
+			alignment = <0x0 0x400000>;
 		};
 		ion_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x2400000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x30000000>;
+			size = <0x0 0x4C00000>;
+			alignment = <0x0 0x400000>;
 		};
 
 		/*  vdin0 CMA pool */
@@ -122,36 +98,43 @@
 		//	linux,phandle = <4>;
 		//	reusable;
 		/* 1920x1080x2x4  =16+4 M */
-		//	size = <0x01400000>;
-		//	alignment = <0x400000>;
+		//	size = <0x0 0x01400000>;
+		//	alignment = <0x0 0x400000>;
 		//};
 		/*  vdin1 CMA pool */
 		vdin1_cma_reserved:linux,vdin1_cma {
 			compatible = "shared-dma-pool";
 			reusable;
 			/* 1920x1080x2x4  =16 M */
-			size = <0x01000000>;
-			alignment = <0x400000>;
-			alloc-ranges = <0x0 0x30000000>;
+			size = <0x0 0x01000000>;
+			alignment = <0x0 0x400000>;
 		};
 		/*  POST PROCESS MANAGER */
 		ppmgr_reserved:linux,ppmgr {
-			compatible = "amlogic, ppmgr_memory";
-			size = <0x0>;
-			multi-use;
+			compatible = "shared-dma-pool";
+			size = <0x0 0x0>;
+		};
+
+		codec_mm_cma:linux,codec_mm_cma {
+			compatible = "shared-dma-pool";
+			reusable;
+			/* ion_codec_mm max can alloc size 80M*/
+			size = <0x0 0xd000000>;
+			alignment = <0x0 0x400000>;
+			linux,contiguous-region;
 		};
 		picdec_cma_reserved:linux,picdec {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x0>;
-			alignment = <0x0>;
+			size = <0x0 0x0>;
+			alignment = <0x0 0x0>;
 			linux,contiguous-region;
 		};
 		/* codec shared reserved */
 		codec_mm_reserved:linux,codec_mm_reserved {
 			compatible = "amlogic, codec-mm-reserved";
-			size = <0x0>;
-			alignment = <0x100000>;
+			size = <0x0 0x0>;
+			alignment = <0x0 0x100000>;
 			//no-map;
 		};
 	};
@@ -166,79 +149,11 @@
 		status = "disabled";
 	};
 
-	vpu {
-		clk_level = <2>;
-		/* 0: 100.0M    1: 166.7M    2: 200.0M    3: 250.0M */
-		/* 4: 333.3M    5: 400.0M    6: 500.0M    7: 666.7M */
-	};
-
-	uart_AO: serial@c81004c0 {
-		compatible = "amlogic, meson-uart";
-		reg = <0xc81004c0 0x18>;
-		interrupts = <0 193 1>;
-		status = "okay";
-		clocks = <&xtal>;
-		clock-names = "clk_uart";
-		xtal_tick_en = <1>;
-		fifosize = < 64 >;
-		pinctrl-names = "default";
-		pinctrl-0 = <&ao_uart_pins>;
-		support-sysrq = <0>;	/* 0 not support , 1 support */
-	};
-
-	uart_A: serial@c11084c0 {
-		compatible = "amlogic, meson-uart";
-		reg = <0xc11084c0 0x18>;
-		interrupts = <0 26 1>;
-		status = "disable";
-		clocks = <&clkc CLKID_UART0>;
-		clock-names = "clk_uart";
-		fifosize = < 128 >;
-		pinctrl-names = "default";
-		// pinctrl-0 = <&a_uart_pins>;
-	};
-
-	uart_B: serial@c11084dc {
-		compatible = "amlogic, meson-uart";
-		reg = <0xc11084dc 0x18>;
-		interrupts = <0 75 1>;
-		status = "disabled";
-		clocks = <&clkc CLKID_UART1>;
-		clock-names = "clk_uart";
-		fifosize = < 64 >;
-		pinctrl-names = "default";
-		pinctrl-0 = <&b_uart_pins>;
-	};
-
-	uart_C: serial@c1108700 {
-		compatible = "amlogic, meson-uart";
-		reg = <0xc1108700 0x18>;
-		interrupts = <0 93 1>;
-		status = "okay";
-		clocks = <&clkc CLKID_UART2>;
-		clock-names = "clk_uart";
-		fifosize = < 64 >;
-		pinctrl-names = "default";
-		pinctrl-0 = <&c_uart_pins>;
-	};
-
-	uart_AO_B: serial@c81004e0 {
-		compatible = "amlogic, meson-uart";
-		reg = <0xc81004e0 0x18>;
-		interrupts = <0 197 1>;
-		status = "disable";
-		clocks = <&xtal>;
-		clock-names = "clk_uart";
-		fifosize = < 64 >;
-		pinctrl-names = "default";
-		pinctrl-0 = <&ao_b_uart_pins>;
-	};
-
 	bt-dev{
 		compatible = "amlogic, bt-dev";
 		dev_name = "bt-dev";
 		status = "okay";
-		gpio_reset = <&gpio       GPIOX_12       GPIO_ACTIVE_HIGH>;
+		gpio_reset = <&gpio       GPIOX_17       GPIO_ACTIVE_HIGH>;
 	};
 
 	wifi{
@@ -246,7 +161,6 @@
 		dev_name = "aml_wifi";
 		status = "okay";
 		interrupt_pin = <&gpio       GPIOX_7       GPIO_ACTIVE_HIGH>;
-		interrupts = <	0 68 4>;
 		irq_trigger_type = "GPIO_IRQ_LOW";
 		dhd_static_buf;    //dhd_static_buf support
 		power_on_pin = <&gpio       GPIOX_6       GPIO_ACTIVE_HIGH>;
@@ -271,7 +185,7 @@
 	sd_emmc_c: emmc@d0074000 {
 		status = "okay";
 		compatible = "amlogic, meson-mmc-gxl";
-		reg = <0xd0074000 0x2000>;
+		reg = <0x0 0xd0074000 0x0 0x2000>;
 		interrupts = <0 218 1>;
 		pinctrl-names = "emmc_clk_cmd_pins", "emmc_all_pins";
 		pinctrl-0 = <&emmc_clk_cmd_pins>;
@@ -301,8 +215,8 @@
 				 "MMC_CAP_HW_RESET",
 				 "MMC_CAP_ERASE",
 				 "MMC_CAP_CMD23";
-			// caps2 = "MMC_CAP2_HS200", "MMC_CAP2_HS400";
-			f_min = <300000>;
+			/*caps2 = "MMC_CAP2_HS200", "MMC_CAP2_HS400";*/
+			f_min = <400000>;
 			f_max = <50000000>;
 			max_req_size = <0x20000>; /**128KB*/
 			gpio_dat3 = <&gpio BOOT_3 GPIO_ACTIVE_HIGH>;
@@ -317,18 +231,28 @@
 	sd_emmc_b:sd@d0072000 {
 		status = "okay";
 		compatible = "amlogic, meson-mmc-gxl";
-		reg = <0xd0072000 0x2000>;
+		reg = <0x0 0xd0072000 0x0 0x2000>;
 		interrupts = <0 217 1>;
 		pinctrl-names = "sd_all_pins",
 			"sd_clk_cmd_pins",
+			"sd_1bit_pins",
 			"sd_clk_cmd_uart_pins",
+			"sd_1bit_uart_pins",
 			"sd_to_ao_uart_pins",
-			"ao_to_sd_uart_pins";
+			"ao_to_sd_uart_pins",
+			"ao_to_sd_jtag_pins",
+			"sd_to_ao_jtag_pins";
 		pinctrl-0 = <&sd_all_pins>;
 		pinctrl-1 = <&sd_clk_cmd_pins>;
-		pinctrl-2 = <&sd_clk_cmd_pins &ao_to_sd_uart_pins>;
-		pinctrl-3 = <&sd_to_ao_uart_pins>;
-		pinctrl-4 = <&ao_to_sd_uart_pins>;
+		pinctrl-2 = <&sd_1bit_pins>;
+		pinctrl-3 = <&sd_to_ao_uart_clr_pins
+			&sd_clk_cmd_pins &ao_to_sd_uart_pins>;
+		pinctrl-4 = <&sd_to_ao_uart_clr_pins
+			&sd_1bit_pins &ao_to_sd_uart_pins>;
+		pinctrl-5 = <&sd_all_pins &sd_to_ao_uart_pins>;
+		pinctrl-6 = <&sd_to_ao_uart_clr_pins &ao_to_sd_uart_pins>;
+		pinctrl-7 = <&sd_to_ao_uart_clr_pins &ao_to_sd_uart_pins>;
+		pinctrl-8 = <&sd_all_pins &sd_to_ao_uart_pins>;
 		clocks = <&clkc CLKID_SD_EMMC_B>,
 			   <&clkc CLKID_SD_EMMC_B_P0_COMP>,
 			   <&clkc CLKID_FCLK_DIV2>;
@@ -370,7 +294,7 @@
 	sd_emmc_a:sdio@d0070000 {
 		status = "okay";
 		compatible = "amlogic, meson-mmc-gxl";
-		reg = <0xd0070000 0x2000>;
+		reg = <0x0 0xd0070000 0x0 0x2000>;
 		interrupts = <0 216 4>;
 		pinctrl-names = "sdio_clk_cmd_pins", "sdio_all_pins";
 		pinctrl-0 = <&sdio_clk_cmd_pins>;
@@ -412,7 +336,7 @@
 		compatible = "amlogic, aml_mtd_nand";
 		dev_name = "mtdnand";
 		status = "disabled";
-		reg = <0xd0074800 0x200>;
+		reg = <0x0 0xd0074800 0x0 0x200>;
 		interrupts = <	0 34 1 >;
 		pinctrl-names = "nand_rb_mod","nand_norb_mod", "nand_cs_only";
 		pinctrl-0 = <&all_nand_pins>;
@@ -473,10 +397,10 @@
 
 	ethmac: ethernet@0xc9410000 {
 			compatible = "amlogic, gxbb-eth-dwmac";
-			reg = <0xc9410000 0x10000
-			0xc8834540 0x8
-			0xc8834558 0xc
-			0xc1104408 0x4>;
+			reg = <0x0 0xc9410000 0x0 0x10000
+			0x0 0xc8834540 0x0 0x8
+			0x0 0xc8834558 0x0 0xc
+			0x0 0xc1104408 0x0 0x4>;
 			interrupts = <0 8 1>;
 			pinctrl-names = "external_eth_pins";
 			pinctrl-0 = <&external_eth_pins>;
@@ -498,7 +422,7 @@
 		#thermal-sensor-cells = <1>;
 		cooling_devices {
 			cpufreq_cool_cluster0 {
-				min_state = <1000000>;
+				min_state = <1200000>;
 				dyn_coeff = <140>;
 				cluster_id = <0>;
 				node_name = "cpufreq_cool0";
@@ -512,10 +436,10 @@
 				device_type = "cpucore";
 			};
 			gpufreq_cool {
-				min_state = <400>;
+				min_state = <500>;
 				dyn_coeff = <437>;
 				cluster_id = <0>;
-				node_name = "gpufreq_cool0";
+				node_name = "mali";
 				device_type = "gpufreq";
 			};
 			gpucore_cool {
@@ -532,9 +456,6 @@
 		cpucore_cool0:cpucore_cool0 {
 			#cooling-cells = <2>; /* min followed by max */
 		};
-		gpufreq_cool0:gpufreq_cool0 {
-			#cooling-cells = <2>; /* min followed by max */
-		};
 		gpucore_cool0:gpucore_cool0 {
 			#cooling-cells = <2>; /* min followed by max */
 		};
@@ -549,17 +470,17 @@
 
 			trips {
 				switch_on: trip-point@0 {
-					temperature = <70000>;
-					hysteresis = <1000>;
-					type = "passive";
-				};
-				control: trip-point@1 {
 					temperature = <80000>;
 					hysteresis = <1000>;
 					type = "passive";
 				};
+				control: trip-point@1 {
+					temperature = <90000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
 				hot: trip-point@2 {
-					temperature = <85000>;
+					temperature = <100000>;
 					hysteresis = <5000>;
 					type = "hot";
 				};
@@ -583,7 +504,7 @@
 				};
 				gpufreq_cooling_map {
 					trip = <&control>;
-					cooling-device = <&gpufreq_cool0 0 4>;
+					cooling-device = <&gpu 0 4>;
 					contribution = <1024>;
 				};
 				gpucore_cooling_map {
@@ -597,7 +518,7 @@
 
 	dwc3: dwc3@c9000000 {
 		compatible = "synopsys, dwc3";
-		reg = <0xc9000000 0x100000>;
+		reg = <0x0 0xc9000000 0x0 0x100000>;
 		interrupts = <0 30 4>;
 		usb-phy = <&usb2_phy>, <&usb3_phy>;
 		cpu-type = "gxl";
@@ -607,20 +528,20 @@
 	usb2_phy: usb2phy@d0078000 {
 		compatible = "amlogic, amlogic-new-usb2";
 		portnum = <3>;
-		reg = <0xd0078000 0x80
-			0xc1104408 0x4>;
+		reg = <0x0 0xd0078000 0x0 0x80
+					0x0 0xc1104408 0x0 0x4>;
 	};
 
 	usb3_phy: usb3phy@d0078080 {
 		compatible = "amlogic, amlogic-new-usb3";
 		portnum = <0>;
-		reg = <0xd0078080 0x20>;
+		reg = <0x0 0xd0078080 0x0 0x20>;
 	};
 
 	dwc2_a {
 		compatible = "amlogic, dwc2";
 		device_name = "dwc2_a";
-		reg = <0xc9100000 0x40000>;
+		reg = <0x0 0xc9100000 0x0 0x40000>;
 		status = "okay";
 		interrupts = <0 31 4>;
 		pl-periph-id = <0>; /** lm name */
@@ -673,7 +594,7 @@
 			"vdac_clk_gate";
 
 		/* performance: reg_address, reg_value */
-		/* s805x */
+		/* s905x */
 		performance = <0x1bf0  0x9
 			0x1b56  0x343
 			0x1b12  0x8080
@@ -718,41 +639,41 @@
 		interrupt-names = "hdmi_aocec";
 		pinctrl-names = "default";
 		pinctrl-0=<&hdmitx_aocec>;
-		reg = <0xc810023c 0x4
-		       0xc8100000 0x200>;
+		reg = <0x0 0xc810023c 0x0 0x4
+		       0x0 0xc8100000 0x0 0x200>;
 		reg-names = "ao_exit","ao";
 	};
 
 	sysled {
 		compatible = "amlogic, sysled";
 		dev_name = "sysled";
-		status = "okay";
-		led_gpio = <&gpio GPIODV_27 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+		led_gpio = <&gpio GPIODV_24 GPIO_ACTIVE_HIGH>;
 		led_active_low = <1>;
 	};
 
 	codec_io {
 		compatible = "amlogic, codec_io";
-		#address-cells=<1>;
-		#size-cells=<1>;
+		#address-cells=<2>;
+		#size-cells=<2>;
 		ranges;
 		io_cbus_base{
-			reg = <0xC1100000 0x100000>;
+			reg = <0x0 0xC1100000 0x0 0x100000>;
 		};
 		io_dos_base{
-			reg = <0xc8820000 0x10000>;
+			reg = <0x0 0xc8820000 0x0 0x10000>;
 		};
 		io_hiubus_base{
-			reg = <0xc883c000 0x2000>;
+			reg = <0x0 0xc883c000 0x0 0x2000>;
 		};
 		io_aobus_base{
-			reg = <0xc8100000 0x100000>;
+			reg = <0x0 0xc8100000 0x0 0x100000>;
 		};
 		io_vcbus_base{
-			reg = <0xd0100000 0x40000>;
+			reg = <0x0 0xd0100000 0x0 0x40000>;
 		};
 		io_dmc_base{
-			reg = <0xc8838000 0x400>;
+			reg = <0x0 0xc8838000 0x0 0x400>;
 		};
 	};
 
@@ -760,6 +681,7 @@
 		compatible = "amlogic, codec, mm";
 		memory-region = <&codec_mm_cma &codec_mm_reserved>;
 		dev_name = "codec_mm";
+		/*no-cmatvp;*/
 		status = "okay";
 	};
 
@@ -767,7 +689,7 @@
 		compatible = "amlogic, meson, canvas";
 		dev_name = "amlogic-canvas";
 		status = "ok";
-		reg = <0xc8838000 0x400>;
+		reg = <0x0 0xc8838000 0x0 0x400>;
 	};
 
 	mesonstream {
@@ -777,12 +699,14 @@
 		clocks = <&clkc CLKID_DOS_PARSER
 			&clkc CLKID_DEMUX
 			&clkc CLKID_DOS
+			&clkc CLKID_CLK81
 			&clkc CLKID_VDEC_MUX
 			&clkc CLKID_HCODEC_MUX
 			&clkc CLKID_HEVC_MUX>;
 		clock-names = "parser_top",
 			"demux",
 			"vdec",
+			"clk_81",
 			"clk_vdec_mux",
 			"clk_hcodec_mux",
 			"clk_hevc_mux";
@@ -825,12 +749,12 @@
 			0 89 1>;
 		interrupt-names = "viu-vsync", "rdma";
 		mem_size = <0x00400000 0x00b00000 0x00100000>;
-		/* uboot logo,fb0/fb1 memory size,if afbcd fb0=0x0b51000*/
+		/* uboot logo,fb0/fb1 memory size,if afbcd fb0=0x01851000*/
 		display_mode_default = "720p60hz";
 		scale_mode = <1>;
 		/** 0:VPU free scale 1:OSD free scale 2:OSD super scale */
 		display_size_default = <1280 720 1280 2160 32>;
-		/*1280*720*4*3 = 0xA8C000*/
+		/*1920*1080*4*3 = 0x17BB000*/
 		logo_addr = "0x3fc00000";
 	};
 	ge2d {
@@ -886,8 +810,8 @@
 	dmic:snd_dmic {
 		#sound-dai-cells = <0>;
 		compatible = "aml, aml_snd_dmic";
-		reg = <0xd0042000 0x2000>;
-		status = "okay";
+		reg = <0x0 0xd0042000 0x0 0x2000>;
+		status = "disabled";
 		resets = <
 			&clkc CLKID_PDM_GATE
 		>;
@@ -922,7 +846,7 @@
 		#sound-dai-cells = <0>;
 		compatible = "amlogic, aml-pcm-dai";
 		pinctrl-names = "audio_pcm";
-		// pinctrl-0 = <&audio_pcm_pins>;
+		pinctrl-0 = <&audio_pcm_pins>;
 		clocks =
 			<&clkc CLKID_MPLL0>,
 			<&clkc CLKID_PCM_MCLK_COMP>,
@@ -961,7 +885,7 @@
 	amlogic_codec:t9015{
 		#sound-dai-cells = <0>;
 		compatible = "amlogic, aml_codec_T9015";
-		reg = <0xc8832000 0x14>;
+		reg = <0x0 0xc8832000 0x0 0x14>;
 		status = "okay";
 	};
 	aml_sound_meson {
@@ -1024,11 +948,11 @@
 		status = "okay";
 		interrupts = <0 187 1>;
 		interrupt-names = "wave420l_irq";
-		#address-cells=<1>;
-		#size-cells=<1>;
+		#address-cells=<2>;
+		#size-cells=<2>;
 		ranges;
 		io_reg_base{
-			reg = <0xc8810000 0x4000>;
+			reg = <0x0 0xc8810000 0x0 0x4000>;
 		};
 	};
 
@@ -1052,19 +976,17 @@
 		flag_cma = <1>;/*0:use reserved;1:use cma*/
 		//memory-region = <&di_reserved>;
 		memory-region = <&di_cma_reserved>;
-		interrupts = <0 46 1
-				0 6 1>;
-		interrupt-names = "de_irq",
-				"timerc";
+		interrupts = <0 46 1 0 6 1>;
+		interrupt-names = "de_irq",	"timerc";
+		/*
+		 * nr_size(byte) = 1920*544*2(yuv422 8bit) |
+		 * 1920*544*2*12/8(yuv422 10bit)
+		 * | 1920*544*2*10/8(yuv422 10bit full pack mode)
+		 */
 		/* mtn_size(byte) = 1920*544/2 */
 		/* count_size(byte) = 1920*544/2 */
-		/* mv_size(byte) = 1920*544*2/5 */
-		/* mc_size(byte) = 544*2 */
-		buffer-size = <3552320>;
+		buffer-size = <3133440>;
 		hw-version = <2>;
-		/* reserve-iomap = "true"; */
-		/* if enable nr10bit, set nr10bit-surpport to 1 */
-		nr10bit-surpport = <0>;
 	};
 
 	ionvideo {
@@ -1279,7 +1201,7 @@
 };
 
 &gpu{
-	/*max gpu is 650M*/
+	/*gpu max freq is 666M in S905W*/
 	tbl = <&clk125_cfg &clk285_cfg &clk400_cfg
 		   &clk500_cfg &clk666_cfg &clk666_cfg>;
 };
