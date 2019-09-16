@@ -2375,6 +2375,14 @@ static int hdmirx_probe(struct platform_device *pdev)
 			clk_prepare_enable(hdevp->axi_clk);
 			clk_rate = clk_get_rate(hdevp->axi_clk);
 		}
+		/* */
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "term_lvl",
+							&phy_term_lel);
+		if (ret) {
+			rx_pr("term_lvl not found.\n");
+			phy_term_lel = 0;
+		}
 	} else {
 		hdevp->audmeas_clk = clk_get(&pdev->dev, "hdmirx_audmeas_clk");
 		if (IS_ERR(hdevp->audmeas_clk))
@@ -2444,7 +2452,9 @@ static int hdmirx_probe(struct platform_device *pdev)
 	if (ret != 0)
 		rx_pr("warning: no rev cmd mem\n");
 	rx_emp_resource_allocate(&(pdev->dev));
+	aml_phy_get_trim_val();
 	hdmirx_hw_probe();
+	term_cal_en = (!is_ft_trim_done());
 	hdmirx_init_params();
 	hdmirx_switch_pinmux(&(pdev->dev));
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND

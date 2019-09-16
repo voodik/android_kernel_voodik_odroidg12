@@ -101,11 +101,15 @@ int eq_try_cnt = 20;
 int pll_rst_max = 5;
 /* cdr lock threshold */
 int cdr_lock_level;
+u32 term_cal_val;
+bool term_cal_en;
 int clock_lock_th = 2;
 int scdc_force_en = 1;
 /* for hdcp_hpd debug, disable by default */
 bool hdcp_hpd_ctrl_en;
 int eq_dbg_lvl;
+u32 phy_trim_val;
+int phy_term_lel;
 
 /*------------------------variable define end------------------------------*/
 
@@ -3669,6 +3673,21 @@ void aml_phy_init_1(void)
 	wr_reg_hhi(HHI_HDMIRX_PHY_DCHD_CNTL1, data32);/*398*/
 }
 
+bool is_ft_trim_done(void)
+{
+	return  phy_trim_val & 0x1;
+}
+
+void aml_phy_get_trim_val(void)
+{
+	u32 data32;
+
+	phy_trim_val = rd_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL1);
+	data32 = (phy_trim_val >> 12) & 0x3ff;
+	data32 = (~((~data32) << phy_term_lel) | (1 << phy_term_lel));
+	phy_trim_val = ((phy_trim_val & (~(0x3ff << 12)))
+		| (data32 << 12));
+}
 void aml_phy_init(void)
 {
 	uint32_t idx = rx.phy.phy_bw;
@@ -3697,8 +3716,17 @@ void aml_phy_init(void)
 	udelay(2);
 
 	data32 = phy_misci[idx][1];
+	if (idx < phy_frq_band_5) {
+		if (term_cal_en) {
+			data32 = (((data32 & (~(0x3ff << 12))) |
+				(term_cal_val << 12)) | (1 << 22));
+			rx_pr("man term mode\n");
+		} else {
+			data32 = phy_trim_val;
+			rx_pr("ft trim mode\n");
+		}
+	}
 	wr_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL1, data32);
-
 	wr_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL2, phy_misci[idx][2]);
 
 	/* reset and select data port */
@@ -4419,3 +4447,51 @@ void rx_get_audio_N_CTS(uint32_t *N, uint32_t *CTS)
 	*CTS = hdmirx_rd_top(TOP_ACR_CTS_STAT);
 }
 
+/* termination calibration */
+void rx_phy_rt_cal(void)
+{
+	int i = 0, j = 0;
+	u32 x_val[100][2];
+	u32 temp;
+	int val_cnt = 1;
+
+	rx_pr("360=0x%x\n", rd_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL1));
+	for (; i < 100; i++) {
+		wr_reg_hhi_bits(HHI_HDMIRX_PHY_MISC_CNTL0, MISCI_COMMON_RST, 0);
+		wr_reg_hhi_bits(HHI_HDMIRX_PHY_MISC_CNTL0, MISCI_COMMON_RST, 1);
+		udelay(1);
+		temp = (rd_reg_hhi(HHI_HDMIRX_PHY_MISC_STAT) >> 1) & 0x3ff;
+		rx_pr("temp=%x\n", temp);
+		if (i == 0) {
+			x_val[0][0] = temp;
+			x_val[0][1] = 1;
+		}
+
+		for (; j < i; j++) {
+			rx_pr("j=%d\n", j);
+			if (temp == x_val[j][0]) {
+				x_val[j][1]	+= 1;
+				rx_pr("++,val=%x\n", x_val[j][0]);
+				goto todo;
+			}
+		}
+todo:
+		if (j == (val_cnt + 1)) {
+			x_val[j][0] = temp;
+			x_val[j][1] = 1;
+			val_cnt++;
+			rx_pr("new\n");
+		}
+		rx_pr("x_val=0x%x,cnt=%d,val_cnt=%d\n",
+		      x_val[j][0], x_val[j][1], val_cnt);
+
+		if (x_val[j][1] == 10) {
+			term_cal_val = (~((x_val[j][0]) << 1)) & 0x3ff;
+			for (; j < val_cnt; j++)
+				rx_pr("val=%x,cnt=%d\n",
+				      x_val[j][0], x_val[j][1]);
+			return;
+		}
+		j = 0;
+	}
+}

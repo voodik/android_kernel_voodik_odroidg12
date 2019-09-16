@@ -208,6 +208,7 @@ static int esd_phy_rst_cnt;
 static int esd_phy_rst_max;
 static int cec_dev_info;
 struct rx_s rx;
+static bool term_flag = 1;
 
 void hdmirx_init_params(void)
 {
@@ -2974,7 +2975,8 @@ int hdmirx_debug(const char *buf, int size)
 		rx.phy.err_sum = 0xffffff;
 	} else if (strncmp(tmpbuf, "audio", 5) == 0) {
 		hdmirx_audio_fifo_rst();
-	}
+	} else if (strncmp(tmpbuf, "eqcal", 5) == 0)
+		rx_phy_rt_cal();
 
 	return 0;
 }
@@ -3004,6 +3006,10 @@ void hdmirx_timer_handler(unsigned long arg)
 {
 	struct hdmirx_dev_s *devp = (struct hdmirx_dev_s *)arg;
 
+	if (term_flag && term_cal_en) {
+		rx_phy_rt_cal();
+		term_flag = 0;
+	}
 	rx_5v_monitor();
 	rx_check_repeat();
 	rx_dw_edid_monitor();
