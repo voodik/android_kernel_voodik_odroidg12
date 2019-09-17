@@ -18,7 +18,7 @@
 #ifndef __AO_CEC_H__
 #define __AO_CEC_H__
 
-#define CEC_DRIVER_VERSION	"2019/11/13: avoid kmalloc fail, and system crash\n"
+#define CEC_DRIVER_VERSION	"2019/11/15:add poll for andorid chk new msg\n"
 
 #define CEC_FRAME_DELAY		msecs_to_jiffies(400)
 #define CEC_DEV_NAME		"cec"
@@ -580,5 +580,6 @@ extern void cec_logicaddr_add(unsigned int cec_sel, unsigned int l_add);
 extern void cec_clear_all_logical_addr(unsigned int cec_sel);
 extern int dump_cecrx_reg(char *b);
 extern void cec_ip_share_io(u32 share, u32 cec_ip);
+void cec_new_msg_push(void);
 
 #endif	/* __AO_CEC_H__ */
