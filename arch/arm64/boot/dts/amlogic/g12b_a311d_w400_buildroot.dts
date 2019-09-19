@@ -870,11 +870,6 @@
 	memory-region = <&adapt_cma_reserved>;
 };
 
-&gdc {
-	status = "okay";
-	memory-region = <&gdc_cma_reserved>;
-};
-
 &meson_fb {
 	status = "okay";
 	display_size_default = <1920 1080 1920 2160 32>;
