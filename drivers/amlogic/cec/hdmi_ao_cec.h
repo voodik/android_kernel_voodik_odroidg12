@@ -18,7 +18,7 @@
 #ifndef __AO_CEC_H__
 #define __AO_CEC_H__
 
-#define CEC_DRIVER_VERSION	"2019/11/11: sometime ping got wrong ack\n"
+#define CEC_DRIVER_VERSION	"2019/11/13: avoid kmalloc fail, and system crash\n"
 
 #define CEC_FRAME_DELAY		msecs_to_jiffies(400)
 #define CEC_DEV_NAME		"cec"
