@@ -9283,7 +9283,9 @@ static void set_omx_pts(u32 *p)
 	} else if (set_from_hwc == 0 && !omx_run) {
 		struct vframe_s *vf = NULL;
 		u32 donot_drop = 0;
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 		u32 dovi_dual_layer = 0;
+#endif
 
 		while (try_cnt--) {
 			vf = vf_peek(RECEIVER_NAME);
