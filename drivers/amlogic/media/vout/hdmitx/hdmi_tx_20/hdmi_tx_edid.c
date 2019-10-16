@@ -91,7 +91,23 @@ static unsigned int hdmitx_edid_check_valid_blocks(unsigned char *buf);
 static void Edid_DTD_parsing(struct rx_cap *pRXCap, unsigned char *data);
 static void hdmitx_edid_set_default_aud(struct hdmitx_dev *hdev);
 
-static void edid_save_checkvalue(unsigned char *buf, unsigned int block_cnt)
+static int xtochar(int num, unsigned char *checksum)
+{
+	if (((edid_checkvalue[num]  >> 4) & 0xf) <= 9)
+		checksum[0] = ((edid_checkvalue[num]  >> 4) & 0xf) + '0';
+	else
+		checksum[0] = ((edid_checkvalue[num]  >> 4) & 0xf) - 10 + 'a';
+
+	if ((edid_checkvalue[num] & 0xf) <= 9)
+		checksum[1] = (edid_checkvalue[num] & 0xf) + '0';
+	else
+		checksum[1] = (edid_checkvalue[num] & 0xf) - 10 + 'a';
+
+	return 0;
+}
+
+static void edid_save_checkvalue(unsigned char *buf, unsigned int block_cnt,
+	struct rx_cap *RXCap)
 {
 	unsigned int i, length, max;
 
@@ -105,6 +121,12 @@ static void edid_save_checkvalue(unsigned char *buf, unsigned int block_cnt)
 
 	for (i = 0; i < max; i++)
 		edid_checkvalue[i] = *(buf+(i+1)*128-1);
+
+	RXCap->chksum[0] = '0';
+	RXCap->chksum[1] = 'x';
+
+	for (i = 0; i < 4; i++)
+		xtochar(i, &RXCap->chksum[2 * i + 2]);
 }
 
 static int Edid_DecodeHeader(struct hdmitx_info *info, unsigned char *buff)
@@ -395,9 +417,9 @@ int Edid_Parse_check_HDMI_VSDB(struct hdmitx_dev *hdev,
 	if (temp_addr >= VSpecificBoundary)
 		ret = -1;
 	else {
-		if ((buff[BlockAddr + 1] != 0x03) ||
-			(buff[BlockAddr + 2] != 0x0C) ||
-			(buff[BlockAddr + 3] != 0x0))
+		if ((buff[BlockAddr + 1] != GET_OUI_BYTE0(HDMI_IEEEOUI)) ||
+			(buff[BlockAddr + 2] != GET_OUI_BYTE1(HDMI_IEEEOUI)) ||
+			(buff[BlockAddr + 3] != GET_OUI_BYTE2(HDMI_IEEEOUI)))
 			ret = -1;
 	}
 	return ret;
@@ -1532,7 +1554,6 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdmitx_device,
 	pRXCap->number_of_dtd += BlockBuf[3] & 0xf;
 
 	pRXCap->native_VIC = 0xff;
-	pRXCap->AUD_count = 0;
 
 	Edid_Y420CMDB_Reset(&(hdmitx_device->hdmi_info));
 
@@ -1578,7 +1599,7 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdmitx_device,
 			if ((BlockBuf[offset] == 0x03) &&
 				(BlockBuf[offset+1] == 0x0c) &&
 				(BlockBuf[offset+2] == 0x00)) {
-				pRXCap->ieeeoui = 0x000c03;
+				pRXCap->ieeeoui = HDMI_IEEEOUI;
 				pRXCap->ColorDeepSupport =
 					(count > 5) ? BlockBuf[offset+5] : 0;
 				set_vsdb_dc_cap(pRXCap);
@@ -1625,7 +1646,7 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdmitx_device,
 			} else if ((BlockBuf[offset] == 0xd8) &&
 				(BlockBuf[offset+1] == 0x5d) &&
 				(BlockBuf[offset+2] == 0xc4)) {
-				pRXCap->hf_ieeeoui = 0xd85dc4;
+				pRXCap->hf_ieeeoui = HF_IEEEOUI;
 				pRXCap->Max_TMDS_Clock2 = BlockBuf[offset+4];
 				pRXCap->scdc_present =
 					!!(BlockBuf[offset+5] & (1 << 7));
@@ -1635,6 +1656,11 @@ static int hdmitx_edid_block_parse(struct hdmitx_dev *hdmitx_device,
 					!!(BlockBuf[offset+5] & (1 << 3));
 				set_vsdb_dc_420_cap(&hdmitx_device->RXCap,
 					&BlockBuf[offset]);
+				if (count > 7) {
+					unsigned char b7 = BlockBuf[offset+7];
+
+					pRXCap->allm = !!(b7 & (1 << 1));
+				}
 			}
 
 			offset += count; /* ignore the remaind. */
@@ -1741,7 +1767,7 @@ static void hdmitx_edid_set_default_aud(struct hdmitx_dev *hdev)
 	pRXCap->RxAudioCap[0].audio_format_code = 1; /* PCM */
 	pRXCap->RxAudioCap[0].channel_num_max = 1; /* 2ch */
 	pRXCap->RxAudioCap[0].freq_cc = 7; /* 32/44.1/48 kHz */
-	pRXCap->RxAudioCap[0].cc3 = 7; /* 16/20/24 bit */
+	pRXCap->RxAudioCap[0].cc3 = 1; /* 16bit */
 }
 
 /* add default VICs for DVI case */
@@ -2040,6 +2066,35 @@ next:
 		dump_dtd_info(t);
 }
 
+static void edid_check_pcm_declare(struct rx_cap *pRXCap)
+{
+	int idx_pcm = 0;
+	int i;
+
+	if (!pRXCap->AUD_count)
+		return;
+
+	/* Try to find more than 1 PCMs, RxAudioCap[0] is always basic audio */
+	for (i = 1; i < pRXCap->AUD_count; i++) {
+		if (pRXCap->RxAudioCap[i].audio_format_code ==
+			pRXCap->RxAudioCap[0].audio_format_code) {
+			idx_pcm = i;
+			break;
+		}
+	}
+
+	/* Remove basic audio */
+	if (idx_pcm) {
+		for (i = 0; i < pRXCap->AUD_count - 1; i++)
+			memcpy(&pRXCap->RxAudioCap[i],
+				&pRXCap->RxAudioCap[i + 1],
+				sizeof(struct rx_audiocap));
+		/* Clear the last audio declaration */
+		memset(&pRXCap->RxAudioCap[i], 0, sizeof(struct rx_audiocap));
+		pRXCap->AUD_count--;
+	}
+}
+
 static void hdrinfo_to_vinfo(struct vinfo_s *info, struct rx_cap *pRXCap)
 {
 	unsigned int  k, l;
@@ -2257,9 +2312,9 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 		if ((CheckSum & 0xff) == 0)
 			hdmitx_device->RXCap.ieeeoui = 0;
 		else
-			hdmitx_device->RXCap.ieeeoui = 0x0c03;
+			hdmitx_device->RXCap.ieeeoui = HDMI_IEEEOUI;
 		if (zero_numbers > 120)
-			hdmitx_device->RXCap.ieeeoui = 0x0c03;
+			hdmitx_device->RXCap.ieeeoui = HDMI_IEEEOUI;
 
 		return 0; /* do nothing. */
 	}
@@ -2308,7 +2363,7 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 
 		hdmitx_edid_block_parse(hdmitx_device, &(EDID_buf[i*128]));
 	}
-
+	edid_check_pcm_declare(&hdmitx_device->RXCap);
 /*
  * Because DTDs are not able to represent some Video Formats, which can be
  * represented as SVDs and might be preferred by Sinks, the first DTD in the
@@ -2363,14 +2418,14 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 	}
 
 	if (hdmitx_edid_search_IEEEOUI(&EDID_buf[128])) {
-		pRXCap->ieeeoui = 0x0c03;
+		pRXCap->ieeeoui = HDMI_IEEEOUI;
 		pr_info(EDID "find IEEEOUT\n");
 	} else {
 		pRXCap->ieeeoui = 0x0;
 		pr_info(EDID "not find IEEEOUT\n");
 	}
 
-	if ((pRXCap->ieeeoui != 0x0c03) || (pRXCap->ieeeoui == 0x0) ||
+	if ((pRXCap->ieeeoui != HDMI_IEEEOUI) || (pRXCap->ieeeoui == 0x0) ||
 		(pRXCap->VIC_count == 0))
 		hdmitx_edid_set_default_vic(hdmitx_device);
 
@@ -2381,27 +2436,29 @@ int hdmitx_edid_parse(struct hdmitx_dev *hdmitx_device)
 		pRXCap->ieeeoui = 0x0;
 		pr_info(EDID "sink is DVI device\n");
 	} else
-		pRXCap->ieeeoui = 0x0c03;
+		pRXCap->ieeeoui = HDMI_IEEEOUI;
 
 	if (edid_zero_data(EDID_buf))
-		pRXCap->ieeeoui = 0x0c03;
+		pRXCap->ieeeoui = HDMI_IEEEOUI;
 
 	if ((!pRXCap->AUD_count) && (!pRXCap->ieeeoui))
 		hdmitx_edid_set_default_aud(hdmitx_device);
 
-	edid_save_checkvalue(EDID_buf, BlockCount+1);
+	edid_save_checkvalue(EDID_buf, BlockCount + 1, pRXCap);
 
 	i = hdmitx_edid_dump(hdmitx_device, (char *)(hdmitx_device->tmp_buf),
 		HDMI_TMP_BUF_SIZE);
 	hdmitx_device->tmp_buf[i] = 0;
 
 	if (!hdmitx_edid_check_valid_blocks(&EDID_buf[0])) {
-		pRXCap->ieeeoui = 0x0c03;
+		pRXCap->ieeeoui = HDMI_IEEEOUI;
 		pr_info(EDID "Invalid edid, consider RX as HDMI device\n");
 	}
 	/* update RX HDR information */
 	info = get_current_vinfo();
 	if (info) {
+		/*update hdmi checksum to vout*/
+		memcpy(info->hdmichecksum, pRXCap->chksum, 10);
 		if (!((strncmp(info->name, "480cvbs", 7) == 0) ||
 		(strncmp(info->name, "576cvbs", 7) == 0) ||
 		(strncmp(info->name, "null", 4) == 0))) {
@@ -2615,7 +2672,7 @@ bool hdmitx_edid_check_valid_mode(struct hdmitx_dev *hdev,
 	pRXCap = &(hdev->RXCap);
 
 	/* DVI case, only 8bit */
-	if (pRXCap->ieeeoui != 0x0c03) {
+	if (pRXCap->ieeeoui != HDMI_IEEEOUI) {
 		if (para->cd != COLORDEPTH_24B)
 			return 0;
 	}
@@ -2781,7 +2838,7 @@ void hdmitx_edid_clear(struct hdmitx_dev *hdmitx_device)
 	/* Note: in most cases, we think that rx is tv and the default
 	 * IEEEOUI is HDMI Identifier
 	 */
-	pRXCap->ieeeoui = 0x000c03;
+	pRXCap->ieeeoui = HDMI_IEEEOUI;
 
 	hdmitx_device->vic_count = 0;
 	hdmitx_device->hdmi_info.vsdb_phy_addr.a = 0;
@@ -2972,6 +3029,10 @@ int hdmitx_edid_dump(struct hdmitx_dev *hdmitx_device, char *buffer,
 		pos += snprintf(buffer+pos, buffer_len-pos,
 			"MaxTMDSClock2 %d MHz\n", pRXCap->Max_TMDS_Clock2 * 5);
 	}
+
+	if (pRXCap->allm)
+		pos += snprintf(buffer+pos, buffer_len-pos, "ALLM: %x\n",
+			pRXCap->allm);
 
 	pos += snprintf(buffer+pos, buffer_len-pos, "vLatency: ");
 	if (pRXCap->vLatency == LATENCY_INVALID_UNKNOWN)
