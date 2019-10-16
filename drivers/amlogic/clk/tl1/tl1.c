@@ -14,7 +14,6 @@
  * more details.
  *
  */
-
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/of_address.h>
@@ -22,6 +21,7 @@
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <dt-bindings/clock/amlogic,tl1-clkc.h>
+#include <linux/delay.h>
 
 #include "../clkc.h"
 #include "tl1.h"
@@ -107,13 +107,13 @@ static struct meson_clk_pll tl1_gp1_pll = {
 	},
 	.n = {
 		.reg_off = HHI_GP1_PLL_CNTL0,
-		.shift	 = 9,
+		.shift	 = 10,
 		.width	 = 5,
 	},
 	.od = {
 		.reg_off = HHI_GP1_PLL_CNTL0,
 		.shift	 = 16,
-		.width	 = 2,
+		.width	 = 3,
 	},
 	.rate_table = tl1_pll_rate_table,
 	.rate_count = ARRAY_SIZE(tl1_pll_rate_table),
@@ -185,6 +185,10 @@ static struct meson_clk_pll tl1_adc_pll = {
 };
 #endif
 
+static const struct pll_rate_table tl1_fixed_pll_rate_table[] = {
+	PLL_FRAC_RATE(2000000000ULL, 166, 1, 1, 0, 0x3F15555),
+};
+
 static struct meson_clk_pll tl1_fixed_pll = {
 	.m = {
 		.reg_off = HHI_FIX_PLL_CNTL0,
@@ -207,12 +211,14 @@ static struct meson_clk_pll tl1_fixed_pll = {
 		.width	 = 19,
 	},
 	.lock = &clk_lock,
+	.rate_table = tl1_fixed_pll_rate_table,
+	.rate_count = ARRAY_SIZE(tl1_fixed_pll_rate_table),
 	.hw.init = &(struct clk_init_data){
 		.name = "fixed_pll",
-		.ops = &meson_tl1_pll_ro_ops,
+		.ops = &meson_tl1_pll_ops,
 		.parent_names = (const char *[]){ "xtal" },
 		.num_parents = 1,
-		.flags = CLK_GET_RATE_NOCACHE,
+		.flags = CLK_GET_RATE_NOCACHE | CLK_IGNORE_UNUSED,
 	},
 };
 
@@ -447,8 +453,8 @@ static struct meson_cpu_mux_divider tl1_cpu_fclk_p = {
 		.name = "cpu_fixedpll_p",
 		.ops = &meson_fclk_cpu_ops,
 		.parent_names = (const char *[]){ "xtal", "fclk_div2",
-			"fclk_div3"},
-		.num_parents = 3,
+			"fclk_div3", "gp1_pll"},
+		.num_parents = 4,
 		.flags = (CLK_GET_RATE_NOCACHE | CLK_IGNORE_UNUSED),
 	},
 };
@@ -676,6 +682,19 @@ static struct clk_gate tl1_clk81 = {
 	},
 };
 
+static struct clk_mux tl1_switch_clk81 = {
+	.reg = (void *)HHI_MPEG_CLK_CNTL,
+	.mask = 0x1,
+	.shift = 8,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "switch_clk81",
+		.ops = &clk_mux_ops,
+		.parent_names = (const char *[]){ "xtal", "clk81" },
+		.num_parents = 2,
+	},
+};
+
 /* Everything Else (EE) domain gates */
 /* HHI_GCLK_MPEG0 26 bits valid */
 static MESON_GATE_TL1(tl1_ddr, HHI_GCLK_MPEG0,		0);
@@ -841,7 +860,7 @@ static struct clk_hw *tl1_clk_hws[] = {
 	[CLKID_BT656]		= &tl1_bt656.hw, /*MPEG2 6*/
 	[CLKID_USB1_TO_DDR]	= &tl1_usb1_to_ddr.hw, /*MPEG2 8*/
 	[CLKID_MMC_PCLK]	= &tl1_mmc_pclk.hw, /*MPEG2 11*/
-	[CLKID_HDCP22_PCLK]	= &tl1_hdcp22_pclk.hw, /*MPEG2 13*/
+	[CLKID_HDMIRX_TOP]	= &tl1_hdcp22_pclk.hw, /*MPEG2 13*/
 	[CLKID_UART2]		= &tl1_uart2.hw, /*MPEG2 15*/
 	[CLKID_TS]		= &tl1_ts.hw, /*MPEG2 22*/
 	[CLKID_VPU_INTR]	= &tl1_vpu_intr.hw, /*MPEG2 25*/
@@ -1080,6 +1099,31 @@ static void __init tl1_clkc_init(struct device_node *np)
 	tl1_cpu_clk.reg = clk_base
 			+ (unsigned long)tl1_cpu_clk.reg;
 
+	/* Populate the base address for DSU clk */
+	tl1_dsu_fixed_source_sel0.reg = clk_base
+			+ (unsigned long)tl1_dsu_fixed_source_sel0.reg;
+	tl1_dsu_fixed_source_div0.reg = clk_base
+			+ (unsigned long)tl1_dsu_fixed_source_div0.reg;
+	tl1_dsu_fixed_sel0.reg = clk_base
+			+ (unsigned long)tl1_dsu_fixed_sel0.reg;
+
+	tl1_dsu_fixed_source_sel1.reg = clk_base
+			+ (unsigned long)tl1_dsu_fixed_source_sel1.reg;
+	tl1_dsu_fixed_source_div1.reg = clk_base
+			+ (unsigned long)tl1_dsu_fixed_source_div1.reg;
+	tl1_dsu_fixed_sel1.reg = clk_base
+			+ (unsigned long)tl1_dsu_fixed_sel1.reg;
+
+	tl1_dsu_pre0_clk.reg = clk_base
+			+ (unsigned long)tl1_dsu_pre0_clk.reg;
+	tl1_dsu_pre_clk.reg = clk_base
+			+ (unsigned long)tl1_dsu_pre_clk.reg;
+	tl1_dsu_clk.reg = clk_base
+			+ (unsigned long)tl1_dsu_clk.reg;
+
+	tl1_switch_clk81.reg = clk_base
+			+ (unsigned long)tl1_switch_clk81.reg;
+
 	/* Populate base address for gates */
 	for (i = 0; i < ARRAY_SIZE(tl1_clk_gates); i++)
 		tl1_clk_gates[i]->reg = clk_base +
@@ -1102,10 +1146,12 @@ static void __init tl1_clkc_init(struct device_node *np)
 	/*register all clks*/
 	for (clkid = 0; clkid < CLOCK_GATE; clkid++) {
 		if (tl1_clk_hws[clkid]) {
-		clks[clkid] = clk_register(NULL, tl1_clk_hws[clkid]);
-		WARN_ON(IS_ERR(clks[clkid]));
+			clks[clkid] = clk_register(NULL, tl1_clk_hws[clkid]);
+			WARN_ON(IS_ERR(clks[clkid]));
 		}
 	}
+	clks[CLKID_SWITCH_CLK81] = clk_register(NULL, &tl1_switch_clk81.hw);
+	WARN_ON(IS_ERR(clks[CLKID_SWITCH_CLK81]));
 
 	meson_tl1_sdemmc_init();
 	meson_tl1_media_init();
@@ -1141,6 +1187,11 @@ static void __init tl1_clkc_init(struct device_node *np)
 		__func__);
 		goto iounmap;
 	}
+
+	/* fixed pll init */
+	ret = clk_prepare_enable(tl1_fixed_pll.hw.clk);
+	if (ret)
+		pr_err("%s, failed to init fixed pll\n", __func__);
 
 	ret = of_clk_add_provider(np, of_clk_src_onecell_get,
 			&clk_data);

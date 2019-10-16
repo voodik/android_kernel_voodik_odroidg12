@@ -26,6 +26,7 @@
 #include "../clkc.h"
 #include "../g12a/g12a.h"
 #include "sm1.h"
+#include <linux/delay.h>
 
 static struct meson_clk_pll sm1_gp1_pll = {
 	.m = {
@@ -140,6 +141,99 @@ static struct clk_gate cts_vipnanoq_axi_clk_gate = {
 		.flags = CLK_GET_RATE_NOCACHE,
 	},
 };
+
+static const char * const media_parent_names_mipi[] = { "xtal",
+	"gp0_pll", "mpll1", "mpll2", "fclk_div3", "fclk_div4",
+	"fclk_div5",  "fclk_div7"
+};
+
+static struct clk_mux cts_mipi_csi_phy_clk_mux = {
+	.reg = (void *)HHI_MIPI_CSI_PHY_CLK_CNTL,
+	.mask = 0x7,
+	.shift = 9,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "cts_mipi_csi_phy_clk_mux",
+		.ops = &clk_mux_ops,
+		.parent_names = media_parent_names_mipi,
+		.num_parents = 8,
+		.flags = CLK_GET_RATE_NOCACHE,
+	},
+};
+
+static struct clk_divider cts_mipi_csi_phy_clk_div = {
+	.reg = (void *)HHI_MIPI_CSI_PHY_CLK_CNTL,
+	.shift = 0,
+	.width = 7,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "cts_mipi_csi_phy_clk_div",
+		.ops = &clk_divider_ops,
+		.parent_names = (const char *[]){ "cts_mipi_csi_phy_clk_mux" },
+		.num_parents = 1,
+		.flags = CLK_GET_RATE_NOCACHE,
+	},
+};
+
+static struct clk_gate cts_mipi_csi_phy_clk_gate = {
+	.reg = (void *)HHI_MIPI_CSI_PHY_CLK_CNTL,
+	.bit_idx = 8,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data) {
+	.name = "cts_mipi_csi_phy_clk_gate",
+	.ops = &clk_gate_ops,
+		.parent_names = (const char *[]){ "cts_mipi_csi_phy_clk_div" },
+		.num_parents = 1,
+		.flags = CLK_GET_RATE_NOCACHE,
+	},
+};
+
+static const char * const media_parent_names_adapt[] = { "xtal",
+	"fclk_div4", "fclk_div3", "fclk_div5", "fclk_div7", "mpll2",
+	"mpll3",  "gp0_pll"
+};
+
+static struct clk_mux cts_csi_adapt_clk_mux = {
+	.reg = (void *)HHI_CSI2_ADAPT_CLK_CNTL,
+	.mask = 0x7,
+	.shift = 9,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "cts_csi_adapt_clk_mux",
+		.ops = &clk_mux_ops,
+		.parent_names = media_parent_names_adapt,
+		.num_parents = 8,
+		.flags = CLK_GET_RATE_NOCACHE,
+	},
+};
+
+static struct clk_divider cts_csi_adapt_clk_div = {
+	.reg = (void *)HHI_CSI2_ADAPT_CLK_CNTL,
+	.shift = 0,
+	.width = 7,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data){
+		.name = "cts_csi_adapt_clk_div",
+		.ops = &clk_divider_ops,
+		.parent_names = (const char *[]){ "cts_csi_adapt_clk_mux" },
+		.num_parents = 1,
+		.flags = CLK_GET_RATE_NOCACHE,
+	},
+};
+
+static struct clk_gate cts_csi_adapt_clk_gate = {
+	.reg = (void *)HHI_CSI2_ADAPT_CLK_CNTL,
+	.bit_idx = 8,
+	.lock = &clk_lock,
+	.hw.init = &(struct clk_init_data) {
+	.name = "cts_csi_adapt_clk_gate",
+	.ops = &clk_gate_ops,
+		.parent_names = (const char *[]){ "cts_csi_adapt_clk_div" },
+		.num_parents = 1,
+		.flags = CLK_GET_RATE_NOCACHE,
+	},
+};
+
 static struct clk_mux sm1_dsu_pre_src_clk_mux0 = {
 	.reg = (void *)HHI_SYS_CPU_CLK_CNTL5,
 	.mask = 0x3,
@@ -151,7 +245,7 @@ static struct clk_mux sm1_dsu_pre_src_clk_mux0 = {
 		.parent_names = (const char *[]){ "xtal", "fclk_div2",
 				"fclk_div3", "gp1_pll" },
 		.num_parents = 4,
-		.flags = CLK_SET_RATE_PARENT | CLK_SET_RATE_NO_REPARENT,
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -166,7 +260,7 @@ static struct clk_mux sm1_dsu_pre_src_clk_mux1 = {
 		.parent_names = (const char *[]){ "xtal", "fclk_div2",
 				"fclk_div3", "gp1_pll" },
 		.num_parents = 4,
-		.flags = CLK_SET_RATE_PARENT | CLK_SET_RATE_NO_REPARENT,
+		.flags = CLK_SET_RATE_PARENT,
 	},
 };
 
@@ -330,12 +424,53 @@ static struct clk_hw *sm1_clk_hws[] = {
 				&sm1_csi_phy.hw,
 };
 
+struct sm1_nb_data {
+	struct notifier_block nb;
+};
+
+static int sm1_dsu_mux_clk_notifier_cb(struct notifier_block *nb,
+				    unsigned long event, void *data)
+{
+	struct clk *dsu_pre_clk, *parent_clk;
+	int ret;
+
+	switch (event) {
+	case PRE_RATE_CHANGE:
+		/* switch to sm1_dsu_fixed_sel1, set it to 1G (default 24M) */
+		ret = clk_set_rate(sm1_dsu_pre_clk_mux1.hw.clk, 1000000000);
+		if (ret < 0)
+			return ret;
+		parent_clk = sm1_dsu_pre_clk_mux1.hw.clk;
+		break;
+	case POST_RATE_CHANGE:
+		parent_clk = sm1_dsu_pre_clk_mux0.hw.clk;
+		break;
+	default:
+		return NOTIFY_DONE;
+	}
+
+	dsu_pre_clk = sm1_dsu_pre_post_clk_mux.hw.clk;
+
+	ret = clk_set_parent(dsu_pre_clk, parent_clk);
+	if (ret)
+		return notifier_from_errno(ret);
+
+	usleep_range(80, 120);
+
+	return NOTIFY_OK;
+}
+
+static struct sm1_nb_data sm1_dsu_nb_data = {
+	.nb.notifier_call = sm1_dsu_mux_clk_notifier_cb,
+};
+
 static void __init sm1_clkc_init(struct device_node *np)
 {
 	int ret = 0, clkid, i;
 
 	if (!clk_base)
 		clk_base = of_iomap(np, 0);
+
 	if (!clk_base) {
 		pr_err("%s: Unable to map clk base\n", __func__);
 		return;
@@ -373,6 +508,20 @@ static void __init sm1_clkc_init(struct device_node *np)
 		+ (unsigned long)(cts_vipnanoq_axi_clk_gate.reg);
 	cts_vipnanoq_axi_clk_div.reg = clk_base
 		+ (unsigned long)(cts_vipnanoq_axi_clk_div.reg);
+
+	cts_mipi_csi_phy_clk_mux.reg = clk_base
+		+ (unsigned long)(cts_mipi_csi_phy_clk_mux.reg);
+	cts_mipi_csi_phy_clk_div.reg = clk_base
+		+ (unsigned long)(cts_mipi_csi_phy_clk_div.reg);
+	cts_mipi_csi_phy_clk_gate.reg = clk_base
+		+ (unsigned long)(cts_mipi_csi_phy_clk_gate.reg);
+	cts_csi_adapt_clk_mux.reg = clk_base
+		+ (unsigned long)(cts_csi_adapt_clk_mux.reg);
+	cts_csi_adapt_clk_div.reg = clk_base
+		+ (unsigned long)(cts_csi_adapt_clk_div.reg);
+	cts_csi_adapt_clk_gate.reg = clk_base
+		+ (unsigned long)(cts_csi_adapt_clk_gate.reg);
+
 	/* Populate base address for gates */
 	for (i = 0; i < ARRAY_SIZE(sm1_clk_gates); i++)
 		sm1_clk_gates[i]->reg = clk_base +
@@ -426,17 +575,47 @@ static void __init sm1_clkc_init(struct device_node *np)
 	if (IS_ERR(clks[CLKID_VNANOQ_AXI_CLK_COMP]))
 		panic("%s: %d register cts_vipnanoq_axi_clk_composite error\n",
 			__func__, __LINE__);
-	if (clks[CLKID_CPU_CLK]) {
-		if (!of_property_read_bool(np, "own-dsu-clk"))
-			return;
-		/* set cpu clk as dsu_clk's parent*/
-		clk_set_parent(sm1_dsu_clk.hw.clk, clks[CLKID_CPU_CLK]);
-		/* set sm1_dsu_pre_clk to 1.5G, gp1 pll is 1.5G */
-		clk_set_rate(sm1_dsu_pre_clk.hw.clk, 1500000000);
-		clk_prepare_enable(sm1_dsu_pre_clk.hw.clk);
-		/* set sm1_dsu_pre_clk as dsu_clk's parent */
-		clk_set_parent(sm1_dsu_clk.hw.clk, sm1_dsu_pre_clk.hw.clk);
+
+	clks[CLKID_MIPI_CSI_PHY_CLK_COMP] = clk_register_composite(NULL,
+		"cts_csi_phy_clk_composite",
+		media_parent_names_mipi, 8,
+		&cts_mipi_csi_phy_clk_mux.hw,
+		&clk_mux_ops,
+		&cts_mipi_csi_phy_clk_div.hw,
+		&clk_divider_ops,
+		&cts_mipi_csi_phy_clk_gate.hw,
+		&clk_gate_ops, 0);
+	if (IS_ERR(clks[CLKID_MIPI_CSI_PHY_CLK_COMP]))
+		panic("%s: %d register cts_csi_phy_clk_composite error\n",
+			__func__, __LINE__);
+
+	clks[CLKID_CSI_ADAPT_CLK_COMP] = clk_register_composite(NULL,
+		"cts_csi_adapt_clk_composite",
+		media_parent_names_adapt, 8,
+		&cts_csi_adapt_clk_mux.hw,
+		&clk_mux_ops,
+		&cts_csi_adapt_clk_div.hw,
+		&clk_divider_ops,
+		&cts_csi_adapt_clk_gate.hw,
+		&clk_gate_ops, 0);
+	if (IS_ERR(clks[CLKID_CSI_ADAPT_CLK_COMP]))
+		panic("%s: %d register cts_csi_adapt_clk_composite error\n",
+			__func__, __LINE__);
+
+	if (of_property_read_bool(np, "own-dsu-clk")) {
+		/*
+		 * when change sm1_dsu_pre_clk_mux0, switch to
+		 * sm1_dsu_pre_clk_mux1 to avoid crash
+		 */
+		ret = clk_notifier_register(sm1_dsu_pre_clk_mux0.hw.clk,
+					&sm1_dsu_nb_data.nb);
+		if (ret) {
+			pr_err("%s: failed to register clock notifier for cpu_clk\n",
+			__func__);
+			goto iounmap;
+		}
 	}
+	pr_err("sm1 clk probe ok\n");
 	return;
 
 iounmap:
@@ -445,5 +624,3 @@ iounmap:
 }
 
 CLK_OF_DECLARE(sm1, "amlogic,sm1-clkc-2", sm1_clkc_init);
-
-
