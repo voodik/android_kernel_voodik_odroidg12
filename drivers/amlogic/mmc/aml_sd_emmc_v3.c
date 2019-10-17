@@ -162,6 +162,21 @@ int meson_mmc_clk_init_v3(struct amlsd_host *host)
 
 	return ret;
 }
+/**************************
+ *   select clock source
+ * ************************
+ * HS200 200M -> HS400 200M
+ *
+ * G12B: 800M -> 800M
+ *
+ * TL1 : 792M -> 792M
+ *
+ * SM1 :  1G  -> 800M
+ *
+ * TM2 :  1G  -> 800M
+ *
+ * TXLX:  1G  -> 400M
+ **************************/
 
 static int meson_mmc_clk_set_rate_v3(struct mmc_host *mmc,
 		unsigned long clk_ios)
@@ -469,6 +484,10 @@ static void aml_sd_emmc_set_power_v3(struct amlsd_platform *pdata,
 			pdata->pwr_on(pdata);
 		break;
 	case MMC_POWER_UP:
+		if (aml_card_type_non_sdio(pdata)) {
+			of_amlsd_pwr_off(pdata);
+			of_amlsd_pwr_on(pdata);
+		}
 		break;
 	case MMC_POWER_OFF:
 		writel(0, host->base + SD_EMMC_DELAY1_V3);
@@ -1130,7 +1149,13 @@ static u32 scan_emmc_cmd_win(struct mmc_host *mmc, int send_status)
 		writel(delay2, host->base + SD_EMMC_DELAY2_V3);
 		offset = (u32)(get_random_long() % capacity);
 		for (j = 0; j < repeat_times; j++) {
-			err = single_read_cmd_for_scan(mmc,
+			if (send_status)
+				err = emmc_send_cmd(mmc,
+						MMC_SEND_STATUS,
+						1 << 16,
+						MMC_RSP_R1 | MMC_CMD_AC);
+			else
+				err = single_read_cmd_for_scan(mmc,
 					MMC_READ_SINGLE_BLOCK,
 					host->blk_test, 512, 1,
 					offset);
@@ -2307,8 +2332,7 @@ int aml_mmc_execute_tuning_v3(struct mmc_host *mmc, u32 opcode)
 		intf3 |= (1<<22);
 		writel(intf3, (host->base + SD_EMMC_INTF3));
 		pdata->intf3 = intf3;
-		if ((host->data->chip_type >= MMC_CHIP_TL1)
-			|| (host->data->chip_type == MMC_CHIP_G12B))
+		if (host->data->chip_type == MMC_CHIP_G12B)
 			aml_emmc_hs200_tl1(mmc);
 		err = 0;
 	}
