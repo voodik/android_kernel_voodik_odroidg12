@@ -454,6 +454,7 @@ struct rx_s {
 	struct emp_buff empbuff;
 	uint32_t arc_port;
 	enum edid_ver_e edid_ver;
+	bool arc_5vsts;
 };
 
 struct _hdcp_ksv {

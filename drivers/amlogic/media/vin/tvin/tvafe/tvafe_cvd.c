@@ -2316,6 +2316,11 @@ inline void tvafe_cvd2_adj_hs(struct tvafe_cvd2_s *cvd2,
 				W_APB_BIT(CVD2_ACTIVE_VIDEO_HSTART, temp,
 					HACTIVE_START_BIT, HACTIVE_START_WID);
 				/* 0x12d */
+				if (tvafe_cpu_type() == CPU_TYPE_TL1 ||
+					tvafe_cpu_type() == CPU_TYPE_TM2) {
+					temp = 0x20 * cvd2->info.hs_adj_level;
+					delta = temp / 4;
+				}
 				temp = delta << 16;
 				temp = temp | delta;
 				temp = acd_h_back - temp;
