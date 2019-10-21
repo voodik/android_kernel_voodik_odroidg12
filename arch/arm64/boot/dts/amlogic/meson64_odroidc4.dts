@@ -185,14 +185,6 @@
 			0xffff  0x0>; /* ending flag */
 	};
 
-	bt-dev{
-		compatible = "amlogic, bt-dev";
-		dev_name = "bt-dev";
-		status = "disabled";
-		gpio_reset = <&gpio       GPIOX_17       GPIO_ACTIVE_HIGH>;
-		gpio_hostwake = <&gpio       GPIOX_19       GPIO_ACTIVE_HIGH>;
-	};
-
 	wifi{
 		compatible = "amlogic, aml_wifi";
 		dev_name = "aml_wifi";
@@ -805,7 +797,7 @@
 			 "MMC_PM_KEEP_POWER",
 			 "MMC_CAP_SDIO_IRQ";
 		f_min = <400000>;
-		f_max = <200000000>;
+		f_max = <60000000>;
 	};
 };
 
