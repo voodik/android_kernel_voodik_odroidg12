@@ -151,6 +151,8 @@ void earctx_dmac_set_format(struct regmap *dmac_map,
 			    int frddr_idx, int msb, int frddr_type);
 void earctx_set_channel_status_info(struct regmap *dmac_map,
 				    struct iec958_chsts *chsts);
+enum cmdc_st earctx_cmdc_get_state(struct regmap *cmdc_map);
+enum attend_type earctx_cmdc_get_attended_type(struct regmap *cmdc_map);
 void earctx_cdmc_clr_irqs(struct regmap *top_map, int clr);
 int earctx_cdmc_get_irqs(struct regmap *top_map);
 void earctx_dmac_clr_irqs(struct regmap *top_map, int clr);
