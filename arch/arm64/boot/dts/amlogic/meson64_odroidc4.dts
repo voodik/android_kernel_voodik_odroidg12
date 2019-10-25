@@ -185,6 +185,24 @@
 			0xffff  0x0>; /* ending flag */
 	};
 
+	bt-dev{
+		compatible = "amlogic, bt-dev";
+		dev_name = "bt-dev";
+		status = "disabled";
+		gpio_reset = <&gpio       GPIOX_17       GPIO_ACTIVE_HIGH>;
+		gpio_hostwake = <&gpio       GPIOX_19       GPIO_ACTIVE_HIGH>;
+	};
+
+	wifi{
+		compatible = "amlogic, aml_wifi";
+		dev_name = "aml_wifi";
+		status = "disabled";
+		interrupt_pin = <&gpio       GPIOX_7         GPIO_ACTIVE_LOW>;
+		irq_trigger_type = "GPIO_IRQ_HIGH";
+		power_on_pin = <&gpio        GPIOX_6         GPIO_ACTIVE_HIGH>;
+		dhd_static_buf; //if use bcm wifi, config dhd_static_buf
+	};
+
 	deinterlace {
 		compatible = "amlogic, deinterlace";
 		status = "okay";
