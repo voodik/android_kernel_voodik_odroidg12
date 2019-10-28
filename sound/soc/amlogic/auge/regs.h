@@ -880,6 +880,9 @@ enum clk_sel {
 #define AED_TOP_CTL                        0x83
 #define AED_TOP_REQ_CTL                    0x84
 
+#define AED_TOP_CTL0                       0x83
+#define AED_TOP_CTL1                       0x84
+#define AED_TOP_CTL2                       0x85
 
 /*
  * VAD, Voice activity detection

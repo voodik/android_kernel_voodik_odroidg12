@@ -90,6 +90,8 @@ enum frddr_dest {
 	TDMOUT_C,
 	SPDIFOUT_A,
 	SPDIFOUT_B,
+	EARCTX_DMAC,
+	FRDDR_MAX
 };
 
 enum status_sel {
@@ -226,6 +228,13 @@ struct frddr {
 	int irq;
 	bool in_use;
 	struct ddr_chipinfo *chipinfo;
+};
+
+struct ddr_info {
+	unsigned int toddr_addr;
+	unsigned int frddr_addr;
+	char *toddr_name;
+	char *frddr_name;
 };
 
 /* to ddrs */

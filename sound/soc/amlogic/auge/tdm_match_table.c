@@ -15,6 +15,15 @@
  *
  */
 
+/* For OE function V1:
+ * OE is set by EE_AUDIO_TDMOUT_A_CTRL0 & EE_AUDIO_TDMOUT_A_CTRL1
+ */
+#define OE_FUNCTION_V1 1
+/* For OE function V2:
+ * OE is set by EE_AUDIO_TDMOUT_A_CTRL2
+ */
+#define OE_FUNCTION_V2 2
+
 struct tdm_chipinfo {
 	/* device id */
 	unsigned int id;
@@ -26,7 +35,7 @@ struct tdm_chipinfo {
 	bool sclk_ws_inv;
 
 	/* output en (oe) for pinmux */
-	bool oe_fn;
+	unsigned int oe_fn;
 
 	/* clk pad */
 	bool no_mclkpad_ctrl;
@@ -76,7 +85,7 @@ struct tdm_chipinfo g12a_tdma_chipinfo = {
 struct tdm_chipinfo g12a_tdmb_chipinfo = {
 	.id          = TDM_B,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.mclkpad_no_offset = true,
 };
@@ -84,7 +93,7 @@ struct tdm_chipinfo g12a_tdmb_chipinfo = {
 struct tdm_chipinfo g12a_tdmc_chipinfo = {
 	.id          = TDM_C,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.mclkpad_no_offset = true,
 };
@@ -92,7 +101,7 @@ struct tdm_chipinfo g12a_tdmc_chipinfo = {
 struct tdm_chipinfo g12a_tdminlb_chipinfo = {
 	.id          = TDM_LB,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.mclkpad_no_offset = true,
 };
@@ -100,7 +109,7 @@ struct tdm_chipinfo g12a_tdminlb_chipinfo = {
 struct tdm_chipinfo tl1_tdma_chipinfo = {
 	.id          = TDM_A,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.adc_fn      = true,
 };
@@ -108,7 +117,7 @@ struct tdm_chipinfo tl1_tdma_chipinfo = {
 struct tdm_chipinfo tl1_tdmb_chipinfo = {
 	.id          = TDM_B,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.adc_fn      = true,
 };
@@ -116,7 +125,7 @@ struct tdm_chipinfo tl1_tdmb_chipinfo = {
 struct tdm_chipinfo tl1_tdmc_chipinfo = {
 	.id          = TDM_C,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.adc_fn      = true,
 };
@@ -124,7 +133,7 @@ struct tdm_chipinfo tl1_tdmc_chipinfo = {
 struct tdm_chipinfo tl1_tdminlb_chipinfo = {
 	.id          = TDM_LB,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V1,
 	.same_src_fn = true,
 	.adc_fn      = true,
 };
@@ -132,7 +141,7 @@ struct tdm_chipinfo tl1_tdminlb_chipinfo = {
 struct tdm_chipinfo sm1_tdma_chipinfo = {
 	.id          = TDM_A,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.lane_cnt    = LANE_MAX0,
 };
@@ -140,7 +149,7 @@ struct tdm_chipinfo sm1_tdma_chipinfo = {
 struct tdm_chipinfo sm1_tdmb_chipinfo = {
 	.id          = TDM_B,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.lane_cnt    = LANE_MAX3,
 };
@@ -148,7 +157,7 @@ struct tdm_chipinfo sm1_tdmb_chipinfo = {
 struct tdm_chipinfo sm1_tdmc_chipinfo = {
 	.id          = TDM_C,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.lane_cnt    = LANE_MAX1,
 };
@@ -156,7 +165,7 @@ struct tdm_chipinfo sm1_tdmc_chipinfo = {
 struct tdm_chipinfo sm1_tdminlb_chipinfo = {
 	.id          = TDM_LB,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.lane_cnt    = LANE_MAX3,
 };
@@ -164,7 +173,7 @@ struct tdm_chipinfo sm1_tdminlb_chipinfo = {
 struct tdm_chipinfo tm2_tdma_chipinfo = {
 	.id          = TDM_A,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.adc_fn      = true,
 	.lane_cnt    = LANE_MAX3,
@@ -173,7 +182,7 @@ struct tdm_chipinfo tm2_tdma_chipinfo = {
 struct tdm_chipinfo tm2_tdmb_chipinfo = {
 	.id          = TDM_B,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.adc_fn      = true,
 	.lane_cnt    = LANE_MAX1,
@@ -182,7 +191,7 @@ struct tdm_chipinfo tm2_tdmb_chipinfo = {
 struct tdm_chipinfo tm2_tdmc_chipinfo = {
 	.id          = TDM_C,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.adc_fn      = true,
 	.lane_cnt    = LANE_MAX1,
@@ -191,7 +200,7 @@ struct tdm_chipinfo tm2_tdmc_chipinfo = {
 struct tdm_chipinfo tm2_tdminlb_chipinfo = {
 	.id          = TDM_LB,
 	.sclk_ws_inv = true,
-	.oe_fn       = true,
+	.oe_fn       = OE_FUNCTION_V2,
 	.same_src_fn = true,
 	.lane_cnt    = LANE_MAX3,
 };

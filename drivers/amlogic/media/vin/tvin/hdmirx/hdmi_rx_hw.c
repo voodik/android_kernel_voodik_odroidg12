@@ -89,6 +89,8 @@ int hdcp22_on;
 MODULE_PARM_DESC(hdcp22_on, "\n hdcp22_on\n");
 module_param(hdcp22_on, int, 0664);
 
+/* test for HBR CTS, audio module can set it to force 8ch */
+int hbr_force_8ch = 1;
 /*
 * hdcp14_key_mode:hdcp1.4 key handle method select
 * NORMAL_MODE:systemcontrol path
@@ -1793,130 +1795,146 @@ else
 */
 int hdmirx_audio_init(void)
 {
-/* 0=I2S 2-channel; 1=I2S 4 x 2-channel. */
-int err = 0;
-unsigned long data32 = 0;
+	/* 0=I2S 2-channel; 1=I2S 4 x 2-channel. */
+	int err = 0;
+	unsigned long data32 = 0;
 
-data32 |= 7	<< 13;
-data32 |= 0	<< 12;
-data32 |= 1	<< 11;
-data32 |= 0	<< 10;
+	data32 |= 7	<< 13;
+	data32 |= 0	<< 12;
+	data32 |= 1	<< 11;
+	data32 |= 0	<< 10;
 
-data32 |= 0	<< 9;
-data32 |= 1	<< 8;
-data32 |= 1	<< 6;
-data32 |= 3	<< 4;
-data32 |= 0	<< 3;
-data32 |= acr_mode  << 2;
-data32 |= acr_mode  << 1;
-data32 |= acr_mode  << 0;
-hdmirx_wr_top(TOP_ACR_CNTL_STAT, data32);
+	data32 |= 0	<< 9;
+	data32 |= 1	<< 8;
+	data32 |= 1	<< 6;
+	data32 |= 3	<< 4;
+	data32 |= 0	<< 3;
+	data32 |= acr_mode  << 2;
+	data32 |= acr_mode  << 1;
+	data32 |= acr_mode  << 0;
+	hdmirx_wr_top(TOP_ACR_CNTL_STAT, data32);
 
-/*
- *recover to default value, bit[27:24]
- *set aud_pll_lock filter
- *data32  = 0;
- *data32 |= 0 << 28;
- *data32 |= 0 << 24;
- *hdmirx_wr_dwc(DWC_AUD_PLL_CTRL, data32);
- */
+	if (rx.chip_id >= CHIP_ID_TL1) {
+		data32 = 0;
+		data32 |= 0	<< 2;/*meas_mode*/
+		data32 |= 1	<< 1;/*enable*/
+		data32 |= 1	<< 0;/*reset*/
+		if (acr_mode)
+			data32 |= 2 << 16;/*aud pll*/
+		else
+			data32 |= 500 << 16;/*acr*/
+		hdmirx_wr_top(TOP_AUDMEAS_CTRL, data32);
+		hdmirx_wr_top(TOP_AUDMEAS_CYCLES_M1, 65535);
+		/*start messure*/
+		hdmirx_wr_top(TOP_AUDMEAS_CTRL, data32 & (~0x1));
+	}
 
-/* AFIFO depth 1536word.*/
-/*increase start threshold to middle position */
-data32  = 0;
-data32 |= 160 << 18; /* start */
-data32 |= 200	<< 9; /* max */
-data32 |= 8	<< 0; /* min */
-hdmirx_wr_dwc(DWC_AUD_FIFO_TH, data32);
+	/*
+	 *recover to default value, bit[27:24]
+	 *set aud_pll_lock filter
+	 *data32  = 0;
+	 *data32 |= 0 << 28;
+	 *data32 |= 0 << 24;
+	 *hdmirx_wr_dwc(DWC_AUD_PLL_CTRL, data32);
+	 */
 
-/* recover to default value.*/
-/*remain code for some time.*/
-/*if no side effect then remove it */
-/*
- *data32  = 0;
- *data32 |= 1	<< 16;
- *data32 |= 0	<< 0;
- *hdmirx_wr_dwc(DWC_AUD_FIFO_CTRL, data32);
- */
+	/* AFIFO depth 1536word.*/
+	/*increase start threshold to middle position */
+	data32  = 0;
+	data32 |= 160 << 18; /* start */
+	data32 |= 200	<< 9; /* max */
+	data32 |= 8	<< 0; /* min */
+	hdmirx_wr_dwc(DWC_AUD_FIFO_TH, data32);
 
-data32  = 0;
-data32 |= 0	<< 8;
-data32 |= 1	<< 7;
-data32 |= aud_ch_map << 2;
-data32 |= 1	<< 0;
-hdmirx_wr_dwc(DWC_AUD_CHEXTR_CTRL, data32);
+	/* recover to default value.*/
+	/*remain code for some time.*/
+	/*if no side effect then remove it */
+	/*
+	 *data32  = 0;
+	 *data32 |= 1	<< 16;
+	 *data32 |= 0	<< 0;
+	 *hdmirx_wr_dwc(DWC_AUD_FIFO_CTRL, data32);
+	 */
 
-data32 = 0;
-/* [22:21]	aport_shdw_ctrl */
-data32 |= 3	<< 21;
-/* [20:19]  auto_aclk_mute */
-data32 |= auto_aclk_mute	<< 19;
-/* [16:10]  aud_mute_speed */
-data32 |= 1	<< 10;
-/* [7]      aud_avmute_en */
-data32 |= aud_avmute_en	<< 7;
-/* [6:5]    aud_mute_sel */
-data32 |= aud_mute_sel	<< 5;
-/* [4:3]    aud_mute_mode */
-data32 |= 1	<< 3;
-/* [2:1]    aud_ttone_fs_sel */
-data32 |= 0	<< 1;
-/* [0]      testtone_en */
-data32 |= 0	<< 0;
-hdmirx_wr_dwc(DWC_AUD_MUTE_CTRL, data32);
+	data32  = 0;
+	data32 |= 0	<< 8;
+	data32 |= 1	<< 7;
+	data32 |= aud_ch_map << 2;
+	data32 |= 1	<< 0;
+	hdmirx_wr_dwc(DWC_AUD_CHEXTR_CTRL, data32);
 
-/* recover to default value.*/
-/*remain code for some time.*/
-/*if no side effect then remove it */
-/*
- *data32 = 0;
- *data32 |= 0	<< 16;
- *data32 |= 0	<< 12;
- *data32 |= 0	<< 4;
- *data32 |= 0	<< 1;
- *data32 |= 0	<< 0;
- *hdmirx_wr_dwc(DWC_AUD_PAO_CTRL,   data32);
- */
+	data32 = 0;
+	/* [22:21]	aport_shdw_ctrl */
+	data32 |= 3	<< 21;
+	/* [20:19]  auto_aclk_mute */
+	data32 |= auto_aclk_mute	<< 19;
+	/* [16:10]  aud_mute_speed */
+	data32 |= 1	<< 10;
+	/* [7]      aud_avmute_en */
+	data32 |= aud_avmute_en	<< 7;
+	/* [6:5]    aud_mute_sel */
+	data32 |= aud_mute_sel	<< 5;
+	/* [4:3]    aud_mute_mode */
+	data32 |= 1	<< 3;
+	/* [2:1]    aud_ttone_fs_sel */
+	data32 |= 0	<< 1;
+	/* [0]      testtone_en */
+	data32 |= 0	<< 0;
+	hdmirx_wr_dwc(DWC_AUD_MUTE_CTRL, data32);
 
-/* recover to default value.*/
-/*remain code for some time.*/
-/*if no side effect then remove it */
-/*
- *data32  = 0;
- *data32 |= 0	<< 8;
- *hdmirx_wr_dwc(DWC_PDEC_AIF_CTRL,  data32);
- */
+	/* recover to default value.*/
+	/*remain code for some time.*/
+	/*if no side effect then remove it */
+	/*
+	 *data32 = 0;
+	 *data32 |= 0	<< 16;
+	 *data32 |= 0	<< 12;
+	 *data32 |= 0	<< 4;
+	 *data32 |= 0	<< 1;
+	 *data32 |= 0	<< 0;
+	 *hdmirx_wr_dwc(DWC_AUD_PAO_CTRL,   data32);
+	 */
 
-data32  = 0;
-/* [4:2]    deltacts_irqtrig */
-data32 |= 0 << 2;
-/* [1:0]    cts_n_meas_mode */
-data32 |= 0 << 0;
-/* DEFAULT: {27'd0, 3'd0, 2'd1} */
-hdmirx_wr_dwc(DWC_PDEC_ACRM_CTRL, data32);
+	/* recover to default value.*/
+	/*remain code for some time.*/
+	/*if no side effect then remove it */
+	/*
+	 *data32  = 0;
+	 *data32 |= 0	<< 8;
+	 *hdmirx_wr_dwc(DWC_PDEC_AIF_CTRL,  data32);
+	 */
 
-hdmirx_wr_bits_dwc(DWC_AUD_CTRL, DWC_AUD_HBR_ENABLE, 1);
+	data32  = 0;
+	/* [4:2]    deltacts_irqtrig */
+	data32 |= 0 << 2;
+	/* [1:0]    cts_n_meas_mode */
+	data32 |= 0 << 0;
+	/* DEFAULT: {27'd0, 3'd0, 2'd1} */
+	hdmirx_wr_dwc(DWC_PDEC_ACRM_CTRL, data32);
 
-/* SAO cfg, disable I2S output, no use */
-data32 = 0;
-data32 |= 1	<< 10;
-data32 |= 0	<< 9;
-data32 |= 0x0f	<< 5;
-data32 |= 0	<< 1;
-data32 |= 1	<< 0;
-hdmirx_wr_dwc(DWC_AUD_SAO_CTRL, data32);
+	/* unsupport HBR serial mode. invalid bit */
+	/* hdmirx_wr_bits_dwc(DWC_AUD_CTRL, DWC_AUD_HBR_ENABLE, 1); */
 
-data32  = 0;
-data32 |= 1	<< 6;
-data32 |= 0xf	<< 2;
-hdmirx_wr_dwc(DWC_PDEC_ASP_CTRL, data32);
+	/* SAO cfg, disable I2S output, no use */
+	data32 = 0;
+	data32 |= 1	<< 10;
+	data32 |= 0	<< 9;
+	data32 |= 0x0f	<< 5;
+	data32 |= 0	<< 1;
+	data32 |= 1	<< 0;
+	hdmirx_wr_dwc(DWC_AUD_SAO_CTRL, data32);
 
-return err;
+	data32  = 0;
+	data32 |= 1	<< 6;
+	data32 |= 0xf	<< 2;
+	hdmirx_wr_dwc(DWC_PDEC_ASP_CTRL, data32);
+
+	return err;
 }
 
 /*
-* snps phy g3 initial
-*/
+ * snps phy g3 initial
+ */
 void snps_phyg3_init(void)
 {
 unsigned int data32;
