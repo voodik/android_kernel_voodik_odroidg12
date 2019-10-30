@@ -219,7 +219,9 @@ static void __init setup_machine_fdt(phys_addr_t dt_phys)
 	name = of_flat_dt_get_machine_name();
 	if (!name)
 		return;
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 	machine_name = name;
+#endif
 
 	pr_info("Machine model: %s\n", name);
 	dump_stack_set_arch_desc("%s (DT)", name);
