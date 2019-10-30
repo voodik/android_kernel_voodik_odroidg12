@@ -203,8 +203,10 @@ static int c_show(struct seq_file *m, void *v)
 	seq_puts(m, "\n");
 #endif
 #endif
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 	seq_printf(m, "Hardware\t: %s\n", machine_name);
 	seq_printf(m, "Revision\t: %04x\n\n", system_rev);
+#endif
 	return 0;
 }
 
