@@ -14910,3 +14910,11 @@ F:      drivers/input/touchscreen/sx8650.c
 HARDKERNEL S922D odroidn2
 M: 	charles park <charles.park@hardkernel.com>
 F:      Documentation/devicetree/binding/input/touchscreen/sx8650.txt
+
+AMLOGIC S805Y DTS
+M:  Luan Yuan <luan.yuan@amlogic.com>
+F:  arch/arm/boot/dts/amlogic/gxl_p244_1g.dts
+F:  arch/arm/boot/dts/amlogic/gxl_p244_2g.dts
+F:  arch/arm64/boot/dts/amlogic/gxl_p244_1g.dts
+F:  arch/arm64/boot/dts/amlogic/gxl_p244_2g.dts
+
