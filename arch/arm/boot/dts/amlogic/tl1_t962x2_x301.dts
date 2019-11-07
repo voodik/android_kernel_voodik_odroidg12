@@ -1242,6 +1242,8 @@
 		clock-names = "resample_pll", "resample_src", "resample_clk";
 
 		/*this resample is only used for loopback_A.*/
+		/*only support 16000 or 48000Hz for capture*/
+		capture_sample_rate = <16000>;
 
 		status = "okay";
 	};

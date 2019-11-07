@@ -53,7 +53,8 @@ void new_resample_set_ram_coeff_sinc(enum resample_idx id, int len,
 				     unsigned int *params);
 void new_resample_init_param(enum resample_idx id);
 void new_resample_enable(enum resample_idx id, bool enable);
-void new_resample_set_format(enum resample_idx id, int source, int channel);
+void new_resampleA_set_format(enum resample_idx id, int source, int channel);
+void new_resampleB_set_format(enum resample_idx id, int output_sr);
 void new_resample_set_ratio(enum resample_idx id, int input_sr, int output_sr);
 bool new_resample_get_status(enum resample_idx id);
 void new_resample_src_select(enum resample_idx id, enum resample_src src);

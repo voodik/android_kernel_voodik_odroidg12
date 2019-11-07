@@ -69,6 +69,8 @@ struct audioresample {
 	/* sync with auge_resample_texts */
 	enum samplerate_index asrc_in_sr_idx;
 
+	int capture_sample_rate;
+
 	bool enable;
 };
 
@@ -512,23 +514,20 @@ static int new_resample_init(struct audioresample *p_resample)
 
 	p_resample->enable = 1;
 	new_resample_init_param(p_resample->id);
+	resample_clk_set(p_resample, DEFAULT_SPK_SAMPLERATE);
 
 	if (p_resample->id == RESAMPLE_A) {
 		/* default resample A for tv input source */
 		new_resample_set_ratio(p_resample->id,
 				       DEFAULT_SPK_SAMPLERATE,
 				       DEFAULT_SPK_SAMPLERATE);
-		/*set resample clk to default 256fs mclk.*/
-		/*the same clk source with tdm*/
-		resample_clk_set(p_resample, DEFAULT_SPK_SAMPLERATE);
 	} else if (p_resample->id == RESAMPLE_B) {
 		/* default resample B for loopback downsample */
 		new_resample_set_ratio(p_resample->id,
 				       DEFAULT_SPK_SAMPLERATE,
-				       DEFAULT_MIC_SAMPLERATE);
-		/*set resample clk to default 256fs mclk.*/
-		/*the same clk source with TDMINLB*/
-		resample_clk_set(p_resample, DEFAULT_MIC_SAMPLERATE);
+				       p_resample->capture_sample_rate);
+		new_resampleB_set_format(p_resample->id,
+					 p_resample->capture_sample_rate);
 	}
 
 	return 0;
@@ -632,6 +631,14 @@ static int resample_platform_probe(struct platform_device *pdev)
 		}
 	} else {
 		resample_module = LOOPBACK_A;
+		ret = of_property_read_u32(pdev->dev.of_node,
+					   "capture_sample_rate",
+					   &p_resample->capture_sample_rate);
+		if (ret < 0 ||
+		    p_resample->capture_sample_rate != DEFAULT_SPK_SAMPLERATE) {
+			p_resample->capture_sample_rate =
+					DEFAULT_MIC_SAMPLERATE;
+		}
 	}
 
 	/* config from dts */

@@ -666,8 +666,11 @@ static void aml_resample_enable(
 		}
 
 		if (p_attach_resample->resample_version == 1) {
-			new_resample_set_format(p_attach_resample->id,
+			if (p_attach_resample->id == RESAMPLE_A) {
+				new_resampleA_set_format(
+						p_attach_resample->id,
 						to->channels, bitwidth);
+			}
 			new_resample_src_select(p_attach_resample->id,
 						to->fifo_id);
 		} else if (p_attach_resample->resample_version == 0) {
