@@ -36,6 +36,8 @@ static unsigned int vrtc_init_date;
 static int wakeup;
 static int wakeup_time;
 static struct input_dev *vinput_dev;
+static unsigned long last_alarm_time;
+static unsigned char alarm_enabled;
 
 static void send_power_btn_wakeup(void)
 {
@@ -195,9 +197,33 @@ static int aml_vrtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 			ret = set_wakeup_time(alarm_secs);
 			if (ret < 0)
 				return ret;
+			last_alarm_time = alarm_secs + cur_secs;
 			pr_debug("system will wakeup %lus later\n", alarm_secs);
 		}
 	}
+	alarm_enabled = alarm->enabled;
+	return 0;
+}
+
+static int aml_vrtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+{
+	alarm->enabled = alarm_enabled;
+	alarm->pending = 0;
+
+	if (!last_alarm_time) {
+		alarm->time.tm_sec = -1;
+		alarm->time.tm_min = -1;
+		alarm->time.tm_hour = -1;
+		alarm->time.tm_mday = -1;
+		alarm->time.tm_mon = -1;
+		alarm->time.tm_year = -1;
+		alarm->time.tm_wday = -1;
+		alarm->time.tm_yday = -1;
+		alarm->time.tm_isdst = -1;
+	} else {
+		rtc_time_to_tm(last_alarm_time, &alarm->time);
+	}
+
 	return 0;
 }
 
@@ -205,6 +231,7 @@ static const struct rtc_class_ops aml_vrtc_ops = {
 	.read_time = aml_vrtc_read_time,
 	.set_time = aml_rtc_write_time,
 	.set_alarm = aml_vrtc_set_alarm,
+	.read_alarm = aml_vrtc_read_alarm,
 };
 
 static int aml_vrtc_probe(struct platform_device *pdev)
@@ -274,6 +301,8 @@ static int aml_vrtc_remove(struct platform_device *dev)
 static int aml_vrtc_resume(struct platform_device *pdev)
 {
 	set_wakeup_time(0);
+	alarm_enabled = 0;
+	last_alarm_time = 0;
 
 	/* If timeE < 20, EE domain is thutdown,	timerE is not
 	 * work during suspend. we need get vrtc value.
@@ -293,10 +322,16 @@ static int aml_vrtc_resume(struct platform_device *pdev)
 static int aml_vrtc_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	u32 vrtc_val;
+	struct rtc_time cur_rtc_time;
+	unsigned long cur_secs;
 
 	if (wakeup_time > 0) {
 		pr_info("aml_vrtc_suspend wakeup_time=%d\n", wakeup_time);
 		set_wakeup_time(wakeup_time);
+		alarm_enabled = 1;
+		aml_vrtc_read_time(&pdev->dev, &cur_rtc_time);
+		rtc_tm_to_time(&cur_rtc_time, &cur_secs);
+		last_alarm_time = cur_secs + wakeup_time;
 	}
 
 	vrtc_val = read_te();
