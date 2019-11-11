@@ -877,7 +877,6 @@ static int tas5805_get_DRC_param(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-
 static int tas5805_set_EQ_param(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
@@ -915,7 +914,6 @@ static int tas5805_get_EQ_param(struct snd_kcontrol *kcontrol,
 {
 	return 0;
 }
-
 
 static const struct snd_kcontrol_new tas5805m_vol_control[] = {
 	{
@@ -1079,9 +1077,6 @@ err:
 	return ret;
 }
 
-
-
-
 static int tas5805m_probe(struct snd_soc_codec *codec)
 {
 	int ret;
@@ -1192,7 +1187,7 @@ static int tas5805m_i2c_probe(struct i2c_client *i2c,
 
 	tas5805m_parse_dt(tas5805m, i2c->dev.of_node);
 	tas5805m->regmap = regmap;
-	tas5805m->vol = 100;	//100, -10dB
+	tas5805m->vol = 400;	//10dB
 
 	dev_set_drvdata(&i2c->dev, tas5805m);
 
