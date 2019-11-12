@@ -3892,11 +3892,16 @@ struct apll_param apll_tab[] = {
 	/*od for tmds: 2/4/8/16/32*/
 	/*od2 for audio: 1/2/4/8/16*/
 	/* bw M, N, od, od_div, od2, od2_div, aud_div */
-	{pll_frq_band_0, 160, 1, 0x5, 32,	0x2, 8, 2},/*tmdsx4*/
-	{pll_frq_band_1, 80, 1, 0x4,	16, 0x2, 8, 1},/*tmdsx2*/
-	{pll_frq_band_2, 40, 1, 0x3, 8,	0x2, 8, 0},/*tmds*/
-	{pll_frq_band_3, 40, 2, 0x2, 4,	0x1, 4, 0},/*tmds*/
-	{pll_frq_band_4, 40, 1, 0x1, 2,	0x0, 2, 0},/*tmds*/
+	/* {pll_frq_band_0, 160, 1, 0x5, 32,0x2, 8, 2}, */
+	{pll_frq_band_0, 160, 1, 0x5, 32, 0x1, 8, 3},/* 16 x 27 */
+	/* {pll_frq_band_1, 80, 1, 0x4,	16, 0x2, 8, 1}, */
+	{pll_frq_band_1, 80, 1, 0x4, 16, 0x0, 8, 3},/* 8 x 74 */
+	/* {pll_frq_band_2, 40, 1, 0x3, 8,	0x2, 8, 0}, */
+	{pll_frq_band_2, 40, 1, 0x3, 8,	 0x0, 8, 2}, /* 4 x 148 */
+	/* {pll_frq_band_3, 40, 2, 0x2, 4,	0x1, 4, 0}, */
+	{pll_frq_band_3, 40, 2, 0x2, 4,	 0x0, 4, 1},/* 2 x 297 */
+	/* {pll_frq_band_4, 40, 1, 0x1, 2,	0x0, 2, 0}, */
+	{pll_frq_band_4, 40, 1, 0x1, 2,	 0x0, 2, 0},/* 594 */
 	{pll_frq_null, 40, 1, 0x3, 8,	0x2, 8, 0},
 };
 
