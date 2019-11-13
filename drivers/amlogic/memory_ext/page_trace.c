@@ -589,7 +589,6 @@ static void __init set_init_page_trace(struct page *page, int order, gfp_t flag)
 		text = (unsigned long)_text;
 
 		trace.ret_ip = (ip - text) >> 2;
-		WARN_ON(trace.ret_ip > IP_RANGE_MASK);
 		trace.migrate_type = gfpflags_to_migratetype(flag);
 		trace.order = order;
 		base = find_page_base(page);
@@ -1266,9 +1265,9 @@ int slab_trace_add_page(struct page *page, int order,
 	return 0;
 
 nomem:
-	kfree(trace);
 	pr_err("%s, failed to trace obj %p for %s, trace:%p\n", __func__,
 		page_address(page), s->name, trace);
+	kfree(trace);
 	return -ENOMEM;
 }
 
