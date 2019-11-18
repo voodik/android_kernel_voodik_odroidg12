@@ -2454,7 +2454,8 @@ static int hdmirx_probe(struct platform_device *pdev)
 	rx_emp_resource_allocate(&(pdev->dev));
 	aml_phy_get_trim_val();
 	hdmirx_hw_probe();
-	term_cal_en = (!is_ft_trim_done());
+	if ((rx.chip_id >= CHIP_ID_TL1) && phy_tdr_en)
+		term_cal_en = (!is_ft_trim_done());
 	hdmirx_init_params();
 	hdmirx_switch_pinmux(&(pdev->dev));
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND

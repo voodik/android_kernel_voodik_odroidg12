@@ -1124,6 +1124,7 @@ extern int scdc_force_en;
 extern bool hdcp_hpd_ctrl_en;
 extern int eq_dbg_lvl;
 extern int phy_term_lel;
+extern bool phy_tdr_en;
 
 extern void rx_get_best_eq_setting(void);
 extern void wr_reg_hhi(unsigned int offset, unsigned int val);

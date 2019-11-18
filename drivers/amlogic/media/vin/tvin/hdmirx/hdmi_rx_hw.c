@@ -109,7 +109,11 @@ int scdc_force_en = 1;
 bool hdcp_hpd_ctrl_en;
 int eq_dbg_lvl;
 u32 phy_trim_val;
+/* bit 4: tdr enable bit
+ * bit [3:0]: tdr level control
+ */
 int phy_term_lel;
+bool phy_tdr_en;
 
 /*------------------------variable define end------------------------------*/
 
@@ -3675,13 +3679,20 @@ void aml_phy_init_1(void)
 
 bool is_ft_trim_done(void)
 {
-	return  phy_trim_val & 0x1;
+	int ret = phy_trim_val & 0x1;
+
+	rx_pr("ft trim=%d\n", ret);
+	return ret;
 }
 
 void aml_phy_get_trim_val(void)
 {
 	u32 data32;
 
+	if (rx.chip_id < CHIP_ID_TL1)
+		return;
+	phy_tdr_en = (phy_term_lel >> 4) & 0x1;
+	phy_term_lel = phy_term_lel & 0xf;
 	phy_trim_val = rd_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL1);
 	data32 = (phy_trim_val >> 12) & 0x3ff;
 	data32 = (~((~data32) << phy_term_lel) | (1 << phy_term_lel));
@@ -3716,14 +3727,12 @@ void aml_phy_init(void)
 	udelay(2);
 
 	data32 = phy_misci[idx][1];
-	if (idx < phy_frq_band_5) {
+	if ((idx < phy_frq_band_5) && phy_tdr_en) {
 		if (term_cal_en) {
 			data32 = (((data32 & (~(0x3ff << 12))) |
 				(term_cal_val << 12)) | (1 << 22));
-			rx_pr("man term mode\n");
 		} else {
 			data32 = phy_trim_val;
-			rx_pr("ft trim mode\n");
 		}
 	}
 	wr_reg_hhi(HHI_HDMIRX_PHY_MISC_CNTL1, data32);
