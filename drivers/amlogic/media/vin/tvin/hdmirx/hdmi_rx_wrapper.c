@@ -214,7 +214,7 @@ void hdmirx_init_params(void)
 {
 	if (rx.chip_id >= CHIP_ID_TL1) {
 		clk_unstable_max = 10;
-		esd_phy_rst_max = 20;
+		esd_phy_rst_max = 80;
 		stable_check_lvl = 0x7df;
 		pll_lock_max = 5;
 	} else {
@@ -2194,6 +2194,11 @@ void rx_main_state_machine(void)
 				hdmirx_phy_init();
 				rx.phy.cable_clk = 0;
 				esd_phy_rst_cnt++;
+			} else {
+				rx.err_code = ERR_NONE;
+				rx.state = FSM_HPD_LOW;
+				esd_phy_rst_cnt = 0;
+				break;
 			}
 			rx.err_code = ERR_CLK_UNSTABLE;
 		}
