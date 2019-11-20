@@ -61,6 +61,11 @@
 	};
 
 	/* Audio Related start */
+	spdif_dit:spdif{
+		#sound-dai-cells = <0>;
+		compatible = "linux,spdif-dit";
+		status = "okay";
+	};
 	dummy_codec:dummy{
 		#sound-dai-cells = <0>;
 		compatible = "amlogic, aml_dummy_codec";
@@ -134,7 +139,7 @@
 				system-clock-frequency = <6144000>;
 			};
 			codec {
-				sound-dai = <&dummy_codec>;
+				sound-dai = <&spdif_dit>;
 			};
 		};
 
@@ -148,6 +153,26 @@
 			cpu {
 				sound-dai = <&aml_spdif>;
 				system-clock-frequency = <6144000>;
+			};
+			codec {
+				sound-dai = <&spdif_dit>;
+			};
+		};
+		aml-audio-card,dai-link@3 {
+			format = "i2s";
+			mclk-fs = <256>;
+			bitclock-master = <&aml_tdmb>;
+			frame-master = <&aml_tdmb>;
+			/* suffix-name, sync with android audio hal
+			 * what's the dai link used for
+			 */
+			suffix-name = "alsaPORT-i2s1";
+			cpu {
+				sound-dai = <&aml_tdmb>;
+				dai-tdm-slot-tx-mask = <1 1>;
+				dai-tdm-slot-num = <2>;
+				dai-tdm-slot-width = <32>;
+				system-clock-frequency = <12288000>;
 			};
 			codec {
 				sound-dai = <&dummy_codec>;
@@ -351,6 +376,20 @@
 };
 
 &audiobus {
+	aml_tdmb: tdmb {
+		compatible = "amlogic, g12a-snd-tdmb";
+		#sound-dai-cells = <0>;
+		dai-tdm-lane-slot-mask-out = <1 1 1 1>;
+		dai-tdm-clk-sel = <1>;
+		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
+				&clkc CLKID_MPLL1>;
+		clock-names = "mclk", "clk_srcpll";
+		pinctrl-names = "tdm_pins";
+		pinctrl-0 = <&tdmb_mclk &tdmout_b /*&tdmin_b*/>;
+		mclk_pad = <0>;  /* 0: mclk_0; 1: mclk_1 */
+		i2s2hdmi = <0>;
+		status = "okay";
+	};
 	/* tdmc to internal DAC output, no pinmux */
 	aml_tdmc: tdmc {
 		compatible = "amlogic, g12a-snd-tdmc";
@@ -361,6 +400,7 @@
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_C
 				&clkc CLKID_MPLL2>;
 		clock-names = "mclk", "clk_srcpll";
+		mclk_pad = <1>;  /* 0: mclk_0; 1: mclk_1 */
 		i2s2hdmi = <1>;
 		status = "okay";
 	};
@@ -475,6 +515,22 @@
 };
 
 &pinctrl_periphs {
+	tdmb_mclk: tdmb_mclk {
+		mux {
+			groups = "mclk0_a";
+			function = "mclk0";
+			drive-strength = <2>;
+		};
+	};
+	tdmout_b: tdmout_b {
+		mux { /* GPIOA_1, GPIOA_2, GPIOA_3 */
+			groups = "tdmb_sclk",
+				"tdmb_fs",
+				"tdmb_dout0";
+			function = "tdmb_out";
+			drive-strength = <2>;
+		};
+	};
 	i2c3_master_pins2:i2c3_pins2 {
 		mux {
 			drive-strength = <3>;
