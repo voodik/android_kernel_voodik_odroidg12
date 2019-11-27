@@ -1506,8 +1506,9 @@
 &i2c0 {
 	status = "okay";
 	clock-frequency = <300000>;
-	pinctrl-names="default";
-	pinctrl-0=<&i2c0_dv_pins>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c0_dv_pins>;
+	pinctrl-1 = <&i2c0_dv_pins_slp_input>;
 };
 
 &audiobus {
@@ -1893,8 +1894,9 @@
 
 &i2c2 {
 	status = "okay";
-	pinctrl-names="default";
-	pinctrl-0=<&i2c2_z_pins>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c2_z_pins>;
+	pinctrl-1 = <&i2c2_z_pins_slp_input>;
 	clock-frequency = <400000>;
 
 	tas5805: tas5805@36 {
@@ -2070,8 +2072,9 @@
 &i2c1 {
 	status = "okay";
 	clock-frequency = <300000>;
-	pinctrl-names="default";
-	pinctrl-0=<&i2c1_h_pins>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c1_h_pins>;
+	pinctrl-1 = <&i2c1_h_pins_slp_input>;
 
 	lcd_extern_i2c0: lcd_extern_i2c@0 {
 		compatible = "lcd_ext, i2c";

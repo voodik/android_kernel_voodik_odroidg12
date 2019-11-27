@@ -1880,4 +1880,31 @@
 				&dvfs800_cfg
 				&dvfs800_cfg>;
 };
+&i2c1 {
+	status = "okay";
+	clock-frequency = <300000>;
+	pinctrl-names="default";
+	pinctrl-0=<&i2c1_h_pins>;
+
+	lcd_extern_i2c0: lcd_extern_i2c@0 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_T5800Q";
+		reg = <0x1c>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c1: lcd_extern_i2c@1 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_ANX6862";
+		reg = <0x20>;
+		status = "okay";
+	};
+
+	lcd_extern_i2c2: lcd_extern_i2c@2 {
+		compatible = "lcd_ext, i2c";
+		dev_name = "i2c_ANX7911";
+		reg = <0x74>;
+		status = "okay";
+	};
+};
 
