@@ -37,9 +37,12 @@
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
+#include <linux/platform_data/board_odroid.h>
 
 int sd_volsw_gpio;
 int sd_power_gpio;
+int sd_vddio_gpio;
+
 #define CHECK_RET(ret) { \
 	if (ret) \
 	pr_err("[%s] gpio op failed(%d) at line %d\n",\
@@ -123,7 +126,7 @@ void meson_common_restart(char mode, const char *cmd)
 }
 
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-void odroid_card_reset(void)
+void odroidn2_card_reset(void)
 {
 	int ret = 0;
 
@@ -150,11 +153,48 @@ void odroid_card_reset(void)
 	gpio_free(sd_volsw_gpio);
 	gpio_free(sd_power_gpio);
 }
+void odroidc4_card_reset(void)
+{
+	int ret = 0;
+
+	if ((sd_vddio_gpio == 0) && (sd_power_gpio == 0) &&
+		(sd_power_gpio == 0))
+		return;
+
+	gpio_free(sd_volsw_gpio);
+	gpio_free(sd_vddio_gpio);
+	gpio_free(sd_power_gpio);
+
+	ret = gpio_request_one(sd_volsw_gpio,
+			GPIOF_OUT_INIT_LOW, "REBOOT");
+	CHECK_RET(ret);
+	ret = gpio_request_one(sd_vddio_gpio,
+			GPIOF_OUT_INIT_LOW, "REBOOT");
+	CHECK_RET(ret);
+	ret = gpio_request_one(sd_power_gpio,
+			GPIOF_OUT_INIT_LOW, "REBOOT");
+	CHECK_RET(ret);
+	mdelay(100);
+	ret = gpio_direction_input(sd_vddio_gpio);
+	CHECK_RET(ret);
+	ret = gpio_direction_input(sd_power_gpio);
+	CHECK_RET(ret);
+	ret = gpio_direction_input(sd_volsw_gpio);
+	CHECK_RET(ret);
+	mdelay(5);
+	gpio_free(sd_vddio_gpio);
+	gpio_free(sd_power_gpio);
+	gpio_free(sd_volsw_gpio);
+}
 #endif // CONFIG_ARCH_MESON64_ODROID_COMMON
+
 static void do_aml_restart(enum reboot_mode reboot_mode, const char *cmd)
 {
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-	odroid_card_reset();
+	if (!board_is_odroidn2())
+		odroidc4_card_reset();
+	else
+		odroidn2_card_reset();
 #endif
 	meson_common_restart(reboot_mode, cmd);
 }
@@ -220,6 +260,10 @@ static int aml_restart_probe(struct platform_device *pdev)
 
 	sd_volsw_gpio = of_get_named_gpio(of_node, "sd_volsw_gpio", 0);
 	sd_power_gpio = of_get_named_gpio(of_node, "sd_power_gpio", 0);
+	if (!board_is_odroidn2()) {
+		sd_vddio_gpio = 0;
+		sd_vddio_gpio = of_get_named_gpio(of_node, "sd_vddio_gpio", 0);
+	}
 #endif
 	ret = of_property_read_u32(pdev->dev.of_node,
 				   "reboot_reason_addr", &paddr);
