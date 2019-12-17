@@ -132,6 +132,19 @@ static  int __init vout_setup(char *s)
 	return 0;
 }
 __setup("voutmode=", vout_setup);
+
+static bool disableHPD;
+
+static  int __init disableHPD_setup(char *s)
+{
+	if (!(strcmp(s, "true")))
+		disableHPD = true;
+	else
+		disableHPD = false;
+
+	return 0;
+}
+__setup("disablehpd=", disableHPD_setup);
 #endif
 
 int hdmitx_hpd_hw_op(enum hpd_op cmd)
@@ -151,7 +164,12 @@ int hdmitx_hpd_hw_op(enum hpd_op cmd)
 	case MESON_CPU_ID_G12A:
 	case MESON_CPU_ID_G12B:
 	case MESON_CPU_ID_SM1:
-		return hdmitx_hpd_hw_op_g12a(cmd);
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+		if ((cmd == HPD_READ_HPD_GPIO) && (disableHPD))
+			return 1;
+		else
+#endif
+			return hdmitx_hpd_hw_op_g12a(cmd);
 	default:
 		break;
 	}
@@ -175,6 +193,11 @@ int read_hpd_gpio(void)
 	case MESON_CPU_ID_G12A:
 	case MESON_CPU_ID_G12B:
 	case MESON_CPU_ID_SM1:
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+		if (disableHPD)
+			return 1;
+		else
+#endif
 		return read_hpd_gpio_txlx();
 	default:
 		break;
@@ -682,6 +705,16 @@ static irqreturn_t intr_handler(int irq, void *dev)
 		else
 			dat_top &= ~(1 << 1);
 	}
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	if (disableHPD) {
+		hdev->hdmitx_event |= HDMI_TX_HPD_PLUGIN;
+		hdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGOUT;
+		hdmitx_wr_reg(HDMITX_TOP_INTR_STAT_CLR, dat_top | 0x6);
+		return IRQ_HANDLED;
+	}
+#endif
+
 	/* HPD rising */
 	if (dat_top & (1 << 1)) {
 		hdev->hdmitx_event |= HDMI_TX_HPD_PLUGIN;
@@ -2858,6 +2891,16 @@ static void hdmitx_setupirq(struct hdmitx_dev *phdev)
 	r = request_irq(phdev->irq_hpd, &intr_handler,
 			IRQF_SHARED, "hdmitx",
 			(void *)phdev);
+
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	if (disableHPD)	{
+		phdev->hdmitx_event |= HDMI_TX_HPD_PLUGIN;
+		phdev->hdmitx_event &= ~HDMI_TX_HPD_PLUGOUT;
+		phdev->rhpd_state = 1;
+		queue_delayed_work(phdev->hdmi_wq,
+			&phdev->work_hpd_plugin, HZ/3);
+	}
+#endif
 }
 
 static void hdmitx_uninit(struct hdmitx_dev *phdev)
