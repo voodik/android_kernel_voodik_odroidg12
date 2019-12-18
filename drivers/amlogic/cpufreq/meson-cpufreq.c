@@ -59,6 +59,19 @@ static unsigned int get_cpufreq_table_index(u64 function_id,
 
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 #include <linux/platform_data/board_odroid.h>
+#include <linux/amlogic/cpu_version.h>
+
+#ifdef CONFIG_ARCH_MESON64_ODROIDN2
+#define N2_A53_DEFAULT		1896000	/* N2 Core A53 */
+#define N2_A73_DEFAULT		1800000	/* N2 Core A73 */
+
+#define N2PLUS_A53_DEFAULT	1908000	/* N2 Plus Core A53 */
+#define N2PLUS_A73_DEFAULT	2208000	/* N2 Plus Core A73 */
+#endif
+
+#ifdef CONFIG_ARCH_MESON64_ODROIDN2
+#define C4_A55_DEFAULT		1800000	/* C4 Core A55 */
+#endif
 
 static unsigned long max_freq[2] = {
 	0,
@@ -552,6 +565,9 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 	if (board_is_odroidn2() || board_is_odroidc4()) {
 		int i = 0;
+
+		max_freq[cur_cluster] = min(max_freq[cur_cluster],
+				(unsigned long)get_table_max(freq_table[cur_cluster]));
 		for (i = 0; (freq_table[cur_cluster][i].frequency != CPUFREQ_TABLE_END)
 				&& max_freq[cur_cluster]; i++) {
 			if (freq_table[cur_cluster][i].frequency > max_freq[cur_cluster]) {
@@ -764,13 +780,17 @@ static int meson_cpufreq_probe(struct platform_device *pdev)
 	/* Set the maximum cpufreq when kernel parameter is not given with
 	   'max_freq_<a53|a55|a73>' */
 	if (board_is_odroidn2()) {
-		if (!max_freq[0])
-			max_freq[0] = 1896000; /* defalut freq for A53 is 1.896GHz */
-		if (!max_freq[1])
-			max_freq[1] = 1800000; /* defalut freq for A73 is 1.800GHz */
+		if (!max_freq[0]) {
+			max_freq[0] = (is_meson_g12b_cpu() && is_meson_rev_a())
+				?  N2_A53_DEFAULT : N2PLUS_A53_DEFAULT;
+		}
+		if (!max_freq[1]) {
+			max_freq[1] = (is_meson_g12b_cpu() && is_meson_rev_a())
+				? N2_A73_DEFAULT : N2PLUS_A73_DEFAULT;
+		}
 	} else if (board_is_odroidc4()) {
 		if (!max_freq[0])
-			max_freq[0] = 1800000; /* defalut freq for A55 is 1.800GHz */
+			max_freq[0] = C4_A55_DEFAULT;
 	}
 #endif
 
