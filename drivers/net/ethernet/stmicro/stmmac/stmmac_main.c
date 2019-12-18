@@ -64,7 +64,7 @@
 #include <linux/suspend.h>
 #define PM_SUSPEND_PREPARE      0x0003 /* Going to suspend the system */
 
-#define	STMMAC_ALIGN(x)		__ALIGN_KERNEL(x, SMP_CACHE_BYTES)
+#define	STMMAC_ALIGN(x)		ALIGN(ALIGN(x, SMP_CACHE_BYTES), 16)
 #define	TSO_MAX_BUFF_SIZE	(SZ_16K - 1)
 
 /* Module parameters */
