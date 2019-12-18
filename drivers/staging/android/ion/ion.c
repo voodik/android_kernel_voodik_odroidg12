@@ -1344,29 +1344,10 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	struct rb_node *n;
 	size_t total_size = 0;
 	size_t total_orphaned_size = 0;
-#ifdef CONFIG_AMLOGIC_MODIFY
-	mutex_lock(&debugfs_mutex);
-	mutex_lock(&dev->buffer_lock);
-	seq_puts(s, "All allocated buffers listed:\n");
-	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
-		struct ion_buffer *buffer = rb_entry(n, struct ion_buffer,
-						     node);
-		if (buffer->heap->id != heap->id)
-			continue;
-		seq_printf(s, "%s %p %8s %u %8s %zu %8s %d %8s %d\n",
-			   "buf=", buffer,
-			   "heap_id=", heap->id,
-			   "size=", buffer->size,
-			   "kmap=", buffer->kmap_cnt,
-			   "dmap=", buffer->dmap_cnt);
-	}
-	seq_puts(s, "----------------------------------------------------\n");
-	mutex_unlock(&dev->buffer_lock);
-#else
+
 	seq_printf(s, "%16s %16s %16s\n", "client", "pid", "size");
 	seq_puts(s, "----------------------------------------------------\n");
 	mutex_lock(&debugfs_mutex);
-#endif
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client *client = rb_entry(n, struct ion_client,
 						     node);
