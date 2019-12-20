@@ -761,7 +761,7 @@
 
 &reboot {
 	sd_volsw_gpio = <&gpio_ao GPIOAO_6 GPIO_ACTIVE_HIGH>;
-	sd_power_gpio = <&gpio_ao GPIOAO_8 GPIO_ACTIVE_HIGH>;
+	sd_power_gpio = <&gpio_ao GPIOAO_3 GPIO_ACTIVE_HIGH>;
 	sd_vddio_gpio = <&gpio_ao GPIOE_2 GPIO_ACTIVE_HIGH>;
 };
 
@@ -797,7 +797,7 @@
 			"MMC_CAP_UHS_SDR50",
 			"MMC_CAP_UHS_SDR104";
 		vol_switch = <&gpio_ao GPIOAO_6 GPIO_ACTIVE_HIGH>;
-		gpio_power = <&gpio_ao GPIOAO_8 GPIO_ACTIVE_HIGH>;
+		gpio_power = <&gpio_ao GPIOAO_3 GPIO_ACTIVE_HIGH>;
 		vol_switch_18 = <1>;
 		f_min = <400000>;
 		f_max = <200000000>;
