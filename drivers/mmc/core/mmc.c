@@ -2019,10 +2019,6 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	int err = 0;
 	unsigned int notify_type = is_suspend ? EXT_CSD_POWER_OFF_SHORT :
 					EXT_CSD_POWER_OFF_LONG;
-#ifdef CONFIG_AMLOGIC_MMC
-	struct amlsd_platform *pdata = mmc_priv(host);
-	struct amlsd_host *mmc = pdata->host;
-#endif
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
@@ -2054,13 +2050,6 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 		mmc_power_off(host);
 		mmc_card_set_suspended(host->card);
 	}
-
-#ifdef CONFIG_AMLOGIC_MMC
-	if (mmc->gp0_clk) {
-		clk_disable_unprepare(mmc->gp0_clk);
-		mmc->gp0_clk = NULL;
-	}
-#endif
 
 out:
 	mmc_release_host(host);

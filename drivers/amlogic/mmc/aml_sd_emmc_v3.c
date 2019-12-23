@@ -280,6 +280,7 @@ static int meson_mmc_clk_set_rate_v3(struct mmc_host *mmc,
 				ret = clk_set_rate(src0_clk, 792000000);
 				if (ret)
 					pr_warn("not set tl1-gp0\n");
+				host->gp0_enable = 1;
 			}
 			pr_warn("set rate clkin2>>>>>>>>clk:%lu\n",
 						clk_get_rate(src0_clk));
@@ -298,12 +299,6 @@ static int meson_mmc_clk_set_rate_v3(struct mmc_host *mmc,
 			if (ret)
 				pr_warn("set src0: xtal as comp0 parent error\n");
 		}
-	}
-	if (host->data->chip_type == MMC_CHIP_TL1 && !host->gp0_clk) {
-		host->gp0_clk = src0_clk;
-		ret = clk_prepare_enable(host->gp0_clk);
-		if (ret)
-			pr_warn("set comp0 enable failed\n");
 	}
 
 	dev_dbg(host->dev, "change clock rate %u -> %lu\n",

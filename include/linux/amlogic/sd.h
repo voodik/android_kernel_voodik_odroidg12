@@ -429,7 +429,6 @@ struct amlsd_host {
 	struct clk *core_clk;
 	struct clk_mux mux;
 	struct clk *mux_clk;
-	struct clk *gp0_clk;
 	struct clk *mux_parent[MUX_CLK_NUM_PARENTS];
 	unsigned long mux_parent_rate[MUX_CLK_NUM_PARENTS];
 	struct clk_divider cfg_div;
@@ -457,6 +456,7 @@ struct amlsd_host {
 	char cmd_retune;
 	char find_win;
 	char tuning_mode;
+	int gp0_enable;
 	unsigned int is_sduart;
 	unsigned int irq;
 	unsigned int irq_in;
