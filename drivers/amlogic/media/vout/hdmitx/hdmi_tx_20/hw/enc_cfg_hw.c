@@ -711,6 +711,32 @@ static const struct reg_s tvregs_2560x1080p60hz[] = {
 	{MREG_END_MARKER, 0},
 };
 
+static const struct reg_s tvregs_vesa_480x320p60hz[] = {
+	{P_VENC_VDAC_SETTING, 0xff,},
+	{P_ENCP_VIDEO_EN, 0,},
+	{P_ENCI_VIDEO_EN, 0,},
+
+	{P_ENCP_VIDEO_MODE, 0x4040,},
+	{P_ENCP_VIDEO_MODE_ADV, 0x18,},
+
+	{P_ENCP_VIDEO_MAX_PXCNT, 0x31F,},
+	{P_ENCP_VIDEO_MAX_LNCNT, 0x20C,},
+	{P_ENCP_VIDEO_HAVON_BEGIN, 0x64,},
+	{P_ENCP_VIDEO_HAVON_END, 0x243,},
+	{P_ENCP_VIDEO_VAVON_BLINE, 0xBD,},
+	{P_ENCP_VIDEO_VAVON_ELINE, 0x1FC,},
+	{P_ENCP_VIDEO_HSO_BEGIN, 0x0,},
+	{P_ENCP_VIDEO_HSO_END, 0x64,},
+	{P_ENCP_VIDEO_VSO_BEGIN, 0x1E,},
+	{P_ENCP_VIDEO_VSO_END, 0x32,},
+	{P_ENCP_VIDEO_VSO_BLINE, 0x0,},
+	{P_ENCP_VIDEO_VSO_ELINE, 0x8,},
+
+	{P_ENCP_VIDEO_EN, 1,},
+	{P_ENCI_VIDEO_EN, 0,},
+	{MREG_END_MARKER, 0}
+};
+
 static const struct reg_s tvregs_vesa_640x480p60hz[] = {
 	{P_VENC_VDAC_SETTING, 0xff,},
 	{P_ENCP_VIDEO_EN, 0,},
@@ -732,6 +758,33 @@ static const struct reg_s tvregs_vesa_640x480p60hz[] = {
 	{P_VPU_VIU_VENC_MUX_CTRL, 0xA},
 	{P_ENCI_VIDEO_EN, 0,},
 	{MREG_END_MARKER, 0}
+};
+
+static const struct reg_s tvregs_vesa_480x800p60hz[] = {
+	{P_ENCP_VIDEO_EN, 0},
+	{P_ENCI_VIDEO_EN, 0},
+
+	{P_ENCP_VIDEO_MODE, 0x4040},
+	{P_ENCP_VIDEO_MODE_ADV, 0x18},
+
+	{P_ENCP_VIDEO_MAX_PXCNT, 0x25F},
+	{P_ENCP_VIDEO_MAX_LNCNT, 0x34C},
+
+	{P_ENCP_VIDEO_HAVON_BEGIN, 0x28},
+	{P_ENCP_VIDEO_HAVON_END, 0x207},
+	{P_ENCP_VIDEO_VAVON_BLINE, 0x1D},
+	{P_ENCP_VIDEO_VAVON_ELINE, 0x33C},
+
+	{P_ENCP_VIDEO_HSO_BEGIN, 0x0},
+	{P_ENCP_VIDEO_HSO_END, 0x30},
+	{P_ENCP_VIDEO_VSO_BEGIN, 0x1E},
+	{P_ENCP_VIDEO_VSO_END, 0x32},
+	{P_ENCP_VIDEO_VSO_BLINE, 0x0},
+	{P_ENCP_VIDEO_VSO_ELINE, 0x3},
+
+	{P_ENCP_VIDEO_EN, 1},
+	{P_ENCI_VIDEO_EN, 0},
+	{MREG_END_MARKER, 0},
 };
 
 static const struct reg_s tvregs_vesa_800x600p60hz[] = {
@@ -1426,7 +1479,9 @@ static struct vic_tvregs_set tvregsTab[] = {
 	{HDMI_3840x2160p50_16x9_Y420, tvregs_4k2k_25hz},
 	{HDMI_2560x1080p50_64x27, tvregs_2560x1080p50hz},
 	{HDMI_2560x1080p60_64x27, tvregs_2560x1080p60hz},
+	{HDMIV_480x320p60hz, tvregs_vesa_480x320p60hz},
 	{HDMIV_640x480p60hz, tvregs_vesa_640x480p60hz},
+	{HDMIV_480x800p60hz, tvregs_vesa_480x800p60hz},
 	{HDMIV_800x480p60hz, tvregs_vesa_800x480p60hz},
 	{HDMIV_800x600p60hz, tvregs_vesa_800x600p60hz},
 	{HDMIV_852x480p60hz, tvregs_vesa_852x480p60hz},
