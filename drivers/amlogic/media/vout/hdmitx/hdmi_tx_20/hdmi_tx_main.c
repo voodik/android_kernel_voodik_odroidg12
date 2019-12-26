@@ -2188,7 +2188,9 @@ const char *disp_mode_t[] = {
 	"2160p50hz",
 	"2160p60hz",
 	/* VESA modes */
+	"480x320p60hz",
 	"640x480p60hz",
+	"480x800p60hz",
 	"800x480p60hz",
 	"800x600p60hz",
 	"852x480p60hz",
