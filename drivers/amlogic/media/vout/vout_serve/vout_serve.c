@@ -281,8 +281,17 @@ static int set_vout_init_mode(void)
 	char init_mode_str[VMODE_NAME_LEN_MAX];
 	int ret = 0;
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	strncpy(vout_mode_uboot,
+			(vout_get_hpd_state() || !cvbs_cable_connected()) ?
+			hdmimode : cvbsmode,
+			sizeof(vout_mode_uboot));
+#endif
+
 	snprintf(init_mode_str, VMODE_NAME_LEN_MAX, "%s", vout_mode_uboot);
+
 	vout_init_vmode = validate_vmode(vout_mode_uboot);
+
 	if (vout_init_vmode >= VMODE_MAX) {
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 		VOUTERR("no matched vout mode %s, force to set 1080p60hz\n",
@@ -300,9 +309,11 @@ static int set_vout_init_mode(void)
 	}
 	last_vmode = vout_init_vmode;
 
+#if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	if (uboot_display)
 		vmode = vout_init_vmode | VMODE_INIT_BIT_MASK;
 	else
+#endif
 		vmode = vout_init_vmode;
 
 	memset(local_name, 0, sizeof(local_name));
