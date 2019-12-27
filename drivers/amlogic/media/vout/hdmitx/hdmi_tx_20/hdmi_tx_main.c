@@ -4355,6 +4355,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	/* start reading E-EDID */
 	if (hdev->repeater_tx)
 		rx_repeat_hpd_state(1);
+	edidinfo_detach_to_vinfo(hdev);
 	hdmitx_get_edid(hdev);
 	hdev->cedst_policy = hdev->cedst_en & hdev->rxcap.scdc_present;
 	hdmi_physcial_size_update(hdev);
