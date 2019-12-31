@@ -383,13 +383,13 @@ static const struct snd_soc_dapm_widget tl1_acodec_dapm_widgets[] = {
 			0, 0),
 
 	/*DRV output */
-	SND_SOC_DAPM_OUT_DRV("LO1L_OUT_EN", ACODEC_0,
+	SND_SOC_DAPM_OUT_DRV("LO1L_OUT_EN", SND_SOC_NOPM,
 			     LO1L_EN, 0, NULL, 0),
-	SND_SOC_DAPM_OUT_DRV("LO1R_OUT_EN", ACODEC_0,
+	SND_SOC_DAPM_OUT_DRV("LO1R_OUT_EN", SND_SOC_NOPM,
 			     LO1R_EN, 0, NULL, 0),
-	SND_SOC_DAPM_OUT_DRV("LO2L_OUT_EN", ACODEC_0,
+	SND_SOC_DAPM_OUT_DRV("LO2L_OUT_EN", SND_SOC_NOPM,
 			     LO2L_EN, 0, NULL, 0),
-	SND_SOC_DAPM_OUT_DRV("LO2R_OUT_EN", ACODEC_0,
+	SND_SOC_DAPM_OUT_DRV("LO2R_OUT_EN", SND_SOC_NOPM,
 			     LO2R_EN, 0, NULL, 0),
 
 	/*MUX output source select */
