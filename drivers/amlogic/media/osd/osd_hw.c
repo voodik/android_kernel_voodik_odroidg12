@@ -6701,6 +6701,9 @@ static void osd_set_freescale(u32 index,
 	struct layer_blend_reg_s *blend_reg;
 	u32 width, height;
 	u32 src_height;
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	u32 dst_width, dst_height;
+#endif
 	u32 workaround_line = osd_hw.workaround_line;
 	u32 output_index = 0;
 
@@ -6835,6 +6838,35 @@ static void osd_set_freescale(u32 index,
 		osd_set_dummy_data(index, 0);
 	else
 		osd_set_dummy_data(index, 0xff);
+
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	/* Adjust free_scale option based on dst axis */
+	dst_width = osd_hw.free_dst_data[index].x_end -
+		osd_hw.free_dst_data[index].x_start + 1;
+	dst_height = osd_hw.free_dst_data[index].y_end -
+		osd_hw.free_dst_data[index].y_start + 1;
+
+	if (dst_width > 1920)
+		osd_hw.free_scale[index].h_enable = 1;
+	else
+		osd_hw.free_scale[index].h_enable = 0;
+
+	if (dst_height < 2160)
+		osd_hw.free_scale[index].v_enable = 0;
+	else
+		osd_hw.free_scale[index].v_enable = 1;
+
+	osd_hw.free_scale_enable[index] =
+		(((osd_hw.free_scale[index].h_enable << 16) & 0xffff0000)
+		| (osd_hw.free_scale[index].v_enable & 0xffff));
+	osd_hw.free_scale_mode[index] = 1;
+
+	osd_log_dbg2(MODULE_BLEND, "h_enable %d v_enable %d, free_scale 0x%x\n",
+		osd_hw.free_scale[index].h_enable,
+		osd_hw.free_scale[index].v_enable,
+		osd_hw.free_scale_enable[index]);
+#endif /* CONFIG_ARCH_MESON64_ODROID_COMMON */
+
 	osd_log_dbg2(MODULE_BLEND, "osd%d:free_src_data:%d,%d,%d,%d\n",
 		index,
 		osd_hw.free_src_data[index].x_start,
