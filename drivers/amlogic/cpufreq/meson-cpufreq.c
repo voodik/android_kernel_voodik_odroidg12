@@ -41,36 +41,7 @@
 #include "../../regulator/internal.h"
 #include <linux/amlogic/scpi_protocol.h>
 #include "../../base/power/opp/opp.h"
-/* Currently we support only two clusters */
-#define MAX_CLUSTERS	2
-
-/*core power supply*/
-#define CORE_SUPPLY "cpu"
-
-/* Core Clocks */
-#define CORE_CLK	"core_clk"
-#define LOW_FREQ_CLK_PARENT	"low_freq_clk_parent"
-#define HIGH_FREQ_CLK_PARENT	"high_freq_clk_parent"
-
-static struct thermal_cooling_device *cdev[MAX_CLUSTERS];
-static struct clk *clk[MAX_CLUSTERS];
-static struct cpufreq_frequency_table *freq_table[MAX_CLUSTERS];
-
-/* Default voltage_tolerance */
-#define DEF_VOLT_TOL		0
-
-/*mid rate for set parent,Khz*/
-static unsigned int mid_rate = (1000*1000);
-static unsigned int gap_rate = (10*1000*1000);
-
-struct meson_cpufreq_driver_data {
-	struct device *cpu_dev;
-	struct regulator *reg;
-	/* voltage tolerance in percentage */
-	unsigned int volt_tol;
-	struct clk *high_freq_clk_p;
-	struct clk *low_freq_clk_p;
-};
+#include "meson-cpufreq.h"
 
 #ifdef CONFIG_ARCH_MESON64_ODROIDN2
 #define OF_NODE_CPU_OPP_0	"/cpu_opp_table0/"	/* Core A53 */
@@ -81,10 +52,6 @@ static unsigned long max_freq[2] = {
 		1800000  /* defalut freq for A73 is 1.800GHz */
 };
 #endif
-
-static DEFINE_PER_CPU(unsigned int, physical_cluster);
-
-static struct mutex cluster_lock[MAX_CLUSTERS];
 
 static unsigned int meson_cpufreq_get_rate(unsigned int cpu)
 {
