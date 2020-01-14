@@ -6846,15 +6846,21 @@ static void osd_set_freescale(u32 index,
 	dst_height = osd_hw.free_dst_data[index].y_end -
 		osd_hw.free_dst_data[index].y_start + 1;
 
+	/*
+	 * On Android, higher framebuffer size over 1920x1080
+	 * will be limited to 1920x1080
+	 * and osd driver needs to scale the size
+	 * to fit in actual hdmi output resolution.
+	 */
 	if (dst_width > 1920)
 		osd_hw.free_scale[index].h_enable = 1;
 	else
 		osd_hw.free_scale[index].h_enable = 0;
 
-	if (dst_height < 2160)
-		osd_hw.free_scale[index].v_enable = 0;
-	else
+	if (dst_height > 1080)
 		osd_hw.free_scale[index].v_enable = 1;
+	else
+		osd_hw.free_scale[index].v_enable = 0;
 
 	osd_hw.free_scale_enable[index] =
 		(((osd_hw.free_scale[index].h_enable << 16) & 0xffff0000)
