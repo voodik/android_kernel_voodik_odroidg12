@@ -6852,15 +6852,20 @@ static void osd_set_freescale(u32 index,
 	 * and osd driver needs to scale the size
 	 * to fit in actual hdmi output resolution.
 	 */
-	if (dst_width > 1920)
+	if ((dst_width <= 1920) && (dst_height <= 1200)) {
 		osd_hw.free_scale[index].h_enable = 1;
-	else
-		osd_hw.free_scale[index].h_enable = 0;
-
-	if (dst_height > 1080)
 		osd_hw.free_scale[index].v_enable = 1;
-	else
-		osd_hw.free_scale[index].v_enable = 0;
+	} else {
+		if (dst_width > 1920)
+			osd_hw.free_scale[index].h_enable = 1;
+		else
+			osd_hw.free_scale[index].h_enable = 0;
+
+		if (dst_height > 1080)
+			osd_hw.free_scale[index].v_enable = 1;
+		else
+			osd_hw.free_scale[index].v_enable = 0;
+	}
 
 	osd_hw.free_scale_enable[index] =
 		(((osd_hw.free_scale[index].h_enable << 16) & 0xffff0000)
