@@ -5942,6 +5942,12 @@ static int amhdmitx_probe(struct platform_device *pdev)
 	hdmitx_device.nb.notifier_call = hdmitx_reboot_notifier;
 	register_reboot_notifier(&hdmitx_device.nb);
 
+	HDMITX_Meson_Init(&hdmitx_device);
+
+	hdmitx_device.hpd_state = !!(hdmitx_device.hwop.cntlmisc(
+		&hdmitx_device, MISC_HPD_GPI_ST, 0));
+
+
 	vout_register_server(&hdmitx_vout_server);
 #ifdef CONFIG_AMLOGIC_VOUT2_SERVE
 	vout2_register_server(&hdmitx_vout2_server);
@@ -5954,8 +5960,6 @@ static int amhdmitx_probe(struct platform_device *pdev)
 #endif
 
 	hdmitx_extcon_register(pdev, dev);
-
-	HDMITX_Meson_Init(&hdmitx_device);
 
 	/* update fmt_attr */
 	hdmitx_init_fmt_attr(&hdmitx_device);
