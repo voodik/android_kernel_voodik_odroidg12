@@ -33,6 +33,21 @@
 #include <linux/hrtimer.h>
 #include <asm/setup.h>
 
+static int prevent_sleep = 0;
+
+static  int __init prevent_sleep_setup(char *s)
+{
+	if (!strcmp(s, "true") || !strcmp(s, "1"))
+		prevent_sleep = 1;
+	else
+		prevent_sleep = 0;
+
+	return 0;
+}
+__setup("prevent_sleep=", prevent_sleep_setup);
+
+struct wakeup_source wake_src;
+
 MODULE_AUTHOR("Hardkernel Co,.Ltd");
 MODULE_DESCRIPTION("SYSFS driver for ODROID hardware");
 MODULE_LICENSE("GPL");
@@ -133,6 +148,8 @@ static struct class odroid_class = {
 static int odroid_sysfs_probe(struct platform_device *pdev)
 {
 	int error = 0;
+	if (prevent_sleep)
+		__pm_stay_awake(&wake_src);
 
 #ifdef CONFIG_USE_OF
 	struct device_node *node;
@@ -149,6 +166,9 @@ static int odroid_sysfs_probe(struct platform_device *pdev)
 
 static int odroid_sysfs_remove(struct platform_device *pdev)
 {
+	if (prevent_sleep)
+		__pm_relax(&wake_src);
+
 	return 0;
 }
 
@@ -191,6 +211,9 @@ static struct platform_driver odroid_sysfs_driver = {
 static int __init odroid_sysfs_init(void)
 {
 	int error = class_register(&odroid_class);
+
+	if (prevent_sleep)
+		wakeup_source_init(&wake_src, "odroid_sysfs");
 
 	if (error < 0)
 		return error;
