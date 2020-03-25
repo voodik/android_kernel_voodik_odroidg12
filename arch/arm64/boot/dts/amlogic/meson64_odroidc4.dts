@@ -29,11 +29,6 @@
 
 	chosen { };
 
-	memory@00000000 {
-		device_type = "memory";
-		linux,usable-memory = <0x0 0x000000 0x0 0x80000000>;
-	};
-
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
@@ -203,6 +198,10 @@
 		irq_trigger_type = "GPIO_IRQ_HIGH";
 		power_on_pin = <&gpio        GPIOX_6         GPIO_ACTIVE_HIGH>;
 		dhd_static_buf; //if use bcm wifi, config dhd_static_buf
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm_e_pins>;
+		pwms= <&pwm_ef MESON_PWM_0 30541 0>;
+		duty_cycle = <15270>;
 	};
 
 	deinterlace {
@@ -792,7 +791,7 @@
 			 "MMC_PM_KEEP_POWER",
 			 "MMC_CAP_SDIO_IRQ";
 		f_min = <400000>;
-		f_max = <60000000>;
+		f_max = <208000000>;
 	};
 };
 
