@@ -759,6 +759,14 @@
 	status = "okay";
 };
 
+&usb3_phy_v2 {
+	status = "okay";
+	portnum = <1>;
+	otg = <1>;
+	gpio-vbus-power = "GPIOAO_2";
+	gpios = <&gpio_ao GPIOAO_2 GPIO_ACTIVE_HIGH>;
+};
+
 &reboot {
 	sd_volsw_gpio = <&gpio_ao GPIOAO_6 GPIO_ACTIVE_HIGH>;
 	sd_power_gpio = <&gpio_ao GPIOAO_3 GPIO_ACTIVE_HIGH>;
@@ -840,7 +848,7 @@
 	num_chipselect = <2>;
 
 	cs-gpios = <&gpio GPIOX_10 GPIO_ACTIVE_LOW>,
-		   <&gpio GPIOA_4 GPIO_ACTIVE_LOW>;
+		   <&gpio GPIOH_6 GPIO_ACTIVE_LOW>;
 
 	can0: can@0 {
 		compatible = "microchip,mcp2515";

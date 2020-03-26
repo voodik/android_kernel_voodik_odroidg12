@@ -189,14 +189,6 @@
 	portnum = <2>;
 };
 
-&usb3_phy_v2 {
-	status = "okay";
-	portnum = <1>;
-	otg = <1>;
-	gpio-vbus-power = "GPIOH_6";
-	gpios = <&gpio GPIOH_6 GPIO_ACTIVE_HIGH>;
-};
-
 &dwc3 {
 	status = "okay";
 };
