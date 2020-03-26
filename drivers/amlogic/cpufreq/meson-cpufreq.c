@@ -57,13 +57,12 @@ static unsigned int get_cpufreq_table_index(u64 function_id,
 	return res.a0;
 }
 
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
-#define OF_NODE_CPU_OPP_0	"/cpu_opp_table0/"	/* Core A53 */
-#define OF_NODE_CPU_OPP_1	"/cpu_opp_table1/"	/* Core A73 */
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+#include <linux/platform_data/board_odroid.h>
 
 static unsigned long max_freq[2] = {
-		1896000, /* defalut freq for A53 is 1.896GHz */
-		1800000  /* defalut freq for A73 is 1.800GHz */
+	0,
+	0,
 };
 #endif
 
@@ -440,9 +439,6 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 	unsigned int volt_tol = 0;
 	unsigned long freq_hz = 0;
 	int cpu = 0, ret = 0, tables_index;
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
-	int i = 0;
-#endif
 
 	if (!policy) {
 		pr_err("invalid cpufreq_policy\n");
@@ -553,15 +549,18 @@ static int meson_cpufreq_init(struct cpufreq_policy *policy)
 		goto free_reg;
 	}
 
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
-	for (i = 0; (freq_table[cur_cluster][i].frequency != CPUFREQ_TABLE_END)
-		&& max_freq[cur_cluster]; i++) {
-		if (freq_table[cur_cluster][i].frequency > max_freq[cur_cluster]) {
-			pr_info("dvfs [%s] - cluster %d freq %d\n",
-				__func__, cur_cluster,
-				freq_table[cur_cluster][i].frequency);
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	if (board_is_odroidn2() || board_is_odroidc4()) {
+		int i = 0;
+		for (i = 0; (freq_table[cur_cluster][i].frequency != CPUFREQ_TABLE_END)
+				&& max_freq[cur_cluster]; i++) {
+			if (freq_table[cur_cluster][i].frequency > max_freq[cur_cluster]) {
+				pr_info("dvfs [%s] - cluster %d freq %d\n",
+						__func__, cur_cluster,
+						freq_table[cur_cluster][i].frequency);
 
-			freq_table[cur_cluster][i].frequency = CPUFREQ_TABLE_END;
+				freq_table[cur_cluster][i].frequency = CPUFREQ_TABLE_END;
+			}
 		}
 	}
 #endif
@@ -642,52 +641,49 @@ free_np:
 	return ret;
 }
 
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
-static int __init get_max_freq_a53(char *str)
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+static int __init get_max_freq_cortex(unsigned int cluster, char *str)
 {
 	int ret;
+	unsigned long value;
 
-	if (str == NULL) {
-		/* default freq value for A53 core is 1.896GHz */
-		pr_info("[%s] no data\n", __func__);
+	if (!str || (cluster >= ARRAY_SIZE(max_freq)))
 		return -EINVAL;
-	}
-	ret = kstrtoul(str, 0, &max_freq[0]);
-	if (ret != 0) {
-		pr_info("[%s] invalid data - err %d, str %s\n",
-			__func__, ret, str);
-		return -EINVAL;
+
+	ret = kstrtoul(str, 0, &value);
+	if (ret == 0) {
+		max_freq[cluster] = value * 1000;	/* in unit kHz */
+		pr_info("max cpufreq of cluster%d : %ldkHz\n",
+				cluster, max_freq[cluster]);
+		return 0;
 	}
 
-	/* in unit kHz */
-	max_freq[0] *= 1000;
-	pr_info("[%s] - max_freq : %ld\n", __func__, max_freq[0]);
+	pr_debug("[%s] invalid data - err %d, str %s\n", __func__, ret, str);
 
-	return 0;
+	return -EINVAL;
+}
+
+static int __init get_max_freq_a53(char *str)
+{
+	if (board_is_odroidn2())
+		return get_max_freq_cortex(0, str);
+	return -EINVAL;
 }
 __setup("max_freq_a53=", get_max_freq_a53);
 
+static int __init get_max_freq_a55(char *str)
+{
+	if (board_is_odroidc4())
+		return get_max_freq_cortex(0, str);
+	return -EINVAL;
+}
+__setup("max_freq_a55=", get_max_freq_a55);
+
 static int __init get_max_freq_a73(char *str)
 {
-	int ret;
-
-	if (str == NULL) {
-		/* default freq value for A73 core is 1.800GHz */
-		pr_info("[%s] no data\n", __func__);
-		return -EINVAL;
-	}
-	ret = kstrtoul(str, 0, &max_freq[1]);
-	if (ret != 0) {
-		pr_info("[%s] invalid data - err %d, str %s\n",
-			__func__, ret, str);
-		return -EINVAL;
-	}
-
-	/* in unit kHz */
-	max_freq[1] *= 1000;
-	pr_info("[%s] - max_freq : %ld\n", __func__, max_freq[1]);
-
-	return 0;
+	if (board_is_odroidn2())
+		return get_max_freq_cortex(1, str);
+	return -EINVAL;
 }
 __setup("max_freq_a73=", get_max_freq_a73);
 #endif
@@ -781,6 +777,20 @@ static int meson_cpufreq_probe(struct platform_device *pdev)
 	struct regulator *cpu_reg = NULL;
 	unsigned int cpu = 0;
 	int ret, i;
+
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	/* Set the maximum cpufreq when kernel parameter is not given with
+	   'max_freq_<a53|a55|a73>' */
+	if (board_is_odroidn2()) {
+		if (!max_freq[0])
+			max_freq[0] = 1896000; /* defalut freq for A53 is 1.896GHz */
+		if (!max_freq[1])
+			max_freq[1] = 1800000; /* defalut freq for A73 is 1.800GHz */
+	} else if (board_is_odroidc4()) {
+		if (!max_freq[0])
+			max_freq[0] = 1800000; /* defalut freq for A55 is 1.800GHz */
+	}
+#endif
 
 	for (i = 0; i < MAX_CLUSTERS; i++)
 		mutex_init(&cluster_lock[i]);
