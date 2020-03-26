@@ -33,12 +33,6 @@
 		spi1 = &spicc1;
 	};
 
-	gpiomem {
-		compatible = "amlogic, gpiomem";
-		reg = <0x0 0xff634000 0x0 0x1000>;
-		status = "okay";
-	};
-
 	codec_mm {
 		compatible = "amlogic, codec, mm";
 		memory-region = <&codec_mm_cma &codec_mm_reserved>;
@@ -107,13 +101,6 @@
 		gpios = <&gpio GPIOA_13 GPIO_ACTIVE_HIGH>;
 		status = "disabled";
 	};
-
-	pwmgpio:pwmgpio {
-		compatible = "pwm-gpio";
-		#pwm-cells = <3>;
-		pwm-gpios = <&gpio_ao GPIOAO_10 GPIO_ACTIVE_HIGH>;
-		status = "okay";
-	};
 };
 
 &ethmac {
@@ -177,11 +164,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2_master_pins1>;
 	clock-frequency = <100000>;		/* default 100k */
-
-	pcf8563: rtc@51 {
-		compatible = "nxp,pcf8563";
-		reg = <0x51>;
-	};
 };
 
 &usb2_phy_v2 {
@@ -201,7 +183,7 @@
 
 &pcie_A {
 	reset-gpio = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
-	status = "disable";
+	status = "disabled";
 };
 
 &sd_emmc_c {
@@ -213,7 +195,6 @@
 			 "MMC_CAP_MMC_HIGHSPEED",
 			 "MMC_CAP_SD_HIGHSPEED",
 			 "MMC_CAP_NONREMOVABLE",
-			 "MMC_CAP_1_8V_DDR",
 			 "MMC_CAP_HW_RESET",
 			 "MMC_CAP_ERASE",
 			 "MMC_CAP_CMD23";
@@ -233,12 +214,6 @@
 	i2c3_master_pins2:i2c3_pins2 {
 		mux {
 			drive-strength = <3>;
-		};
-	};
-	spdifout: spdifout {
-		mux {/* GPIOA_11 */
-			groups = "spdif_out_a11";
-			function = "spdif_out";
 		};
 	};
 	pwmcd_to_gpios:pwmcd_gpio {
