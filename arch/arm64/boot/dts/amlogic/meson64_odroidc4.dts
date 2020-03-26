@@ -29,6 +29,13 @@
 
 	chosen { };
 
+	gpiomem {
+		compatible = "amlogic, gpiomem";
+		reg = <0x0 0xff634000 0x0 0x1000>,	/* GPIO banks */
+			<0x0 0xff800000 0x0 0x1000>;	/* GPIO_AO bank*/
+		status = "okay";
+	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
@@ -50,12 +57,20 @@
 			alloc-ranges = <0x0 0x05000000 0x0 0x400000>;
 			clear-map;
 		};
+
 		secos_reserved:linux,secos {
 			status = "disable";
 			compatible = "amlogic, aml_secos_memory";
 			reg = <0x0 0x05300000 0x0 0x2000000>;
 			no-map;
 		};
+
+		/*  POST PROCESS MANAGER */
+		ppmgr_reserved:linux,ppmgr {
+			compatible = "shared-dma-pool";
+			size = <0x0 0x0>;
+		};
+
 		logo_reserved:linux,meson-fb {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -93,12 +108,6 @@
 			size = <0x0 0x02800000>;
 			alignment = <0x0 0x400000>;
 		};
-		/*  POST PROCESS MANAGER */
-		ppmgr_reserved:linux,ppmgr {
-			compatible = "shared-dma-pool";
-			size = <0x0 0x0>;
-		};
-
 		codec_mm_cma:linux,codec_mm_cma {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -773,24 +782,6 @@
 	sd_vddio_gpio = <&gpio_ao GPIOE_2 GPIO_ACTIVE_HIGH>;
 };
 
-&sd_emmc_c {
-	status = "okay";
-	emmc {
-		caps = "MMC_CAP_8_BIT_DATA",
-			 "MMC_CAP_MMC_HIGHSPEED",
-			 "MMC_CAP_SD_HIGHSPEED",
-			 "MMC_CAP_NONREMOVABLE",
-			/* "MMC_CAP_1_8V_DDR", */
-			 "MMC_CAP_HW_RESET",
-			 "MMC_CAP_ERASE",
-			 "MMC_CAP_CMD23";
-		caps2 = "MMC_CAP2_HS200";
-		/* "MMC_CAP2_HS400";*/
-		f_min = <400000>;
-		f_max = <200000000>;
-	};
-};
-
 &sd_emmc_b {
 	status = "okay";
 	sd-uhs-sdr25;
@@ -830,9 +821,33 @@
 	};
 };
 
-&meson_cooldev {
-	status = "okay";
+&pinctrl_periphs {
+	tdmout_a: tdmout_a {
+		mux { /* GPIOX_9, GPIOX_10, GPIOX_11 */
+			groups = "tdma_sclk",
+				"tdma_fs",
+				"tdma_dout0";
+			function = "tdma_out";
+			drive-strength = <2>;
+		};
+	};
 };
+
+&pinctrl_aobus {
+	spdifout: spdifout {
+		mux {/* GPIOAO_10 */
+			groups = "spdif_out_ao";
+			function = "spdif_out_ao";
+		};
+	};
+	tdma_mclk: tdma_mclk {
+		mux {
+			groups = "mclk0_ao";
+			function = "mclk0_ao";
+			drive-strength = <2>;
+		};
+	};
+}; /* end of pinctrl_aobus */
 
 &spicc0 {
 	status = "disabled";
