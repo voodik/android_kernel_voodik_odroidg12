@@ -965,3 +965,13 @@
 &i2c3 {
 	status = "disabled";
 };
+
+&i2c2 {
+	status = "disabled";
+
+	pcf8563: rtc@51 {
+		status = "disabled";
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+};
