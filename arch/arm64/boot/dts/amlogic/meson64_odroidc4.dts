@@ -752,6 +752,53 @@
 		reg = <0x0 0xff808040 0x0 0x44>;
 		status = "ok";
 	};
+
+	hktft35 {
+		status = "disabled";
+		compatible = "odroid,hktft35";
+		pinctrl-names = "hktft35";
+		pinctrl-0 = <&hktft35_pins>;
+
+		rotate = <270>;
+		bgr;
+		fps = <20>;
+		bpp = <16>;
+		reset-gpios = <&gpio GPIOX_3 GPIO_ACTIVE_LOW>;
+		dc-gpios = <&gpio GPIOX_14 GPIO_ACTIVE_LOW>;
+		wr-gpios = <&gpio GPIOX_10 GPIO_ACTIVE_LOW>;
+		cs-gpios = <&gpio GPIOX_16 GPIO_ACTIVE_LOW>;
+		led-gpios = <&gpio GPIOX_6 GPIO_ACTIVE_LOW>;
+		db-gpios = <&gpio GPIOX_1 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_2 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_0 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_11 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_9 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_8 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_7 GPIO_ACTIVE_LOW>,
+			   <&gpio GPIOX_4 GPIO_ACTIVE_LOW>;
+		debug = <0>;
+
+		hktft35_pins: hktft35_pins {
+			mux {
+				groups = "GPIOX_0",
+					"GPIOX_1",
+					"GPIOX_2",
+					"GPIOX_3",
+					"GPIOX_4",
+					"GPIOX_6",
+					"GPIOX_7",
+					"GPIOX_8",
+					"GPIOX_9",
+					"GPIOX_10",
+					"GPIOX_11",
+					"GPIOX_14",
+					"GPIOX_16";
+				function = "gpio_periphs";
+				output-high;
+				drive-strength = <3>;
+			};
+		};
+	};
 }; /* end of / */
 
 &audiobus {
