@@ -944,3 +944,26 @@
 		reg = <0x51>;
 	};
 };
+
+&i2c3 {
+	status = "disabled";
+
+	/* Hardkernel I2C 3.5" Touchscreen */
+	/* drivers/input/sx8650.c */
+	sx865x: sx865x@49 {
+		status = "disabled";
+		compatible = "semtech,sx8650";
+		reg = <0x49>;
+		#clock-cells = <0>;
+
+		/* H/W Pin control setup */
+		/* ODROID-C4 */
+		gpio-pendown = <&gpio GPIOH_5 GPIO_ACTIVE_LOW>;
+		gpio-reset   = <&gpio GPIOH_7 GPIO_ACTIVE_LOW>;
+
+		/* platform data setup */
+		invert-x = <0>;
+		invert-y = <1>;
+		swap-xy = <1>;
+	};
+};
