@@ -1,7 +1,7 @@
 /*
- * arch/arm64/boot/dts/amlogic/mesong12_odroid_common.dtsi
+ * arch/arm64/boot/dts/amlogic/mesonsm1_odroid_common.dtsi
  *
- * Copyright (C) 2018 Hardkernel Co,. Ltd. All rights reserved.
+ * Copyright (C) 2020 Hardkernel Co,. Ltd. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@
 		serial3 = &uart_C;
 		serial4 = &uart_AO_B;
 		i2c0 = &i2c0;
-		i2c1 = &i2c1;
-		i2c2 = &i2c2;
-		i2c3 = &i2c3;
+		i2c1 = &i2c2;
+		i2c2 = &i2c3;
+		i2c3 = &i2c1;
 		i2c4 = &i2c_AO;
 		tsensor0 = &p_tsensor;
 		tsensor1 = &d_tsensor;
