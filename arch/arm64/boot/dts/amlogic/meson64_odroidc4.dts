@@ -905,4 +905,32 @@
 
 		linux,wakeup;
 	};
+
+	hktft32@0 {
+		status = "disabled";
+		compatible = "odroid,hktft32";
+		reg = <0>;
+		pinctrl-names = "hktft32";
+		pinctrl-0 = <&hktft32_pins>;
+
+		spi-max-frequency = <40000000>;
+		rotate = <90>;
+		bgr;
+		backlight;
+		fps = <20>;
+		bpp = <16>;
+		reset-gpios = <&gpio GPIOX_4 GPIO_ACTIVE_LOW>;
+		dc-gpios = <&gpio GPIOX_7 GPIO_ACTIVE_LOW>;
+		debug = <0>;
+
+		hktft32_pins: hktft32_pins {
+			mux {
+				groups = "GPIOX_4",
+					"GPIOX_7";
+				function = "gpio_periphs";
+				output-high;
+				drive-strength = <3>;
+			};
+		};
+	};
 };
