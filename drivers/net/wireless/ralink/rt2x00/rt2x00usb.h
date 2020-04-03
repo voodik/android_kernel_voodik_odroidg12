@@ -38,7 +38,7 @@
  * a higher value is required. In that case we use the REGISTER_TIMEOUT_FIRMWARE
  * and EEPROM_TIMEOUT.
  */
-#define REGISTER_TIMEOUT		100
+#define REGISTER_TIMEOUT		300
 #define REGISTER_TIMEOUT_FIRMWARE	1000
 #define EEPROM_TIMEOUT			2000
 
@@ -259,9 +259,23 @@ static inline void rt2x00usb_register_write(struct rt2x00_dev *rt2x00dev,
 					    u32 value)
 {
 	__le32 reg = cpu_to_le32(value);
-	rt2x00usb_vendor_request_buff(rt2x00dev, USB_MULTI_WRITE,
-				      USB_VENDOR_REQUEST_OUT, offset,
-				      &reg, sizeof(reg));
+	mutex_lock(&rt2x00dev->csr_mutex);
+	if (rt2x00usb_vendor_request(rt2x00dev,
+								 USB_SINGLE_WRITE,
+								 USB_VENDOR_REQUEST_OUT,
+								 offset,
+								 (reg & 0xffff),
+								 NULL, 0,
+								 REGISTER_TIMEOUT) == 0) {
+		rt2x00usb_vendor_request(rt2x00dev,
+								 USB_SINGLE_WRITE,
+								 USB_VENDOR_REQUEST_OUT,
+								 offset+2,
+								 ((reg >> 16) & 0xffff),
+								 NULL, 0,
+								 REGISTER_TIMEOUT);
+	}
+	mutex_unlock(&rt2x00dev->csr_mutex);
 }
 
 /**
@@ -278,9 +292,21 @@ static inline void rt2x00usb_register_write_lock(struct rt2x00_dev *rt2x00dev,
 						 u32 value)
 {
 	__le32 reg = cpu_to_le32(value);
-	rt2x00usb_vendor_req_buff_lock(rt2x00dev, USB_MULTI_WRITE,
-				       USB_VENDOR_REQUEST_OUT, offset,
-				       &reg, sizeof(reg), REGISTER_TIMEOUT);
+	if (rt2x00usb_vendor_request(rt2x00dev,
+								 USB_SINGLE_WRITE,
+								 USB_VENDOR_REQUEST_OUT,
+								 offset,
+								 (reg & 0xffff),
+								 NULL, 0,
+								 REGISTER_TIMEOUT) == 0) {
+		rt2x00usb_vendor_request(rt2x00dev,
+								 USB_SINGLE_WRITE,
+								 USB_VENDOR_REQUEST_OUT,
+								 offset+2,
+								 ((reg >> 16) & 0xffff),
+								 NULL, 0,
+								 REGISTER_TIMEOUT);
+	}
 }
 
 /**
