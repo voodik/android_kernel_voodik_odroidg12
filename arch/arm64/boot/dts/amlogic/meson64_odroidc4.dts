@@ -850,7 +850,7 @@
 }; /* end of pinctrl_aobus */
 
 &spicc0 {
-	status = "disabled";
+	status = "okay";
 
 	/*
 	 40 Pin Header : MOSI(GPIOX.8->19 Pin), MISO(GPIOX.9->21 Pin),
@@ -874,7 +874,7 @@
 	};
 
 	spidev@0 {
-		status = "disabled";
+		status = "okay";
 
 		compatible = "linux,spidev";
 		/* spi default max clock 100Mhz */
@@ -936,8 +936,6 @@
 };
 
 &i2c2 {
-	status = "disabled";
-
 	pcf8563: rtc@51 {
 		status = "disabled";
 		compatible = "nxp,pcf8563";
