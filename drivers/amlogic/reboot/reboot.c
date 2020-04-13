@@ -201,6 +201,12 @@ static void do_aml_restart(enum reboot_mode reboot_mode, const char *cmd)
 
 static void do_aml_poweroff(void)
 {
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	if (!board_is_odroidn2())
+		odroidc4_card_reset();
+	else
+		odroidn2_card_reset();
+#endif
 	/* TODO: Add poweroff capability */
 	__invoke_psci_fn_smc(0x82000042, 1, 0, 0);
 	__invoke_psci_fn_smc(psci_function_id_poweroff,
