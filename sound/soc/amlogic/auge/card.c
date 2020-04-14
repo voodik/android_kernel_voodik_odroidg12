@@ -731,7 +731,7 @@ static int spk_mute_get(struct snd_kcontrol *kcontrol,
 }
 
 static const struct snd_kcontrol_new card_controls[] = {
-	SOC_SINGLE_BOOL_EXT("SPK mute", 0,
+	SOC_SINGLE_BOOL_EXT("LINE_OUT mute", 0,
 			    spk_mute_get,
 			    spk_mute_set),
 };
@@ -746,7 +746,7 @@ static int aml_card_parse_gpios(struct device_node *node,
 	bool active_low;
 	int ret;
 
-	gpio = of_get_named_gpio_flags(node, "spk_mute-gpios", 0, &flags);
+	gpio = of_get_named_gpio_flags(node, "mute_gpio", 0, &flags);
 	priv->spk_mute_gpio = gpio;
 
 	if (gpio_is_valid(gpio)) {
@@ -754,12 +754,14 @@ static int aml_card_parse_gpios(struct device_node *node,
 		flags = active_low ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
 		priv->spk_mute_active_low = active_low;
 
-		ret = devm_gpio_request_one(dev, gpio, flags, "spk_mute");
+		ret = devm_gpio_request_one(dev, gpio, flags, "line_mute");
 		if (ret >= 0) {
 			snd_soc_add_card_controls(soc_card, card_controls,
 					ARRAY_SIZE(card_controls));
 		}
+		pr_info("add line-out mute controls\n");
 	}
+#if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	if (IS_ERR_OR_NULL(priv->avout_mute_desc)) {
 		priv->avout_mute_desc = gpiod_get(dev,
 					"avout_mute", GPIOF_OUT_INIT_LOW);
@@ -780,7 +782,7 @@ static int aml_card_parse_gpios(struct device_node *node,
 				"high" : "low");
 		}
 	}
-
+#endif
 	return 0;
 }
 
