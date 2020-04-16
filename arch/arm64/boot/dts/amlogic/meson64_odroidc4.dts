@@ -944,8 +944,6 @@
 };
 
 &i2c3 {
-	status = "disabled";
-
 	/* Hardkernel I2C 3.5" Touchscreen */
 	/* drivers/input/sx8650.c */
 	sx865x: sx865x@49 {
