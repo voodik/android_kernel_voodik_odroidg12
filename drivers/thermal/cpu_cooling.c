@@ -31,6 +31,10 @@
 #include <linux/cpu.h>
 #include <linux/cpu_cooling.h>
 
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+#include <linux/platform_data/board_odroid.h>
+#endif
+
 #include <trace/events/thermal.h>
 
 /*
@@ -295,17 +299,19 @@ static int build_dyn_power_table(struct cpufreq_cooling_device *cpufreq_device,
 	if (num_opps == 0)
 		return -EINVAL;
 
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
-	pr_debug("[%s] num_opps %d cpufreq max_level %d\n",
-		__func__, num_opps, cpufreq_device->max_level);
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	if (board_is_odroidn2()) {
+		pr_debug("[%s] num_opps %d cpufreq max_level %d\n",
+				__func__, num_opps, cpufreq_device->max_level);
 
-	if (cpufreq_device->max_level == 0)
-		return -EINVAL;
+		if (cpufreq_device->max_level == 0)
+			return -EINVAL;
 
-	if (num_opps < (cpufreq_device->max_level + 1))
-		return -EINVAL;
+		if (num_opps < (cpufreq_device->max_level + 1))
+			return -EINVAL;
 
-	num_opps = cpufreq_device->max_level + 1;
+		num_opps = cpufreq_device->max_level + 1;
+	}
 #endif
 
 	power_table = kcalloc(num_opps, sizeof(*power_table), GFP_KERNEL);
@@ -319,9 +325,18 @@ static int build_dyn_power_table(struct cpufreq_cooling_device *cpufreq_device,
 	     freq++, i++) {
 		u32 freq_mhz, voltage_mv;
 		u64 power;
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
-		if (i >= num_opps)
-			break;
+
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+		if (board_is_odroidn2()) {
+			if (i >= num_opps)
+				break;
+		} else {
+			if (i >= num_opps) {
+				rcu_read_unlock();
+				ret = -EAGAIN;
+				goto free_power_table;
+			}
+		}
 #else
 		if (i >= num_opps) {
 			rcu_read_unlock();
@@ -329,6 +344,7 @@ static int build_dyn_power_table(struct cpufreq_cooling_device *cpufreq_device,
 			goto free_power_table;
 		}
 #endif
+
 		freq_mhz = freq / 1000000;
 		voltage_mv = dev_pm_opp_get_voltage(opp) / 1000;
 
