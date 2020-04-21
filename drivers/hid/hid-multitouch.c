@@ -1753,6 +1753,12 @@ static const struct hid_device_id mt_devices[] = {
 				USB_VENDOR_ID_SHARP,
 				USB_DEVICE_ID_SHARP_TSLV238) },
 
+/* CROSSOVER DISPLAY capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(
+				USB_VENDOR_ID_CROSSOVER,
+				USB_DEVICE_ID_133TF3_DEX) },
+
 /* TEST DISPLAY capacitive Screen */
 	{ .driver_data = MT_CLS_DEFAULT,
 		HID_USB_DEVICE(
