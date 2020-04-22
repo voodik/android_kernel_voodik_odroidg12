@@ -850,7 +850,7 @@
 }; /* end of pinctrl_aobus */
 
 &spicc0 {
-	status = "disabled";
+	status = "okay";
 
 	/*
 	 40 Pin Header : MOSI(GPIOX.8->19 Pin), MISO(GPIOX.9->21 Pin),
@@ -874,7 +874,7 @@
 	};
 
 	spidev@0 {
-		status = "disabled";
+		status = "okay";
 
 		compatible = "linux,spidev";
 		/* spi default max clock 100Mhz */
@@ -904,5 +904,62 @@
 		ti,pressure-max = /bits/ 16 <255>;
 
 		linux,wakeup;
+	};
+
+	hktft32@0 {
+		status = "disabled";
+		compatible = "odroid,hktft32";
+		reg = <0>;
+		pinctrl-names = "hktft32";
+		pinctrl-0 = <&hktft32_pins>;
+
+		spi-max-frequency = <40000000>;
+		rotate = <90>;
+		bgr;
+		backlight;
+		fps = <20>;
+		bpp = <16>;
+		reset-gpios = <&gpio GPIOX_4 GPIO_ACTIVE_LOW>;
+		dc-gpios = <&gpio GPIOX_7 GPIO_ACTIVE_LOW>;
+		debug = <0>;
+
+		hktft32_pins: hktft32_pins {
+			mux {
+				groups = "GPIOX_4",
+					"GPIOX_7";
+				function = "gpio_periphs";
+				output-high;
+				drive-strength = <3>;
+			};
+		};
+	};
+};
+
+&i2c2 {
+	pcf8563: rtc@51 {
+		status = "disabled";
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+	};
+};
+
+&i2c3 {
+	/* Hardkernel I2C 3.5" Touchscreen */
+	/* drivers/input/sx8650.c */
+	sx865x: sx865x@49 {
+		status = "disabled";
+		compatible = "semtech,sx8650";
+		reg = <0x49>;
+		#clock-cells = <0>;
+
+		/* H/W Pin control setup */
+		/* ODROID-C4 */
+		gpio-pendown = <&gpio GPIOH_5 GPIO_ACTIVE_LOW>;
+		gpio-reset   = <&gpio GPIOH_7 GPIO_ACTIVE_LOW>;
+
+		/* platform data setup */
+		invert-x = <0>;
+		invert-y = <1>;
+		swap-xy = <1>;
 	};
 };
