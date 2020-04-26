@@ -945,6 +945,9 @@ static int mt_touch_event(struct hid_device *hid, struct hid_field *field,
 	return 1;
 }
 
+extern bool touch_invert_x;
+extern bool touch_invert_y;
+
 static int mt_process_slot(struct mt_device *td, struct input_dev *input,
 			    struct mt_application *app,
 			    struct mt_usages *slot)
@@ -1056,8 +1059,20 @@ static int mt_process_slot(struct mt_device *td, struct input_dev *input,
 			minor = minor >> 1;
 		}
 
-		input_event(input, EV_ABS, ABS_MT_POSITION_X, *slot->x);
-		input_event(input, EV_ABS, ABS_MT_POSITION_Y, *slot->y);
+		if (touch_invert_x)
+			input_event(input, EV_ABS, ABS_MT_POSITION_X,
+				input->absinfo[0].maximum - *slot->x);
+		else
+			input_event(input, EV_ABS, ABS_MT_POSITION_X,
+				*slot->x);
+
+		if (touch_invert_y)
+			input_event(input, EV_ABS, ABS_MT_POSITION_Y,
+				input->absinfo[1].maximum - *slot->y);
+		else
+			input_event(input, EV_ABS, ABS_MT_POSITION_Y,
+				*slot->y);
+
 		input_event(input, EV_ABS, ABS_MT_TOOL_X, *slot->cx);
 		input_event(input, EV_ABS, ABS_MT_TOOL_Y, *slot->cy);
 		input_event(input, EV_ABS, ABS_MT_DISTANCE, !*slot->tip_state);
