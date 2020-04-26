@@ -78,41 +78,6 @@ static const char * const power_supply_scope_text[] = {
 	"Unknown", "System", "Device"
 };
 
-static ssize_t power_supply_show_usb_type(struct device *dev,
-					  enum power_supply_usb_type *usb_types,
-					  ssize_t num_usb_types,
-					  union power_supply_propval *value,
-					  char *buf)
-{
-	enum power_supply_usb_type usb_type;
-	ssize_t count = 0;
-	bool match = false;
-	int i;
-
-	for (i = 0; i < num_usb_types; ++i) {
-		usb_type = usb_types[i];
-
-		if (value->intval == usb_type) {
-			count += sprintf(buf + count, "[%s] ",
-					 power_supply_usb_type_text[usb_type]);
-			match = true;
-		} else {
-			count += sprintf(buf + count, "%s ",
-					 power_supply_usb_type_text[usb_type]);
-		}
-	}
-
-	if (!match) {
-		dev_warn(dev, "driver reporting unsupported connected type\n");
-		return -EINVAL;
-	}
-
-	if (count)
-		buf[count - 1] = '\n';
-
-	return count;
-}
-
 static ssize_t power_supply_show_property(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf) {
@@ -169,10 +134,6 @@ static ssize_t power_supply_show_property(struct device *dev,
 		break;
 	case POWER_SUPPLY_PROP_MODEL_NAME ... POWER_SUPPLY_PROP_SERIAL_NUMBER:
 		ret = sprintf(buf, "%s\n", value.strval);
-		break;
-	case POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT:
-		ret = sprintf(buf, "%lld\n",
-			      power_supply_type_text[value.int64val]);
 		break;
 	default:
 		ret = sprintf(buf, "%d\n", value.intval);
@@ -306,8 +267,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(usb_hc),
 	POWER_SUPPLY_ATTR(usb_otg),
 	POWER_SUPPLY_ATTR(charge_enabled),
-	/* Local extensions of type int64_t */
-	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),
