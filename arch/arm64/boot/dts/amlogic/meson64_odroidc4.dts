@@ -753,7 +753,7 @@
 		status = "ok";
 	};
 
-	hktft35 {
+	hktft35: hktft35 {
 		status = "disabled";
 		compatible = "odroid,hktft35";
 		pinctrl-names = "hktft35";
@@ -850,7 +850,7 @@
 }; /* end of audiobus */
 
 &uart_A {
-	status = "okay";
+	status = "disabled";
 };
 
 &usb3_phy_v2 {
@@ -935,7 +935,7 @@
 }; /* end of pinctrl_aobus */
 
 &spicc0 {
-	status = "okay";
+	status = "disabled";
 
 	/*
 	 40 Pin Header : MOSI(GPIOX.8->19 Pin), MISO(GPIOX.9->21 Pin),
@@ -958,8 +958,8 @@
 		gpio-irq = <&gpio GPIOX_3 GPIO_ACTIVE_LOW>;
 	};
 
-	spidev@0 {
-		status = "okay";
+	spidev: spidev@0 {
+		status = "disabled";
 
 		compatible = "linux,spidev";
 		/* spi default max clock 100Mhz */
@@ -968,7 +968,7 @@
 	};
 
 	/* SPI 3.2" Touch Screen Define */
-	ads7846@1 {
+	ads7846: ads7846@1 {
 		status = "disabled";
 
 		spi-max-frequency = <1000000>;
@@ -991,7 +991,7 @@
 		linux,wakeup;
 	};
 
-	hktft32@0 {
+	hktft32: hktft32@0 {
 		status = "disabled";
 		compatible = "odroid,hktft32";
 		reg = <0>;
@@ -1021,6 +1021,8 @@
 };
 
 &i2c2 {
+	status = "disabled";
+
 	pcf8563: rtc@51 {
 		status = "disabled";
 		compatible = "nxp,pcf8563";
@@ -1029,6 +1031,8 @@
 };
 
 &i2c3 {
+	status = "disabled";
+
 	/* Hardkernel I2C 3.5" Touchscreen */
 	/* drivers/input/sx8650.c */
 	sx865x: sx865x@49 {
