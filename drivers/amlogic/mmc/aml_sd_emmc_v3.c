@@ -371,18 +371,6 @@ static void aml_sd_emmc_set_timing_v3(struct amlsd_platform *pdata,
 				 */
 				if (pdata->tx_delay != 0)
 					clkc->tx_delay = pdata->tx_delay;
-
-				if (((host->data->chip_type >= MMC_CHIP_TL1)
-				|| (host->data->chip_type == MMC_CHIP_G12B))
-					&& aml_card_type_mmc(pdata)) {
-					clkc->core_phase = para->hs4.core_phase;
-					clkc->tx_phase = para->hs4.tx_phase;
-
-					irq_en |= (1<<17);
-					writel(irq_en,
-						host->base + SD_EMMC_IRQ_EN);
-				/*improve CMD setup time by half SD_CLK cycle*/
-				}
 			}
 			pr_info("%s: try set sd/emmc to HS400 mode\n",
 				mmc_hostname(host->mmc));
@@ -392,6 +380,12 @@ static void aml_sd_emmc_set_timing_v3(struct amlsd_platform *pdata,
 		if (clk_div & 0x01)
 			clk_div++;
 		clkc->div = clk_div / 2;
+		if (aml_card_type_mmc(pdata)) {
+			clkc->core_phase  = para->ddr.core_phase;
+			clkc->tx_phase  = para->ddr.tx_phase;
+		}
+		pr_info("%s: try set sd/emmc to DDR mode\n",
+			mmc_hostname(host->mmc));
 	} else if (timing == MMC_TIMING_MMC_HS) {
 		clkc->core_phase = para->hs.core_phase;
 		/* overide co-phase by dts */
@@ -476,17 +470,12 @@ static void aml_sd_emmc_set_power_v3(struct amlsd_platform *pdata,
 			pdata->pwr_on(pdata);
 		break;
 	case MMC_POWER_UP:
-		if (aml_card_type_non_sdio(pdata)) {
-			of_amlsd_pwr_off(pdata);
-			of_amlsd_pwr_on(pdata);
-		}
 		break;
 	case MMC_POWER_OFF:
 		writel(0, host->base + SD_EMMC_DELAY1_V3);
 		writel(0, host->base + SD_EMMC_DELAY2_V3);
 		writel(0, host->base + SD_EMMC_ADJUST_V3);
 		writel(0, host->base + SD_EMMC_INTF3);
-		host->cmd_retune = 0;
 		break;
 	default:
 		if (pdata->pwr_pre)
