@@ -626,6 +626,23 @@
 		status = "okay";
 	};
 
+	gpio_keypad{
+		compatible = "amlogic, gpio_keypad";
+		status = "okay";
+		scan_period = <20>;
+		key_num = <1>;
+		key_name = "power";
+		key_code = <116>;
+		reg = <0x0 0xFF800000 0x0 0x400>;
+	};
+
+	hk-lirc-helper {
+		compatible = "hk-lirc-helper";
+		/* Multi-format IR controller */
+		reg = <0x0 0xff808040 0x0 0x44>;
+		status = "ok";
+	};
+
 	/* Audio Related start */
 	dummy_codec:dummy{
 		#sound-dai-cells = <0>;
