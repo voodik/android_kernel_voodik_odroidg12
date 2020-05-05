@@ -103,6 +103,10 @@ static const signed short lg4ff_wheel_effects[] = {
 	-1
 };
 
+static const signed short no_wheel_effects[] = {
+	-1
+};
+
 struct lg4ff_wheel {
 	const u32 product_id;
 	const signed short *ff_effects;
@@ -137,6 +141,7 @@ struct lg4ff_alternate_mode {
 };
 
 static const struct lg4ff_wheel lg4ff_devices[] = {
+	{USB_DEVICE_ID_LOGITECH_WINGMAN_FG,  no_wheel_effects,    40, 180, NULL},
 	{USB_DEVICE_ID_LOGITECH_WINGMAN_FFG, lg4ff_wheel_effects, 40, 180, NULL},
 	{USB_DEVICE_ID_LOGITECH_WHEEL,       lg4ff_wheel_effects, 40, 270, NULL},
 	{USB_DEVICE_ID_LOGITECH_MOMO_WHEEL,  lg4ff_wheel_effects, 40, 270, NULL},
@@ -346,6 +351,7 @@ int lg4ff_raw_event(struct hid_device *hdev, struct hid_report *report,
 			rd[5] = rd[3];
 			rd[6] = 0x7F;
 			return 1;
+		case USB_DEVICE_ID_LOGITECH_WINGMAN_FG:
 		case USB_DEVICE_ID_LOGITECH_WINGMAN_FFG:
 		case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL:
 		case USB_DEVICE_ID_LOGITECH_MOMO_WHEEL2:
@@ -474,9 +480,7 @@ static int lg4ff_play(struct input_dev *dev, void *data, struct ff_effect *effec
 static void lg4ff_set_autocenter_default(struct input_dev *dev, u16 magnitude)
 {
 	struct hid_device *hid = input_get_drvdata(dev);
-	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
-	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
-	s32 *value = report->field[0]->value;
+	s32 *value;
 	u32 expand_a, expand_b;
 	struct lg4ff_device_entry *entry;
 	struct lg_drv_data *drv_data;
@@ -1261,8 +1265,8 @@ static int lg4ff_handle_multimode_wheel(struct hid_device *hid, u16 *real_produc
 
 int lg4ff_init(struct hid_device *hid)
 {
-	struct hid_input *hidinput = list_entry(hid->inputs.next, struct hid_input, list);
-	struct input_dev *dev = hidinput->input;
+	struct hid_input *hidinput;
+	struct input_dev *dev;
 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
 	const struct usb_device_descriptor *udesc = &(hid_to_usb_dev(hid)->descriptor);
@@ -1273,6 +1277,13 @@ int lg4ff_init(struct hid_device *hid)
 	int error, i, j;
 	int mmode_ret, mmode_idx = -1;
 	u16 real_product_id;
+
+	if (list_empty(&hid->inputs)) {
+		hid_err(hid, "no inputs found\n");
+		return -ENODEV;
+	}
+	hidinput = list_entry(hid->inputs.next, struct hid_input, list);
+	dev = hidinput->input;
 
 	/* Check that the report looks ok */
 	if (!hid_validate_values(hid, HID_OUTPUT_REPORT, 0, 0, 7))
@@ -1485,7 +1496,6 @@ int lg4ff_deinit(struct hid_device *hid)
 		}
 	}
 #endif
-	hid_hw_stop(hid);
 	drv_data->device_props = NULL;
 
 	kfree(entry);

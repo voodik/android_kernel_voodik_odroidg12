@@ -107,8 +107,6 @@ out:
 
 /*
  * The first byte of the report buffer is expected to be a report number.
- *
- * This function is to be called with the minors_lock mutex held.
  */
 static ssize_t hidraw_send_report(struct file *file, const char __user *buffer, size_t count, unsigned char report_type)
 {
@@ -116,6 +114,8 @@ static ssize_t hidraw_send_report(struct file *file, const char __user *buffer, 
 	struct hid_device *dev;
 	__u8 *buf;
 	int ret = 0;
+
+	lockdep_assert_held(&minors_lock);
 
 	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
 		ret = -ENODEV;
@@ -181,8 +181,6 @@ static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t
  * of buffer is the report number to request, or 0x0 if the defice does not
  * use numbered reports. The report_type parameter can be HID_FEATURE_REPORT
  * or HID_INPUT_REPORT.
- *
- * This function is to be called with the minors_lock mutex held.
  */
 static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t count, unsigned char report_type)
 {
@@ -191,6 +189,8 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t 
 	__u8 *buf;
 	int ret = 0, len;
 	unsigned char report_number;
+
+	lockdep_assert_held(&minors_lock);
 
 	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
 		ret = -ENODEV;
@@ -205,20 +205,20 @@ static ssize_t hidraw_get_report(struct file *file, char __user *buffer, size_t 
 	}
 
 	if (count > HID_MAX_BUFFER_SIZE) {
-		printk(KERN_WARNING "hidraw: pid %d passed too large report\n",
-				task_pid_nr(current));
+		hid_warn(dev, "pid %d passed too large report\n",
+			task_pid_nr(current));
 		ret = -EINVAL;
 		goto out;
 	}
 
 	if (count < 2) {
-		printk(KERN_WARNING "hidraw: pid %d passed too short report\n",
-				task_pid_nr(current));
+		hid_warn(dev, "pid %d passed too short report\n",
+			task_pid_nr(current));
 		ret = -EINVAL;
 		goto out;
 	}
 
-	buf = kmalloc(count * sizeof(__u8), GFP_KERNEL);
+	buf = kmalloc(count, GFP_KERNEL);
 	if (!buf) {
 		ret = -ENOMEM;
 		goto out;
@@ -260,10 +260,10 @@ static unsigned int hidraw_poll(struct file *file, poll_table *wait)
 
 	poll_wait(file, &list->hidraw->wait, wait);
 	if (list->head != list->tail)
-		return POLLIN | POLLRDNORM;
+		return EPOLLIN | EPOLLRDNORM;
 	if (!list->hidraw->exist)
-		return POLLERR | POLLHUP;
-	return 0;
+		return EPOLLERR | EPOLLHUP;
+	return EPOLLOUT | EPOLLWRNORM;
 }
 
 static int hidraw_open(struct inode *inode, struct file *file)
@@ -342,8 +342,8 @@ static void drop_ref(struct hidraw *hidraw, int exists_bit)
 			kfree(hidraw);
 		} else {
 			/* close device for last reader */
-			hid_hw_power(hidraw->hid, PM_HINT_NORMAL);
 			hid_hw_close(hidraw->hid);
+			hid_hw_power(hidraw->hid, PM_HINT_NORMAL);
 		}
 	}
 }
@@ -378,7 +378,7 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
 
 	mutex_lock(&minors_lock);
 	dev = hidraw_table[minor];
-	if (!dev) {
+	if (!dev || !dev->exist) {
 		ret = -ENODEV;
 		goto out;
 	}
@@ -605,7 +605,7 @@ int __init hidraw_init(void)
 	if (result < 0)
 		goto error_class;
 
-	printk(KERN_INFO "hidraw: raw HID events driver (C) Jiri Kosina\n");
+	pr_info("raw HID events driver (C) Jiri Kosina\n");
 out:
 	return result;
 

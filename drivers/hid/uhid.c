@@ -382,7 +382,7 @@ static int uhid_hid_output_report(struct hid_device *hid, __u8 *buf,
 	return uhid_hid_output_raw(hid, buf, count, HID_OUTPUT_REPORT);
 }
 
-static struct hid_ll_driver uhid_hid_driver = {
+struct hid_ll_driver uhid_hid_driver = {
 	.start = uhid_hid_start,
 	.stop = uhid_hid_stop,
 	.open = uhid_hid_open,
@@ -391,6 +391,7 @@ static struct hid_ll_driver uhid_hid_driver = {
 	.raw_request = uhid_hid_raw_request,
 	.output_report = uhid_hid_output_report,
 };
+EXPORT_SYMBOL_GPL(uhid_hid_driver);
 
 #ifdef CONFIG_COMPAT
 
@@ -508,6 +509,7 @@ static int uhid_dev_create2(struct uhid_device *uhid,
 		goto err_free;
 	}
 
+	/* @hid is zero-initialized, strncpy() is correct, strlcpy() not */
 	len = min(sizeof(hid->name), sizeof(ev->u.create2.name)) - 1;
 	strncpy(hid->name, ev->u.create2.name, len);
 	len = min(sizeof(hid->phys), sizeof(ev->u.create2.phys)) - 1;
@@ -774,7 +776,7 @@ static unsigned int uhid_char_poll(struct file *file, poll_table *wait)
 	if (uhid->head != uhid->tail)
 		return POLLIN | POLLRDNORM;
 
-	return 0;
+	return EPOLLOUT | EPOLLWRNORM;
 }
 
 static const struct file_operations uhid_fops = {
