@@ -214,6 +214,7 @@ static void usb_power_control(int is_power, int shift)
 		if (!usb_power) {
 			set_wifi_power(is_power);
 			WIFI_INFO("Set %s power on !\n", (shift ? "WiFi":"BT"));
+			msleep(200);
 			sdio_notify(1);
 			sdio_reinit();
 		}
@@ -336,7 +337,6 @@ static long wifi_power_ioctl(struct file *filp,
 		set_usb_wifi_power(0);
 		mdelay(200);
 		set_usb_wifi_power(1);
-		mdelay(200);
 #if !defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 		pci_reinit();
 #endif
