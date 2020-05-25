@@ -10,7 +10,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					hktft35.dtbo		\
 					ads7846.dtbo		\
 					sx865x-i2c1.dtbo	\
-					pcf8563.dtbo
+					pcf8563.dtbo		\
+					onewire.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
