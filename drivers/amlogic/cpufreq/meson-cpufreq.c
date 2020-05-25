@@ -61,17 +61,13 @@ static unsigned int get_cpufreq_table_index(u64 function_id,
 #include <linux/platform_data/board_odroid.h>
 #include <linux/amlogic/cpu_version.h>
 
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
 #define N2_A53_DEFAULT		1896000	/* N2 Core A53 */
 #define N2_A73_DEFAULT		1800000	/* N2 Core A73 */
 
 #define N2PLUS_A53_DEFAULT	1908000	/* N2 Plus Core A53 */
 #define N2PLUS_A73_DEFAULT	2208000	/* N2 Plus Core A73 */
-#endif
 
-#ifdef CONFIG_ARCH_MESON64_ODROIDN2
 #define C4_A55_DEFAULT		1800000	/* C4 Core A55 */
-#endif
 
 static unsigned long max_freq[2] = {
 	0,
