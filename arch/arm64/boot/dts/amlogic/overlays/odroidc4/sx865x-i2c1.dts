@@ -9,13 +9,13 @@
 		// i2c3 aliased with i2c1.
 		target = <&i2c3>;
 
-		#address-cells = <1>;
-		#size-cells = <0>;
-
 		__overlay__ {
 			status = "okay";
 
-			/* hardkernel I2C 3.5" Touchscreen */
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			/* Hardkernel I2C 3.5" Touchscreen */
 			/* drivers/input/sx8650.c */
 			sx865x: sx865x@49	{
 				status = "okay";
