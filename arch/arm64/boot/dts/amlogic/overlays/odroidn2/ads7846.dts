@@ -8,11 +8,11 @@
 	fragment@0 {
 		target = <&spicc0>;
 
-		#address-cells = <1>;
-		#size-cells = <0>;
-
 		__overlay__ {
 			status = "okay";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
 
 			ads7846: ads7846@0 {
 				status = "okay";

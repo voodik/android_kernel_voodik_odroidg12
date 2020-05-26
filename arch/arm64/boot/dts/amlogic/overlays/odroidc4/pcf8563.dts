@@ -9,6 +9,9 @@
 		__overlay__ {
 			status = "okay";
 
+			#address-cells = <1>;
+			#size-cells = <0>;
+
 			pcf8563: rtc@51 {
 				status = "okay";
 				compatible = "nxp,pcf8563";
