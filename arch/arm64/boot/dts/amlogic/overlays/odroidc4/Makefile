@@ -3,9 +3,9 @@
 dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					i2c0.dtbo		\
 					i2c1.dtbo		\
-					uarta.dtbo		\
-					uartb.dtbo		\
-					uartc.dtbo		\
+					uart0.dtbo		\
+					uart1.dtbo		\
+					uart2.dtbo		\
 					hktft32.dtbo		\
 					hktft35.dtbo		\
 					ads7846.dtbo		\
