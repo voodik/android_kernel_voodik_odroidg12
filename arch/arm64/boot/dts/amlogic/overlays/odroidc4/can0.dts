@@ -1,0 +1,23 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	fragment@0 {
+		target = <&spicc0>;
+
+		__overlay__ {
+			status = "okay";
+
+			can0: can@0 {
+				compatible = "microchip,mcp2515";
+				gpio-irq = <&gpio GPIOX_3 GPIO_ACTIVE_LOW>;
+				reg = <0>;
+				spi-max-frequency = <10000000>;
+				status = "okay";
+			};
+		};
+	};
+};
