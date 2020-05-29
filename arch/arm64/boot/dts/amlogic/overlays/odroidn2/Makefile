@@ -3,8 +3,8 @@
 dtbo-$(CONFIG_ARCH_MESON64_ODROIDN2) += spi0.dtbo		\
 					i2c0.dtbo		\
 					i2c1.dtbo		\
-					uarta.dtbo		\
-					uartb.dtbo		\
+					uart0.dtbo		\
+					uart1.dtbo		\
 					hktft32.dtbo		\
 					hktft35.dtbo		\
 					ads7846.dtbo		\
