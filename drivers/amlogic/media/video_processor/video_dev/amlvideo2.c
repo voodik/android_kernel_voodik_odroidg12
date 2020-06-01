@@ -78,7 +78,8 @@
 /* #define USE_SEMA_QBUF */
 /* #define USE_VDIN_PTS */
 
-/* #define MULTI_NODE */
+#define MULTI_NODE
+
 #ifdef MULTI_NODE
 #define MAX_SUB_DEV_NODE 2
 #else
@@ -4950,8 +4951,8 @@ static int vidiocgmbuf(struct file *file, void *priv, struct video_mbuf *mbuf)
 #ifdef PREVIOUS_VOUT_MODE
 static enum tvin_scan_mode_e vmode2scan_mode(enum vmode_e mode)
 {
-	enum tvin_scan_mode_e scan_mode =
-		TVIN_SCAN_MODE_NULL;/* 1: progressive 2:interlaced */
+	enum tvin_scan_mode_e scan_mode = TVIN_SCAN_MODE_PROGRESSIVE;
+		//TVIN_SCAN_MODE_NULL;/* 1: progressive 2:interlaced */
 
 	switch (mode) {
 	case VMODE_480I:
@@ -5022,7 +5023,6 @@ static int amlvideo2_stop_tvin_service(struct amlvideo2_node *node)
 		vops->stop_tvin_service(node->vdin_device_num);
 	}
 
-	node->start_vdin_flag = 0;
 	return ret;
 }
 
@@ -5036,7 +5036,7 @@ static int amlvideo2_start_tvin_service(struct amlvideo2_node *node)
 
 	vinfo = get_current_vinfo();
 
-	if ((!node->start_vdin_flag) || (node->r_type != AML_RECEIVER_NONE))
+	if (node->r_type != AML_RECEIVER_NONE)
 		goto start;
 
 	if (amlvideo2_dbg_en)
@@ -5186,7 +5186,7 @@ int amlvideo2_notify_callback(struct notifier_block *block, unsigned long cmd,
 
 		/* if local queue have vf , should give back to provider */
 		if (vfq_empty(&node->q_ready)) {
-			if (amlvideo2_dbg_en)
+			if (amlvideo2_dbg_en & 4)
 				pr_info("q_ready is empty .\n");
 		} else {
 			recycle_vf = vfq_pop(&node->q_ready);
@@ -5194,12 +5194,12 @@ int amlvideo2_notify_callback(struct notifier_block *block, unsigned long cmd,
 				vf_put(recycle_vf, node->recv.name);
 				recycle_vf = vfq_pop(&node->q_ready);
 			}
-			if (amlvideo2_dbg_en)
+			if (amlvideo2_dbg_en & 4)
 				pr_info("already flush local vf .\n");
 		}
 
 		/*debug provider vf state*/
-		if (amlvideo2_dbg_en) {
+		if (amlvideo2_dbg_en & 4) {
 			ret = vf_get_states(vfp, &states);
 			if (ret == 0) {
 				pr_info("vf_pool_size = %d, buf_free_num = %d .\n",
@@ -5217,7 +5217,7 @@ int amlvideo2_notify_callback(struct notifier_block *block, unsigned long cmd,
 
 		if (node->r_type == AML_RECEIVER_NONE)
 			amlvideo2_start_thread(node->fh);
-		msleep(500);
+
 
 		ret = amlvideo2_start_tvin_service(node);
 		if (ret < 0) {
