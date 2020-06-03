@@ -617,6 +617,10 @@
 			opp-hz = /bits/ 64 <2016000000>;
 			opp-microvolt = <1010000>;
 		};
+		opp13 {
+			opp-hz = /bits/ 64 <2100000000>;
+			opp-microvolt = <1030000>;
+		};
 	};
 
 	cpufreq-meson {
