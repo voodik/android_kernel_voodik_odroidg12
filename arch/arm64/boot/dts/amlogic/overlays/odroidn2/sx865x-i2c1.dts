@@ -1,0 +1,37 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	fragment@0 {
+		// i2c3 aliased with i2c1.
+		target = <&i2c3>;
+
+		__overlay__ {
+			status = "okay";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			sx865x: sx865x@49 {
+				status = "okay";
+				compatible = "semtech,sx8650";
+				reg = <0x49>;
+				#clock-cells = <0>;
+
+				/* H/W Pin control setup */
+				/* ODROID-N2 */
+				gpio-pendown = <&gpio GPIOX_19 GPIO_ACTIVE_LOW>;
+				gpio-reset   = <&gpio GPIOA_12 GPIO_ACTIVE_LOW>;
+
+				/* platform data setup */
+				invert-x = <0>;
+				invert-y = <1>;
+				swap-xy = <1>;
+			};
+		};
+	};
+};
+
