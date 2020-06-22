@@ -17,6 +17,8 @@
  * such as fratv, frhdmirx
  */
 
+/*#define DEBUG*/
+
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/platform_device.h>
@@ -172,7 +174,7 @@ static irqreturn_t extn_ddr_isr(int irq, void *devid)
 
 			p_extn->frhdmirx_same_cnt++;
 
-			if (p_extn->frhdmirx_same_cnt > 5)
+			if (p_extn->frhdmirx_same_cnt > timeout_thres)
 				frhdmirx_nonpcm2pcm_clr_reset(p_extn);
 
 			if (p_extn->frhdmirx_cnt == 0)
