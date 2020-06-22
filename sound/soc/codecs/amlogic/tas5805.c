@@ -1087,9 +1087,7 @@ static int tas5805m_probe(struct snd_soc_codec *codec)
 	if (ret != 0)
 		goto err;
 
-	if (tas5805m)
-		tas5805m_set_volume(codec, tas5805m->vol);
-
+	tas5805m_set_volume(codec, tas5805m->vol);
 	snd_soc_add_codec_controls(codec, tas5805m_vol_control,
 			ARRAY_SIZE(tas5805m_vol_control));
 	tas5805m->codec = codec;
