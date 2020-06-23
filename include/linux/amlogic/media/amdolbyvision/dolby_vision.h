@@ -64,7 +64,7 @@ extern void dolby_vision_set_toggle_flag(int flag);
 extern int dolby_vision_wait_metadata(struct vframe_s *vf);
 extern int dolby_vision_pop_metadata(void);
 int dolby_vision_update_metadata(struct vframe_s *vf, bool drop_flag);
-extern int dolby_vision_process(struct vframe_s *vf, u32 display_size,
+int dolby_vision_process(struct vframe_s *vf, u32 display_size,
 	u8 pps_state);
 extern void dolby_vision_init_receiver(void *pdev);
 extern void dolby_vision_vf_put(struct vframe_s *vf);
@@ -97,8 +97,7 @@ extern void tv_dolby_vision_dma_table_modify(
 	u32 tbl_id, uint64_t value);
 extern void tv_dolby_vision_efuse_info(void);
 extern int dolby_vision_parse_metadata(
-	struct vframe_s *vf, u8 toggle_mode,
-	bool bypass_release, bool drop_flag);
+	struct vframe_s *vf, u8 toggle_mode, bool bypass_release);
 extern void dolby_vision_update_vsvdb_config(
 	char *vsvdb_buf, u32 tbl_size);
 extern void tv_dolby_vision_el_info(void);
