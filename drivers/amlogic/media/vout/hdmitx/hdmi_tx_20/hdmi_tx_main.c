@@ -557,9 +557,9 @@ static int set_disp_mode_auto(void)
 			hdev->HWOp.CntlConfig(hdev, CONF_HDMI_DVI_MODE,
 				DVI_MODE);
 			pr_info(SYS "change to DVI mode\n");
-		} else if (hdev->RXCap.IEEEOUI == 0) {
+		} else if (hdev->RXCap.ieeeoui == 0) {
 #else
-		if (hdev->RXCap.IEEEOUI == 0) {
+		if (hdev->RXCap.ieeeoui == 0) {
 #endif
 			/* DVI case judgement. In uboot, directly output HDMI
 			 * mode
@@ -567,7 +567,7 @@ static int set_disp_mode_auto(void)
 			hdev->HWOp.CntlConfig(hdev, CONF_HDMI_DVI_MODE,
 				DVI_MODE);
 			pr_info(SYS "change to DVI mode\n");
-		} else if ((hdev->RXCap.IEEEOUI == 0xc03) &&
+		} else if ((hdev->RXCap.ieeeoui == 0xc03) &&
 		(hdev->HWOp.CntlConfig(hdev, CONF_GET_HDMI_DVI_MODE, 0)
 			== DVI_MODE)) {
 			hdev->HWOp.CntlConfig(hdev, CONF_HDMI_DVI_MODE,
@@ -3846,7 +3846,7 @@ static void hdmitx_hpd_plugin_handler(struct work_struct *work)
 	} else
 #endif
 	{
-		if (hdev->RXCap.IEEEOUI != 0x000c03)
+		if (hdev->RXCap.ieeeoui != 0x000c03)
 			hdev->HWOp.CntlConfig(hdev,
 				CONF_HDMI_DVI_MODE, DVI_MODE);
 		else

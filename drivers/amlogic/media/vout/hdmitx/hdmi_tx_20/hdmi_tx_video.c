@@ -766,7 +766,7 @@ static void hdmi_tx_construct_avi_packet(
  */
 static int is_dvi_device(struct rx_cap *pRXCap)
 {
-	if (pRXCap->IEEEOUI != 0x000c03)
+	if (pRXCap->ieeeoui != 0x000c03)
 		return 1;
 	else
 		return 0;
