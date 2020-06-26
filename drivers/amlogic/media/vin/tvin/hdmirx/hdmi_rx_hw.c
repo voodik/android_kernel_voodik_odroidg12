@@ -303,18 +303,14 @@ unsigned int hdmirx_rd_top(unsigned int addr)
 		}
 		spin_unlock_irqrestore(&reg_rw_lock, flags);
 	} else {
+		spin_lock_irqsave(&reg_rw_lock, flags);
+		wr_reg(MAP_ADDR_MODULE_TOP,
+			hdmirx_addr_port | dev_offset, addr);
 		data = rd_reg(MAP_ADDR_MODULE_TOP,
-			dev_offset + (addr<<2));
+			hdmirx_data_port | dev_offset);
+		spin_unlock_irqrestore(&reg_rw_lock, flags);
 	}
-} else {
-	spin_lock_irqsave(&reg_rw_lock, flags);
-	wr_reg(MAP_ADDR_MODULE_TOP,
-		hdmirx_addr_port | dev_offset, addr);
-	data = rd_reg(MAP_ADDR_MODULE_TOP,
-		hdmirx_data_port | dev_offset);
-	spin_unlock_irqrestore(&reg_rw_lock, flags);
-}
-return data;
+	return data;
 }
 
 /*
@@ -356,17 +352,13 @@ void hdmirx_wr_top(unsigned int addr, unsigned int data)
 		}
 		spin_unlock_irqrestore(&reg_rw_lock, flags);
 	} else {
+		spin_lock_irqsave(&reg_rw_lock, flags);
 		wr_reg(MAP_ADDR_MODULE_TOP,
-			dev_offset + (addr<<2), data);
+			hdmirx_addr_port | dev_offset, addr);
+		wr_reg(MAP_ADDR_MODULE_TOP,
+			hdmirx_data_port | dev_offset, data);
+		spin_unlock_irqrestore(&reg_rw_lock, flags);
 	}
-} else {
-	spin_lock_irqsave(&reg_rw_lock, flags);
-	wr_reg(MAP_ADDR_MODULE_TOP,
-		hdmirx_addr_port | dev_offset, addr);
-	wr_reg(MAP_ADDR_MODULE_TOP,
-		hdmirx_data_port | dev_offset, data);
-	spin_unlock_irqrestore(&reg_rw_lock, flags);
-}
 }
 
 /*
@@ -894,20 +886,6 @@ void rx_irq_en(bool enable)
 		hdmirx_wr_dwc(DWC_AUD_FIFO_ICLR, ~0);
 		hdmirx_wr_dwc(DWC_MD_ICLR, ~0);
 	}
-	hdmirx_wr_dwc(DWC_PDEC_IEN_SET, data32);
-	hdmirx_wr_dwc(DWC_AUD_FIFO_IEN_SET, OVERFL|UNDERFL);
-} else {
-	/* clear enable */
-	hdmirx_wr_dwc(DWC_PDEC_IEN_CLR, ~0);
-	hdmirx_wr_dwc(DWC_AUD_CEC_IEN_CLR, ~0);
-	hdmirx_wr_dwc(DWC_AUD_FIFO_IEN_CLR, ~0);
-	hdmirx_wr_dwc(DWC_MD_IEN_CLR, ~0);
-	/* clear status */
-	hdmirx_wr_dwc(DWC_PDEC_ICLR, ~0);
-	hdmirx_wr_dwc(DWC_AUD_CEC_ICLR, ~0);
-	hdmirx_wr_dwc(DWC_AUD_FIFO_ICLR, ~0);
-	hdmirx_wr_dwc(DWC_MD_ICLR, ~0);
-}
 }
 
 /*
@@ -915,26 +893,26 @@ void rx_irq_en(bool enable)
 */
 void hdmirx_irq_hdcp_enable(bool enable)
 {
-if (enable) {
-	/* hdcp2.2 */
-	if (hdcp22_on)
-		hdmirx_wr_dwc(DWC_HDMI2_IEN_SET, 0x1f);
-	/* hdcp1.4 */
-	hdmirx_wr_dwc(DWC_HDMI_IEN_SET, AKSV_RCV);
-} else {
-	/* hdcp2.2 */
-	if (hdcp22_on) {
+	if (enable) {
+		/* hdcp2.2 */
+		if (hdcp22_on)
+			hdmirx_wr_dwc(DWC_HDMI2_IEN_SET, 0x1f);
+		/* hdcp1.4 */
+		hdmirx_wr_dwc(DWC_HDMI_IEN_SET, AKSV_RCV);
+	} else {
+		/* hdcp2.2 */
+		if (hdcp22_on) {
+			/* clear enable */
+			hdmirx_wr_dwc(DWC_HDMI2_IEN_CLR, ~0);
+			/* clear status */
+			hdmirx_wr_dwc(DWC_HDMI2_ICLR, ~0);
+		}
+		/* hdcp1.4 */
 		/* clear enable */
-		hdmirx_wr_dwc(DWC_HDMI2_IEN_CLR, ~0);
+		hdmirx_wr_dwc(DWC_HDMI_IEN_CLR, ~0);
 		/* clear status */
-		hdmirx_wr_dwc(DWC_HDMI2_ICLR, ~0);
+		hdmirx_wr_dwc(DWC_HDMI_ICLR, ~0);
 	}
-	/* hdcp1.4 */
-	/* clear enable */
-	hdmirx_wr_dwc(DWC_HDMI_IEN_CLR, ~0);
-	/* clear status */
-	hdmirx_wr_dwc(DWC_HDMI_ICLR, ~0);
-}
 }
 
 /*
@@ -1240,14 +1218,6 @@ hdmirx_wr_top(TOP_INFILTER_I2C1, data32);
 hdmirx_wr_top(TOP_INFILTER_I2C2, data32);
 hdmirx_wr_top(TOP_INFILTER_I2C3, data32);
 
-data32 = 0;
-/* conversion mode of 422 to 444 */
-data32 |= 0	<< 19;
-/* !!!!dolby vision 422 to 444 ctl bit */
-data32 |= 0	<< 0;
-hdmirx_wr_top(TOP_VID_CNTL,	data32);
-
-if (rx.chip_id != CHIP_ID_TXHD) {
 	data32 = 0;
 	/* conversion mode of 422 to 444 */
 	data32 |= 0	<< 19;
