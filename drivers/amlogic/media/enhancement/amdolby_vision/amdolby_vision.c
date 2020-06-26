@@ -5007,14 +5007,15 @@ static bool send_hdmi_pkt(
 					EOTF_T_LL_MODE,
 					dovi_setting.diagnostic_enable
 					? RGB_10_12BIT : YUV422_BIT12,
-					&vsif);
+					&vsif, false);
 			else
 #endif
 				vinfo->vout_device->fresh_tx_vsif_pkt(
 					EOTF_T_DOLBYVISION,
 					dolby_vision_mode ==
 					DOLBY_VISION_OUTPUT_MODE_IPT_TUNNEL
-					? RGB_8BIT : YUV422_BIT12, &vsif);
+					? RGB_8BIT : YUV422_BIT12, &vsif,
+					false);
 		}
 		last_dst_format = dst_format;
 	} else if (last_dst_format != dst_format) {
@@ -5045,7 +5046,7 @@ static bool send_hdmi_pkt(
 			if (vinfo && vinfo->vout_device &&
 				vinfo->vout_device->fresh_tx_vsif_pkt)
 				vinfo->vout_device->fresh_tx_vsif_pkt(
-					0, 0, NULL);
+						0, 0, NULL, true);
 		}
 		last_dst_format = dst_format;
 	}

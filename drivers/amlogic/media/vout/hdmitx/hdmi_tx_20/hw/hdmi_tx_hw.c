@@ -1536,6 +1536,7 @@ static void hdmi_tvenc_set(struct hdmitx_vidpara *param)
 	unsigned long vso_begin_evn = 0;
 	struct hdmi_format_para *hdmi_encp_para = NULL;
 	struct hdmi_cea_timing *hdmi_encp_timing = NULL;
+	struct hdmi_cea_timing *custom_timing;
 
 	if ((param->VIC & HDMITX_VESA_OFFSET) == HDMITX_VESA_OFFSET) {
 		/* VESA modes setting */
@@ -1548,8 +1549,6 @@ static void hdmi_tvenc_set(struct hdmitx_vidpara *param)
 		pr_info("hdmitx: don't find Paras for VIC : %d\n", param->VIC);
 	} else {
 		hdmi_encp_timing = &hdmi_encp_para->timing;
-
-	struct hdmi_cea_timing *custom_timing;
 
 	switch (param->VIC) {
 	case HDMI_3840x1080p120hz:
