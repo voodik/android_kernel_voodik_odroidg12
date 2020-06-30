@@ -120,4 +120,15 @@
 			};
 		};
 	};
+
+	fragment@2 {
+		target-path = "/";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		__overlay__ {
+			model = "Hardkernel ODROID-N2Plus";
+		};
+	};
 };
