@@ -15,6 +15,8 @@
  *
  */
 
+#include <include/dt-bindings/thermal/thermal.h>
+
 /{
 	aliases {
 		serial0 = &uart_AO;
@@ -266,17 +268,12 @@
 &soc_thermal {
 	trips {
 		fan_0: trip-point@4 {
-			temperature = <45000>;
+			temperature = <65000>;
 			hysteresis = <5000>;
 			type = "active";
 		};
 		fan_1: trip-point@5 {
-			temperature = <55000>;
-			hysteresis = <5000>;
-			type = "active";
-		};
-		fan_2: trip-point@6 {
-			temperature = <60000>;
+			temperature = <75000>;
 			hysteresis = <5000>;
 			type = "active";
 		};
@@ -284,15 +281,11 @@
 	cooling-maps {
 		fan_cooling_map0 {
 			trip = <&fan_0>;
-			cooling-device = <&pwmfan 0 1>;
+			cooling-device = <&pwmfan THERMAL_NO_LIMIT 2>;
 		};
 		fan_cooling_map1 {
 			trip = <&fan_1>;
-			cooling-device = <&pwmfan 1 2>;
-		};
-		fan_cooling_map2 {
-			trip = <&fan_2>;
-			cooling-device = <&pwmfan 2 3>;
+			cooling-device = <&pwmfan 2 THERMAL_NO_LIMIT>;
 		};
 	};
 };
