@@ -186,6 +186,9 @@ static u32 cur_disp_omx_index;
 #define DEBUG_FLAG_FFPLAY	(1<<0)
 #define DEBUG_FLAG_CALC_PTS_INC	(1<<1)
 
+static bool dovi_drop_flag;
+static int dovi_drop_frame_num;
+
 #define RECEIVER_NAME "amvideo"
 
 static s32 amvideo_poll_major;
@@ -255,8 +258,7 @@ static int video_onoff_state = VIDEO_ENABLE_STATE_IDLE;
 static u32 video_onoff_time;
 static DEFINE_SPINLOCK(video2_onoff_lock);
 static int video2_onoff_state = VIDEO_ENABLE_STATE_IDLE;
-static u32 hdmiin_frame_check;
-static u32 hdmiin_frame_check_cnt;
+static u32 frame_skip_check_cnt;
 
 
 /*frame_detect_flag: 1 enable, 0 disable */
@@ -3181,7 +3183,7 @@ static void pip_toggle_frame(struct vframe_s *vf)
 	if (debug_flag & DEBUG_FLAG_PRINT_TOGGLE_FRAME)
 		pr_info("%s()\n", __func__);
 
-	if ((vf->width == 0) && (vf->height == 0)) {
+	if ((vf->width == 0) || (vf->height == 0)) {
 		amlog_level(LOG_LEVEL_ERROR,
 			"Video: invalid frame dimension\n");
 		return;
@@ -3663,6 +3665,10 @@ static u32 last_el_w;
 bool has_enhanced_layer(struct vframe_s *vf)
 {
 	struct provider_aux_req_s req;
+
+	if (is_dolby_vision_el_disable() &&
+		!for_dolby_vision_certification())
+		return 0;
 
 	if (!vf)
 		return 0;
@@ -5915,7 +5921,8 @@ static inline bool video_vf_disp_mode_check(struct vframe_s *vf)
 	} else
 		vf_notify_provider_by_name("vdin0",
 			VFRAME_EVENT_RECEIVER_DISP_MODE, (void *)&req);
-	if (req.disp_mode == VFRAME_DISP_MODE_OK)
+	if ((req.disp_mode == VFRAME_DISP_MODE_OK) ||
+		(req.disp_mode == VFRAME_DISP_MODE_NULL))
 		return false;
 	/*whether need to check pts??*/
 	video_vf_put(vf);
@@ -5979,9 +5986,11 @@ struct vframe_s *dolby_vision_toggle_frame(struct vframe_s *vf)
 	struct vframe_s *toggle_vf = NULL;
 	int width_bl, width_el;
 	int height_bl, height_el;
-	int ret = dolby_vision_update_metadata(vf);
+	int ret;
 
-	cur_dispbuf2 = dolby_vision_vf_peek_el(vf);
+	ret = dolby_vision_update_metadata(vf, false);
+	if (!is_dolby_vision_el_disable() || for_dolby_vision_certification())
+		cur_dispbuf2 = dolby_vision_vf_peek_el(vf);
 	if (cur_dispbuf2) {
 		if (cur_dispbuf2->type & VIDTYPE_COMPRESS) {
 			VSYNC_WR_MPEG_REG(VD2_AFBC_HEAD_BADDR,
@@ -6054,6 +6063,30 @@ static int dolby_vision_need_wait(void)
 	vf = video_vf_peek();
 	if (!vf || (dolby_vision_wait_metadata(vf) == 1))
 		return 1;
+	return 0;
+}
+
+/* 1: drop fail; 0: drop success*/
+static int dolby_vision_drop_frame(void)
+{
+	struct vframe_s *vf;
+
+	if (dolby_vision_need_wait()) {
+		if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
+			pr_info("drop frame need wait!\n");
+		return 1;
+	}
+	vf = video_vf_get();
+
+	if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
+		pr_info("drop vf %p, index %d\n", vf, vf->omx_index);
+
+	dolby_vision_update_metadata(vf, true);
+	video_vf_put(vf);
+
+	if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
+		pr_info("drop vf %p done\n", vf);
+
 	return 0;
 }
 #endif
@@ -6649,6 +6682,40 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 	/* pr_info("%s: %s\n", __func__, dev_id_s); */
 #endif
 
+#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
+	if (is_dolby_vision_enable() && dovi_drop_flag) {
+		struct vframe_s *vf = NULL;
+		unsigned int cnt = 10;
+		int max_drop_index;
+
+		if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
+			pr_info("dovi_drop_frame_num %d, omx_run %d\n",
+				dovi_drop_frame_num, omx_run);
+		while (cnt--) {
+			vf = video_vf_peek();
+			if (vf && is_dovi_frame(vf)) {
+				max_drop_index = omx_run ?
+				omx_need_drop_frame_num : dovi_drop_frame_num;
+
+				if (max_drop_index >= vf->omx_index) {
+					if (dolby_vision_drop_frame() == 1)
+						break;
+				} else if (omx_run &&
+					   (vf->omx_index >
+					   omx_need_drop_frame_num)) {
+					/* all drop done*/
+					dovi_drop_flag = false;
+					omx_drop_done = true;
+					pr_info("dolby vision drop done\n");
+					break;
+				}
+			} else {
+				break;
+			}
+		}
+	}
+#endif
+
 	if (omx_need_drop_frame_num > 0 && !omx_drop_done && omx_secret_mode) {
 		struct vframe_s *vf = NULL;
 
@@ -6658,10 +6725,6 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 			if (is_dolby_vision_enable()
 				&& vf && is_dovi_frame(vf)) {
-				pr_info("vsync_isr_in, ignore the omx %d frames drop for dv frame\n",
-					omx_need_drop_frame_num);
-				omx_need_drop_frame_num = 0;
-				omx_drop_done = true;
 				break;
 			}
 #endif
@@ -7027,15 +7090,31 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 		if (omx_continuous_drop_flag
 			&& !(debug_flag
 				& DEBUG_FLAG_OMX_DISABLE_DROP_FRAME)) {
-			if (debug_flag & DEBUG_FLAG_OMX_DEBUG_DROP_FRAME) {
-				pr_info("drop omx_index %d, pts %d\n",
-					vf->omx_index, vf->pts);
+			if (is_dolby_vision_enable() && vf &&
+			    is_dovi_frame(vf)) {
+				if (debug_flag & DEBUG_FLAG_OMX_DV_DROP_FRAME)
+					pr_info("dovi ignore continuous drop\n");
+				/* if (omx_run)
+				 *	dolby_vision_drop_frame();
+				 */
+			} else {
+				if (debug_flag &
+					DEBUG_FLAG_OMX_DEBUG_DROP_FRAME) {
+					pr_info("drop omx_index %d, pts %d\n",
+						vf->omx_index, vf->pts);
+				}
+				vf = vf_get(RECEIVER_NAME);
+				if (vf) {
+					vf_put(vf, RECEIVER_NAME);
+					video_drop_vf_cnt++;
+					if (debug_flag &
+					    DEBUG_FLAG_PRINT_DROP_FRAME)
+						pr_info("drop frame: drop count %d\n",
+							video_drop_vf_cnt);
+				}
+				vf = video_vf_peek();
+				continue;
 			}
-			vf = vf_get(RECEIVER_NAME);
-			if (vf)
-				vf_put(vf, RECEIVER_NAME);
-			vf = video_vf_peek();
-			continue;
 		}
 
 		if (vpts_expire(cur_dispbuf, vf, toggle_cnt) || show_nosync) {
@@ -7066,14 +7145,15 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 			 *	quickly for display
 			 *case2:input buffer all not OK
 			 */
-			if (vf && hdmiin_frame_check &&
-				(vf->source_type == VFRAME_SOURCE_TYPE_HDMI) &&
+			if (vf &&
+				((vf->source_type == VFRAME_SOURCE_TYPE_HDMI) ||
+				(vf->source_type == VFRAME_SOURCE_TYPE_CVBS)) &&
 				(video_vf_disp_mode_get(vf) ==
 				VFRAME_DISP_MODE_UNKNOWN) &&
-				(hdmiin_frame_check_cnt++ < 10))
+				(frame_skip_check_cnt++ < 10))
 				break;
 			else
-				hdmiin_frame_check_cnt = 0;
+				frame_skip_check_cnt = 0;
 
 			vf = video_vf_get();
 			if (!vf) {
@@ -7091,8 +7171,9 @@ static irqreturn_t vsync_isr_in(int irq, void *dev_id)
 				ATRACE_COUNTER(MODULE_NAME,  __LINE__);
 				break;
 			}
-			if (vf && hdmiin_frame_check && (vf->source_type ==
-				VFRAME_SOURCE_TYPE_HDMI) &&
+			if (vf &&
+				((vf->source_type == VFRAME_SOURCE_TYPE_HDMI) ||
+				(vf->source_type == VFRAME_SOURCE_TYPE_CVBS)) &&
 				video_vf_disp_mode_check(vf))
 				break;
 			force_blackout = 0;
@@ -8094,7 +8175,9 @@ SET_FILTER:
 			video2_onoff_state = VIDEO_ENABLE_STATE_ON_PENDING;
 		} else if (video2_onoff_state ==
 			VIDEO_ENABLE_STATE_ON_PENDING) {
-			if (is_dolby_vision_on())
+			if (is_dolby_vision_on() &&
+				(!is_dolby_vision_el_disable() ||
+				for_dolby_vision_certification()))
 				vpp_misc_set &= ~(VPP_VD2_PREBLEND |
 					VPP_VD2_POSTBLEND | VPP_PREBLEND_EN);
 			else if (process_3d_type ||
@@ -8818,6 +8901,8 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 		omx_continuous_drop_count = 0;
 		omx_continuous_drop_flag = false;
 		cur_disp_omx_index = 0;
+		dovi_drop_flag = false;
+		dovi_drop_frame_num = 0;
 		mutex_unlock(&omx_mutex);
 	} else if (type == VFRAME_EVENT_PROVIDER_RESET) {
 		video_vf_light_unreg_provider(1);
@@ -8839,6 +8924,8 @@ static int video_receiver_event_fun(int type, void *data, void *private_data)
 		omx_continuous_drop_count = 0;
 		omx_continuous_drop_flag = false;
 		cur_disp_omx_index = 0;
+		dovi_drop_flag = false;
+		dovi_drop_frame_num = 0;
 		mutex_unlock(&omx_mutex);
 		//init_hdr_info();
 
@@ -9282,21 +9369,18 @@ static void set_omx_pts(u32 *p)
 
 	} else if (set_from_hwc == 0 && !omx_run) {
 		struct vframe_s *vf = NULL;
-		u32 donot_drop = 0;
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		u32 dovi_dual_layer = 0;
-#endif
 
 		while (try_cnt--) {
 			vf = vf_peek(RECEIVER_NAME);
 #ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
 			if (is_dolby_vision_enable()
 				&& vf && is_dovi_frame(vf)) {
-				pr_info("set_omx_pts ignore the omx %d frames drop for dv frame\n",
-					frame_num);
-				donot_drop = 1;
-				if (is_dovi_dual_layer_frame(vf))
-					dovi_dual_layer = 1;
+				if (debug_flag &
+					DEBUG_FLAG_OMX_DV_DROP_FRAME)
+					pr_info("dovi will drop %d in vsync\n",
+						frame_num);
+				dovi_drop_flag = true;
+				dovi_drop_frame_num = frame_num;
 				break;
 			}
 #endif
@@ -9312,17 +9396,6 @@ static void set_omx_pts(u32 *p)
 			} else
 				break;
 		}
-		if (donot_drop && omx_pts_set_from_hwc_count > 0) {
-			pr_info("reset omx_run to true.\n");
-			omx_run = true;
-		}
-#ifdef CONFIG_AMLOGIC_MEDIA_ENHANCEMENT_DOLBYVISION
-		if (dovi_dual_layer) {
-			omx_run = true;
-			omx_drop_done = true;
-			pr_info("dolby dual layer donot drop.\n");
-		}
-#endif
 	}
 	mutex_unlock(&omx_mutex);
 }
@@ -13339,6 +13412,7 @@ static int amvideom_probe(struct platform_device *pdev)
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	register_early_suspend(&video_early_suspend_handler);
 #endif
+	video_keeper_init();
 	return ret;
 }
 
@@ -13347,6 +13421,7 @@ static int amvideom_remove(struct platform_device *pdev)
 #ifdef CONFIG_AMLOGIC_LEGACY_EARLY_SUSPEND
 	unregister_early_suspend(&video_early_suspend_handler);
 #endif
+	video_keeper_exit();
 	return 0;
 }
 
@@ -13610,7 +13685,6 @@ static int __init video_init(void)
 	switch_dev_register(&video1_state_sdev);
 	switch_set_state(&video1_state_sdev, 0);
 #endif
-	video_keeper_init();
 #ifdef CONFIG_AM_VIDEO2
 	set_clone_frame_rate(android_clone_rate, 0);
 #endif
@@ -13701,9 +13775,6 @@ MODULE_PARM_DESC(underflow, "\n Underflow count\n");
 
 module_param(next_peek_underflow, uint, 0664);
 MODULE_PARM_DESC(skip, "\n Underflow count\n");
-
-module_param(hdmiin_frame_check, uint, 0664);
-MODULE_PARM_DESC(hdmiin_frame_check, "\n hdmiin_frame_check\n");
 
 module_param(step_enable, uint, 0664);
 MODULE_PARM_DESC(step_enable, "\n step_enable\n");

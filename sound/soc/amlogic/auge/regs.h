@@ -37,6 +37,11 @@ enum clk_sel {
 	SLAVE_J
 };
 
+struct register_table {
+	char *name;
+	unsigned int addr;
+};
+
 #define AUD_ADDR_OFFSET(addr)              ((addr) << 2)
 
 /*
@@ -71,7 +76,46 @@ enum clk_sel {
 #define EE_AUDIO_MCLK_F_CTRL(offset)       (0x006 + offset)
 #define EE_AUDIO_MST_PAD_CTRL0(offset)     (0x007 + offset)
 #define EE_AUDIO_MST_PAD_CTRL1(offset)     (0x008 + offset)
+
+#define REG_BIT_RESET_PDM				(1)
+#define REG_BIT_RESET_TDMINA				(1 << 1)
+#define REG_BIT_RESET_TDMINB				(1 << 2)
+#define REG_BIT_RESET_TDMINC				(1 << 3)
+#define REG_BIT_RESET_TDMIN_LB				(1 << 4)
+#define REG_BIT_RESET_LOOPBACK				(1 << 5)
+#define REG_BIT_RESET_TODDRA				(1 << 6)
+#define REG_BIT_RESET_TODDRB				(1 << 7)
+#define REG_BIT_RESET_TODDRC				(1 << 8)
+#define REG_BIT_RESET_FRDDRA				(1 << 9)
+#define REG_BIT_RESET_FRDDRB				(1 << 10)
+#define REG_BIT_RESET_FRDDRC				(1 << 11)
+#define REG_BIT_RESET_TDMOUTA				(1 << 12)
+#define REG_BIT_RESET_TDMOUTB				(1 << 13)
+#define REG_BIT_RESET_TDMOUTC				(1 << 14)
+#define REG_BIT_RESET_SPDIFOUTA				(1 << 15)
+#define REG_BIT_RESET_SPDIFOUTB				(1 << 16)
+#define REG_BIT_RESET_SPDIFIN				(1 << 17)
+#define REG_BIT_RESET_EQDRC				(1 << 18)
+#define REG_BIT_RESET_RESAMPLE				(1 << 19)
+#define REG_BIT_RESET_DDRARB				(1 << 20)
+#define REG_BIT_RESET_POWDET				(1 << 21)
+#define REG_BIT_RESET_TORAM				(1 << 22)
+#define REG_BIT_RESET_TOACODEC				(1 << 23)
+#define REG_BIT_RESET_TOHDMITX				(1 << 24)
+#define REG_BIT_RESET_CLKTREE				(1 << 25)
+#define REG_BIT_RESET_RESAMPLEB				(1 << 26)
+#define REG_BIT_RESET_TOVAD				(1 << 27)
+#define REG_BIT_RESET_LOCKER				(1 << 28)
+#define REG_BIT_RESET_SPDIFIN_LB			(1 << 29)
+#define REG_BIT_RESET_FRATV				(1 << 30)
+#define REG_BIT_RESET_FRHDMIRX				(1 << 31)
+
 #define EE_AUDIO_SW_RESET0(offset)         (0x009 + offset)
+
+#define REG_BIT_RESET_FRDDRD				(1)
+#define REG_BIT_RESET_TODDRD				(1 << 1)
+#define REG_BIT_RESET_LOOPBACKB				(1 << 2)
+
 #define EE_AUDIO_SW_RESET1                 0x00b
 #define EE_AUDIO_CLK81_CTRL                0x00c
 #define EE_AUDIO_CLK81_EN                  0x00d
@@ -107,7 +151,7 @@ enum clk_sel {
 #define EE_AUDIO_CLK_RESAMPLEB_CTRL        0x02e
 #define EE_AUDIO_CLK_SPDIFIN_LB_CTRL       0x02f
 #define EE_AUDIO_CLK_EQDRC_CTRL0           0x030
-#define EE_AUDIO_VAD_CLK_CTRL              0x031
+#define EE_AUDIO_CLK_VAD_CTRL              0x031
 #define EE_AUDIO_EARCTX_CMDC_CLK_CTRL      0x032
 #define EE_AUDIO_EARCTX_DMAC_CLK_CTRL      0x033
 #define EE_AUDIO_EARCRX_CMDC_CLK_CTRL      0x034
@@ -197,16 +241,41 @@ enum clk_sel {
 #define EE_AUDIO_ARB_CTRL                  0x0a0
 
 /*
- *	AUDIO TDM
+ *	AUDIO LOOPBACK
  */
 #define EE_AUDIO_LB_CTRL0                  0x0b0
-#define EE_AUDIO_LB_CTRL1                  0x0b1
-#define EE_AUDIO_DAT_ID0                   0x0b2
-#define EE_AUDIO_DAT_ID1                   0x0b3
-#define EE_AUDIO_LB_ID0                    0x0b4
-#define EE_AUDIO_LB_ID1                    0x0b5
-#define EE_AUDIO_LB_STS                    0x0b6
 
+#define EE_AUDIO_LB_A_CTRL0                0xb0
+#define EE_AUDIO_LB_A_CTRL1                0xb1
+#define EE_AUDIO_LB_A_CTRL2                0xb2
+#define EE_AUDIO_LB_A_CTRL3                0xb3
+#define EE_AUDIO_LB_A_DAT_CH_ID0           0xb4
+#define EE_AUDIO_LB_A_DAT_CH_ID1           0xb5
+#define EE_AUDIO_LB_A_DAT_CH_ID2           0xb6
+#define EE_AUDIO_LB_A_DAT_CH_ID3           0xb7
+#define EE_AUDIO_LB_A_LB_CH_ID0            0xb8
+#define EE_AUDIO_LB_A_LB_CH_ID1            0xb9
+#define EE_AUDIO_LB_A_LB_CH_ID2            0xba
+#define EE_AUDIO_LB_A_LB_CH_ID3            0xbb
+#define EE_AUDIO_LB_A_STS                  0xbc
+
+#define EE_AUDIO_LB_B_CTRL0                0x230
+#define EE_AUDIO_LB_B_CTRL1                0x231
+#define EE_AUDIO_LB_B_CTRL2                0x232
+#define EE_AUDIO_LB_B_CTRL3                0x233
+#define EE_AUDIO_LB_B_DAT_CH_ID0           0x234
+#define EE_AUDIO_LB_B_DAT_CH_ID1           0x235
+#define EE_AUDIO_LB_B_DAT_CH_ID2           0x236
+#define EE_AUDIO_LB_B_DAT_CH_ID3           0x237
+#define EE_AUDIO_LB_B_LB_CH_ID0            0x238
+#define EE_AUDIO_LB_B_LB_CH_ID1            0x239
+#define EE_AUDIO_LB_B_LB_CH_ID2            0x23a
+#define EE_AUDIO_LB_B_LB_CH_ID3            0x23b
+#define EE_AUDIO_LB_B_STS                  0x23c
+
+/*
+ *	AUDIO TDM
+ */
 #define EE_AUDIO_TDMIN_A_CTRL              0x0c0
 #define EE_AUDIO_TDMIN_A_SWAP0             0x0c1
 #define EE_AUDIO_TDMIN_A_SWAP1             0x260
@@ -544,20 +613,6 @@ enum clk_sel {
 #define EE_AUDIO_FRDDR_D_INIT_ADDR         0x229
 #define EE_AUDIO_FRDDR_D_CTRL2             0x22a
 
-#define EE_AUDIO_LB_B_CTRL0                0x230
-#define EE_AUDIO_LB_B_CTRL1                0x231
-#define EE_AUDIO_LB_B_CTRL2                0x232
-#define EE_AUDIO_LB_B_CTRL3                0x233
-#define EE_AUDIO_LB_B_DAT_CH_ID0           0x234
-#define EE_AUDIO_LB_B_DAT_CH_ID1           0x235
-#define EE_AUDIO_LB_B_DAT_CH_ID2           0x236
-#define EE_AUDIO_LB_B_DAT_CH_ID3           0x237
-#define EE_AUDIO_LB_B_LB_CH_ID0            0x238
-#define EE_AUDIO_LB_B_LB_CH_ID1            0x239
-#define EE_AUDIO_LB_B_LB_CH_ID2            0x23a
-#define EE_AUDIO_LB_B_LB_CH_ID3            0x23b
-#define EE_AUDIO_LB_B_STS                  0x23c
-
 /*
  *	AUDIO LOCKER
  */
@@ -869,6 +924,9 @@ enum clk_sel {
 #define AED_TOP_CTL                        0x83
 #define AED_TOP_REQ_CTL                    0x84
 
+#define AED_TOP_CTL0                       0x83
+#define AED_TOP_CTL1                       0x84
+#define AED_TOP_CTL2                       0x85
 
 /*
  * VAD, Voice activity detection
@@ -1103,5 +1161,38 @@ enum clk_sel {
 #define EARCTX_ANA_CTRL1                   0x006
 #define EARCTX_ANA_CTRL2                   0x007
 #define EARCTX_ANA_STAT0                   0x008
+/* new resample */
+#define AUDIO_RSAMP_CTRL0                  0x000
+#define AUDIO_RSAMP_CTRL1                  0x001
+#define AUDIO_RSAMP_CTRL2                  0x002
+#define AUDIO_RSAMP_PHSINIT                0x003
+#define AUDIO_RSAMP_PHSSTEP                0x004
+#define AUDIO_RSAMP_SHIFT                  0x005
+#define AUDIO_RSAMP_ADJ_CTRL0              0x006
+#define AUDIO_RSAMP_ADJ_CTRL1              0x007
+#define AUDIO_RSAMP_ADJ_SFT                0x008
+#define AUDIO_RSAMP_ADJ_IDET_LEN           0x009
+#define AUDIO_RSAMP_ADJ_FORCE              0x00a
+#define AUDIO_RSAMP_ADJ_KI_FORCE           0x00b
+#define AUDIO_RSAMP_RO_STATUS              0x010
+#define AUDIO_RSAMP_RO_ADJ_FREQ            0x011
+#define AUDIO_RSAMP_RO_ADJ_DIFF_BAK        0x012
+#define AUDIO_RSAMP_RO_ADJ_DIFF_DLT        0x013
+#define AUDIO_RSAMP_RO_ADJ_PHS_ERR         0x014
+#define AUDIO_RSAMP_RO_ADJ_KI_OUT          0x015
+#define AUDIO_RSAMP_RO_IN_CNT              0x016
+#define AUDIO_RSAMP_RO_OUT_CNT             0x017
+#define AUDIO_RSAMP_POST_COEF0             0x020
+#define AUDIO_RSAMP_POST_COEF1             0x021
+#define AUDIO_RSAMP_POST_COEF2             0x022
+#define AUDIO_RSAMP_POST_COEF3             0x023
+#define AUDIO_RSAMP_POST_COEF4             0x024
+#define AUDIO_RSAMP_AA_COEF_ADDR           0x030
+#define AUDIO_RSAMP_AA_COEF_DATA           0x031
+#define AUDIO_RSAMP_SINC_COEF_ADDR         0x040
+#define AUDIO_RSAMP_SINC_COEF_DATA         0x041
+
+/*HHI bus*/
+#define HHI_AUDIO_MEM_PD_REG0              0x045
 
 #endif

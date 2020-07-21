@@ -59,8 +59,7 @@
 			reg = <0x0 0x07400000 0x0 0x00100000>;
 			record-size = <0x8000>;
 			console-size = <0x8000>;
-			ftrace-size = <0x0>;
-			pmsg-size = <0x8000>;
+			ftrace-size = <0x20000>;
 		};
 
 		secmon_reserved:linux,secmon {
@@ -1101,10 +1100,11 @@
 		dai-tdm-lane-slot-mask-out = <1 0 0 0>;
 		dai-tdm-clk-sel = <1>;
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_B
+				&clkaudio CLKID_AUDIO_MCLK_PAD0
 				&clkc CLKID_MPLL1
 				&clkc CLKID_MPLL0
 				&clkaudio CLKID_AUDIO_SPDIFOUT_A>;
-		clock-names = "mclk", "clk_srcpll",
+		clock-names = "mclk", "mclk_pad", "clk_srcpll",
 			"samesource_srcpll", "samesource_clk";
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = <&tdmb_mclk &tdmout_b &tdmin_b>;
@@ -1119,6 +1119,12 @@
 		 * 4: spdifout_b;
 		 */
 		samesource_sel = <3>;
+
+		/*enable default mclk(12.288M), before extern codec start*/
+		start_clk_enable = <0>;
+
+		/*tdm clk tuning enable*/
+		clk_tuning_enable = <1>;
 
 		status = "okay";
 	};
@@ -1159,6 +1165,9 @@
 		interrupt-names = "irq_spdifin";
 		pinctrl-names = "spdif_pins";
 		pinctrl-0 = <&spdifout &spdifin>;
+
+		/*spdif clk tuning enable*/
+		clk_tuning_enable = <1>;
 
 		status = "okay";
 	};
@@ -1223,22 +1232,38 @@
 	};
 
 	asrca: resample@0 {
-		compatible = "amlogic, sm1-resample";
-		clocks = <&clkc CLKID_MPLL3
-				&clkaudio CLKID_AUDIO_MCLK_F
-				&clkaudio CLKID_AUDIO_RESAMPLE_A>;
+		compatible = "amlogic, sm1-resample-a";
+		clocks = <&clkc CLKID_MPLL0
+			&clkaudio CLKID_AUDIO_MCLK_A
+			&clkaudio CLKID_AUDIO_RESAMPLE_A>;
 		clock-names = "resample_pll", "resample_src", "resample_clk";
+
 		/*same with toddr_src
 		 *	TDMIN_A, 0
 		 *	TDMIN_B, 1
 		 *	TDMIN_C, 2
 		 *	SPDIFIN, 3
-		 *	PDMIN,  4
+		 *	PDMIN,   4
 		 *	NONE,
 		 *	TDMIN_LB, 6
 		 *	LOOPBACK, 7
 		 */
-		resample_module = <4>;
+
+		resample_module = <3>;
+
+		status = "okay";
+	};
+
+	asrcb: resample@1 {
+		compatible = "amlogic, sm1-resample-b";
+
+		clocks = <&clkc CLKID_MPLL3
+			&clkaudio CLKID_AUDIO_MCLK_F
+			&clkaudio CLKID_AUDIO_RESAMPLE_B>;
+		clock-names = "resample_pll", "resample_src", "resample_clk";
+
+		/*this resample is only used for loopback_A.*/
+
 		status = "disabled";
 	};
 

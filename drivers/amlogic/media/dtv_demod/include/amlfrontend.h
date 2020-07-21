@@ -130,8 +130,9 @@ struct ss_reg_vt {
 #define IC_VER_GXLX	(0x03)
 #define IC_VER_TXHD	(0x04)
 #define IC_VER_TL1	(0x05)
+#define IC_VER_TM2	(0x06)
 
-#define IC_VER_NUB	(0x06)
+#define IC_VER_NUB	(0x07)
 
 
 /*-----------------------*/
@@ -284,7 +285,6 @@ extern struct amldtvdemod_device_s *dtvdd_devp;	/**/
 
 /*int M6_Demod_Dtmb_Init(struct aml_fe_dev *dev);*/
 int convert_snr(int in_snr);
-extern int vdac_enable_check_dtv(void);
 
 
 extern unsigned  int ats_thread_flg;

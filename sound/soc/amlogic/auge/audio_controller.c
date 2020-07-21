@@ -15,6 +15,9 @@
  *
  */
 
+
+/*#define DEBUG*/
+
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -26,8 +29,12 @@
 #include <linux/regmap.h>
 #include <linux/clk-provider.h>
 
+#include <linux/amlogic/media/sound/iomapres.h>
+
 #include "audio_io.h"
 #include "regs.h"
+#include "audio_aed_reg_list.h"
+#include "audio_top_reg_list.h"
 
 #define DRV_NAME "aml-audio-controller"
 
@@ -35,11 +42,8 @@ static unsigned int aml_audio_mmio_read(struct aml_audio_controller *actrlr,
 			unsigned int reg)
 {
 	struct regmap *regmap = actrlr->regmap;
-	unsigned int val;
 
-	regmap_read(regmap, (reg << 2), &val);
-
-	return val;
+	return mmio_read(regmap, reg);
 }
 
 static int aml_audio_mmio_write(struct aml_audio_controller *actrlr,
@@ -47,7 +51,12 @@ static int aml_audio_mmio_write(struct aml_audio_controller *actrlr,
 {
 	struct regmap *regmap = actrlr->regmap;
 
-	return regmap_write(regmap, (reg << 2), value);
+	pr_debug("audio top reg:[%s] addr: [%#x] val: [%#x]\n",
+			top_register_table[reg].name,
+			top_register_table[reg].addr,
+			value);
+
+	return mmio_write(regmap, reg, value);
 }
 
 static int aml_audio_mmio_update_bits(struct aml_audio_controller *actrlr,
@@ -55,7 +64,12 @@ static int aml_audio_mmio_update_bits(struct aml_audio_controller *actrlr,
 {
 	struct regmap *regmap = actrlr->regmap;
 
-	return regmap_update_bits(regmap, (reg << 2), mask, value);
+	pr_debug("audio top reg:[%s] addr: [%#x] mask: [%#x] val: [%#x]\n",
+			top_register_table[reg].name,
+			top_register_table[reg].addr,
+			mask, value);
+
+	return mmio_update_bits(regmap, reg, mask, value);
 }
 
 struct aml_audio_ctrl_ops aml_actrl_mmio_ops = {

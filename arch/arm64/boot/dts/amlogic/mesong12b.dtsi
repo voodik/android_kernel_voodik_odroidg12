@@ -245,12 +245,12 @@
 		method = "smc";
 	};
 
-	meson_suspend:pm {
+	aml_pm {
 		compatible = "amlogic, pm";
 		status = "okay";
 		device_name = "aml_pm";
-		reg = <0x0 0xff8000a8 0x0 0x4>,
-			<0x0 0xff80023c 0x0 0x4>;
+		debug_reg = <0xff8000a8>;
+		exit_reg = <0xff80023c>;
 	};
 
 	secmon {
@@ -319,6 +319,14 @@
 		clock-frequency = <24000000>;
 		clock-output-names = "xtal";
 		#clock-cells = <0>;
+	};
+
+	rtc{
+		compatible = "amlogic, aml_vrtc";
+		alarm_reg_addr = <0xff8000a8>;
+		timer_e_addr = <0xffd0f188>;
+		init_date = "2019/01/01";
+		status = "okay";
 	};
 
 	cpu_info {
@@ -495,6 +503,15 @@
 		clocks = <&xtal>;
 	};
 
+	jtag {
+		compatible = "amlogic, jtag";
+		status = "okay";
+		select = "disable"; /* disable/apao/apee */
+		pinctrl-names="jtag_apao_pins", "jtag_apee_pins";
+		pinctrl-0=<&jtag_apao_pins>;
+		pinctrl-1=<&jtag_apee_pins>;
+	};
+
 	saradc:saradc {
 		compatible = "amlogic,meson-g12a-saradc";
 		status = "disabled";
@@ -539,6 +556,14 @@
 		clocks = <&clkc CLKID_TS_COMP>; /* CLKID_TS_COMP>;*/
 		clock-names = "ts_comp";
 		#thermal-sensor-cells = <1>;
+	};
+
+	ram-dump {
+		compatible = "amlogic, ram_dump";
+		status = "okay";
+		reg = <0x0 0xFF6345E0 0x0 4>;
+		reg-names = "PREG_STICKY_REG8";
+		store_device = "data";
 	};
 
 	soc {
@@ -708,6 +733,7 @@
 			aoclkc: clock-controller@0 {
 				compatible = "amlogic,g12b-aoclkc";
 				#clock-cells = <1>;
+				#reset-cells = <1>;
 				reg = <0x0 0x0 0x0 0x320>;
 			};
 
@@ -787,6 +813,15 @@
 				pinctrl-names = "default";
 				pinctrl-0 = <&ao_b_uart_pins>;
 			};
+
+			irblaster: meson-irblaster@14c {
+				compatible = "amlogic, meson_irblaster";
+				reg = <0x0 0x14c 0x0 0x10>,
+					<0x0 0x40 0x0 0x4>;
+				#irblaster-cells = <2>;
+				interrupts = <GIC_SPI 198 IRQ_TYPE_EDGE_RISING>;
+				status = "disabled";
+			};
 		};/* end of aobus */
 
 		periphs: periphs@ff634400 {
@@ -849,6 +884,29 @@
 			};
 		};/* end of audiobus*/
 
+		aml_dma {
+			compatible = "amlogic,aml_txlx_dma";
+			reg = <0x0 0xff63e000 0x0 0x48>;
+			interrupts = <0 180 1>;
+
+			aml_aes {
+				compatible = "amlogic,aes_g12a_dma";
+				dev_name = "aml_aes_dma";
+				status = "okay";
+			};
+
+			aml_sha {
+				compatible = "amlogic,sha_dma";
+				dev_name = "aml_sha_dma";
+				status = "okay";
+			};
+
+			aml_tdes {
+				compatible = "amlogic,tdes_dma";
+				dev_name = "aml_tdes_dma";
+				status = "okay";
+			};
+		};
 	}; /* end of soc*/
 
 	remote:rc@0xff808040 {
@@ -1149,6 +1207,7 @@
 			>;
 		reg-names = "NN_REG","NN_SRAM","NN_MEM0",
 			"NN_MEM1","NN_RESET","NN_CLK";
+		nn_power_version = <2>;
 		nn_efuse = <0xff63003c 0x20>;
 	};
 
@@ -1386,15 +1445,6 @@
 		clocks = <&clkc CLKID_VPU_CLKC_MUX>;
 		clock-names = "vpu_clkc";
 	};
-	irblaster: meson-irblaster {
-		compatible = "amlogic, meson_irblaster";
-		reg = <0x0 0xff80014c 0x0 0x10>,
-			<0x0 0xff800040 0x0 0x4>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&irblaster_pins>;
-		interrupts = <0 198 1>;
-		status = "disabled";
-	};
 
 	sd_emmc_c: emmc@ffe07000 {
 		status = "disabled";
@@ -1407,9 +1457,9 @@
 		clocks = <&clkc CLKID_SD_EMMC_C>,
 			   <&clkc CLKID_SD_EMMC_C_P0_COMP>,
 			   <&clkc CLKID_FCLK_DIV2>,
-			   <&clkc CLKID_FCLK_DIV5>,
+			   <&clkc CLKID_FCLK_DIV2P5>,
 			   <&xtal>;
-		clock-names = "core", "clkin0", "clkin1", "clkin2", "xtal";
+		clock-names = "core","clkin0","clkin1","clkin2","xtal";
 
 		bus-width = <8>;
 		cap-sd-highspeed;
@@ -1479,7 +1529,7 @@
 			ocr_avail = <0x200080>; /**VDD voltage 3.3 ~ 3.4 */
 			max_req_size = <0x20000>; /**128KB*/
 			gpio_dat3 = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
-			jtag_pin = <&gpio GPIOC_0 GPIO_ACTIVE_HIGH>;
+			jtag_pin = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 			gpio_cd = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 			card_type = <5>;
 			/* 3:sdio device(ie:sdio-wifi),
@@ -1573,20 +1623,11 @@
 					node_name = "cpufreq_cool1";
 					device_type = "cpufreq";
 				};
-				cpucore_cool_cluster0 {
+				cpucore_cool_cluster {
 					min_state = <1>;
 					dyn_coeff = <0>;
-					cluster_id = <0>;
 					gpu_pp = <2>;
-					node_name = "cpucore_cool0";
-					device_type = "cpucore";
-				};
-				cpucore_cool_cluster1 {
-					min_state = <0>;
-					dyn_coeff = <0>;
-					cluster_id = <1>;
-					gpu_pp = <2>;
-					node_name = "cpucore_cool1";
+					node_name = "cpucore_cool";
 					device_type = "cpucore";
 				};
 				gpufreq_cool {
@@ -1612,10 +1653,7 @@
 			cpufreq_cool1:cpufreq_cool1 {
 				#cooling-cells = <2>; /* min followed by max */
 			};
-			cpucore_cool0:cpucore_cool0 {
-				#cooling-cells = <2>; /* min followed by max */
-			};
-			cpucore_cool1:cpucore_cool1 {
+			cpucore_cool:cpucore_cool {
 				#cooling-cells = <2>; /* min followed by max */
 			};
 			gpufreq_cool0:gpufreq_cool0 {
@@ -1669,12 +1707,7 @@
 				};
 				cpucore_cooling_map0 {
 					trip = <&pcontrol>;
-					cooling-device = <&cpucore_cool0 0 1>;
-					contribution = <1024>;
-				};
-				cpucore_cooling_map1 {
-					trip = <&pcontrol>;
-					cooling-device = <&cpucore_cool1 0 4>;
+					cooling-device = <&cpucore_cool 0 5>;
 					contribution = <1024>;
 				};
 				gpufreq_cooling_map {
@@ -1749,44 +1782,50 @@
 		compatible = "pwm-regulator";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pwm_ao_d_pins3>;
-		pwms = <&pwm_AO_cd MESON_PWM_1 1250 0>;
+		pwms = <&pwm_AO_cd MESON_PWM_1 1500 0>;
 		regulator-name = "vddcpu0";
-		regulator-min-microvolt = <721000>;
-		regulator-max-microvolt = <1022000>;
+		regulator-min-microvolt = <680000>;
+		regulator-max-microvolt = <1040000>;
 		regulator-always-on;
-		max-duty-cycle = <1250>;
+		max-duty-cycle = <1500>;
 		/* Voltage Duty-Cycle */
-		voltage-table = <1022000 0>,
-			<1011000 3>,
-			<1001000 6>,
-			<991000 10>,
-			<981000 13>,
-			<971000 16>,
-			<961000 20>,
-			<951000 23>,
-			<941000 26>,
-			<931000 30>,
-			<921000 33>,
-			<911000 36>,
-			<901000 40>,
-			<891000 43>,
-			<881000 46>,
-			<871000 50>,
-			<861000 53>,
-			<851000 56>,
-			<841000 60>,
-			<831000 63>,
-			<821000 67>,
-			<811000 70>,
-			<801000 73>,
-			<791000 76>,
-			<781000 80>,
-			<771000 83>,
-			<761000 86>,
-			<751000 90>,
-			<741000 93>,
-			<731000 96>,
-			<721000 100>;
+		voltage-table = <1040000 0>,
+			<1030000 3>,
+			<1020000 6>,
+			<1010000 8>,
+			<1000000 11>,
+			<990000 14>,
+			<980000 17>,
+			<970000 20>,
+			<960000 23>,
+			<950000 26>,
+			<940000 29>,
+			<930000 31>,
+			<920000 34>,
+			<910000 37>,
+			<900000 40>,
+			<890000 43>,
+			<880000 45>,
+			<870000 48>,
+			<860000 51>,
+			<850000 54>,
+			<840000 56>,
+			<830000 59>,
+			<820000 62>,
+			<810000 65>,
+			<800000 68>,
+			<790000 70>,
+			<780000 73>,
+			<770000 76>,
+			<760000 79>,
+			<750000 81>,
+			<740000 84>,
+			<730000 87>,
+			<720000 89>,
+			<710000 92>,
+			<700000 95>,
+			<690000 98>,
+			<680000 100>;
 		status = "okay";
 	 };
 
@@ -1794,44 +1833,50 @@
 		compatible = "pwm-regulator";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pwm_a_e2>;
-		pwms = <&pwm_ab MESON_PWM_0 1250 0>;
+		pwms = <&pwm_ab MESON_PWM_0 1500 0>;
 		regulator-name = "vddcpu1";
-		regulator-min-microvolt = <721000>;
-		regulator-max-microvolt = <1022000>;
+		regulator-min-microvolt = <680000>;
+		regulator-max-microvolt = <1040000>;
 		regulator-always-on;
-		max-duty-cycle = <1250>;
+		max-duty-cycle = <1500>;
 		/* Voltage Duty-Cycle */
-		voltage-table = <1022000 0>,
-			<1011000 3>,
-			<1001000 6>,
-			<991000 10>,
-			<981000 13>,
-			<971000 16>,
-			<961000 20>,
-			<951000 23>,
-			<941000 26>,
-			<931000 30>,
-			<921000 33>,
-			<911000 36>,
-			<901000 40>,
-			<891000 43>,
-			<881000 46>,
-			<871000 50>,
-			<861000 53>,
-			<851000 56>,
-			<841000 60>,
-			<831000 63>,
-			<821000 67>,
-			<811000 70>,
-			<801000 73>,
-			<791000 76>,
-			<781000 80>,
-			<771000 83>,
-			<761000 86>,
-			<751000 90>,
-			<741000 93>,
-			<731000 96>,
-			<721000 100>;
+		voltage-table = <1040000 0>,
+			<1030000 3>,
+			<1020000 6>,
+			<1010000 8>,
+			<1000000 11>,
+			<990000 14>,
+			<980000 17>,
+			<970000 20>,
+			<960000 23>,
+			<950000 26>,
+			<940000 29>,
+			<930000 31>,
+			<920000 34>,
+			<910000 37>,
+			<900000 40>,
+			<890000 43>,
+			<880000 45>,
+			<870000 48>,
+			<860000 51>,
+			<850000 54>,
+			<840000 56>,
+			<830000 59>,
+			<820000 62>,
+			<810000 65>,
+			<800000 68>,
+			<790000 70>,
+			<780000 73>,
+			<770000 76>,
+			<760000 79>,
+			<750000 81>,
+			<740000 84>,
+			<730000 87>,
+			<720000 89>,
+			<710000 92>,
+			<700000 95>,
+			<690000 98>,
+			<680000 100>;
 		status = "okay";
 	 };
 
@@ -2048,6 +2093,16 @@
 		mux {
 			groups = "pwm_a_e2";
 			function = "pwm_a_gpioe";
+		};
+	};
+
+	jtag_apao_pins:jtag_apao_pin {
+		mux {
+			groups = "jtag_a_tdi",
+			"jtag_a_tdo",
+			"jtag_a_clk",
+			"jtag_a_tms";
+			function = "jtag_a";
 		};
 	};
 };
@@ -2454,9 +2509,13 @@
 		mux {
 			groups = "uart_tx_a",
 				"uart_rx_a",
-				"uart_cts_a",
 				"uart_rts_a";
 			function = "uart_a";
+		};
+		mux1 {
+			groups = "uart_cts_a";
+			function = "uart_a";
+			bias-pull-down;
 		};
 	};
 
@@ -2555,6 +2614,16 @@
 		mux {
 			groups = "remote_out_z";
 			function = "remote_out";
+		};
+	};
+
+	jtag_apee_pins:jtag_apee_pin {
+		mux {
+			groups = "jtag_b_tdi",
+			"jtag_b_tdo",
+			"jtag_b_clk",
+			"jtag_b_tms";
+			function = "jtag_b";
 		};
 	};
 };

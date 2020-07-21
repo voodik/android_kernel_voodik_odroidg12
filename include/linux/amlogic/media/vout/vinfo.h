@@ -53,6 +53,13 @@ enum vout_fr_adj_type_e {
 	VOUT_FR_ADJ_MAX,
 };
 
+enum vinfo_3d_e {
+	NON_3D = 0,
+	SS_3D,
+	FP_3D,
+	TB_3D,
+};
+
 /*emp : extended metadata type*/
 #define VENDOR_SPECIFIC_EM_DATA 0x0
 #define COMPRESS_VIDEO_TRAMSPORT 0x1
@@ -94,6 +101,7 @@ struct hdr10_plus_info {
 struct hdr_info {
 /* RX EDID hdr support types */
 	u32 hdr_support;
+	unsigned char rawdata[7];
 /*
  *dynamic_info[0] expresses type1's parameters certainly
  *dynamic_info[1] expresses type2's parameters certainly
@@ -142,6 +150,10 @@ enum mode_type {
 
 #define DV_IEEE_OUI	0x00D046
 #define HDR10_PLUS_IEEE_OUI	0x90848B
+#define HDR10_PLUS_DISABLE_VSIF 0
+#define HDR10_PLUS_ENABLE_VSIF  1
+#define HDR10_PLUS_ZERO_VSIF    2
+
 
 /* Dolby Version VSIF  parameter*/
 struct dv_vsif_para {
@@ -211,7 +223,8 @@ struct vout_device_s {
 	const struct dv_info *dv_info;
 	void (*fresh_tx_hdr_pkt)(struct master_display_info_s *data);
 	void (*fresh_tx_vsif_pkt)(enum eotf_type type,
-		enum mode_type tunnel_mode, struct dv_vsif_para *data);
+		enum mode_type tunnel_mode, struct dv_vsif_para *data,
+		bool signal_sdr);
 	void (*fresh_tx_hdr10plus_pkt)(unsigned int flag,
 		struct hdr10plus_para *data);
 	void  (*fresh_tx_emp_pkt)(unsigned char *data, unsigned int type,
@@ -258,6 +271,8 @@ struct vinfo_s {
 	u32 video_clk;
 	u32 htotal;
 	u32 vtotal;
+	unsigned char hdmichecksum[10];
+	enum vinfo_3d_e info_3d;
 	enum vout_fr_adj_type_e fr_adj_type;
 	enum color_fmt_e viu_color_fmt;
 	enum viu_mux_e viu_mux;

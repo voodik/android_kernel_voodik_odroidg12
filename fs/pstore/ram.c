@@ -534,6 +534,7 @@ static int ramoops_parse_dt(struct platform_device *pdev,
 
 #define parse_size(name, field) {					\
 		ret = ramoops_parse_dt_size(pdev, name, &value);	\
+		pr_info(" <%s> %s  %d", __func__, name, value);		\
 		if (ret < 0)						\
 			return ret;					\
 		field = value;						\
@@ -621,7 +622,6 @@ static int ramoops_probe(struct platform_device *pdev)
 			       cxt->console_size, 0);
 	if (err)
 		goto fail_init_cprz;
-
 	err = ramoops_init_prz(dev, cxt, &cxt->fprz, &paddr, cxt->ftrace_size,
 			       LINUX_VERSION_CODE);
 	if (err)
@@ -678,6 +678,17 @@ static int ramoops_probe(struct platform_device *pdev)
 	pr_info("attached 0x%lx@0x%llx, ecc: %d/%d\n",
 		cxt->size, (unsigned long long)cxt->phys_addr,
 		cxt->ecc_info.ecc_size, cxt->ecc_info.block_size);
+
+#ifdef CONFIG_AMLOGIC_DEBUG_FTRACE_PSTORE
+	if (ramoops_ftrace_size) {
+		cxt->fprz->flags |= (PRZ_FLAG_NO_LOCK | PRZ_FLAG_BIG_LOCK);
+		ramoops_ftrace_en = 1;
+	}
+	pr_info("ramoops_io_en:%d %d old:0x%lx ftrace_size:0x%lx",
+		ramoops_io_en, ramoops_ftrace_en,
+		cxt->fprz ? (unsigned long)persistent_ram_old_size(cxt->fprz)
+		: 0, ramoops_ftrace_size);
+#endif
 
 	return 0;
 

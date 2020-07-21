@@ -36,6 +36,8 @@ extern int vad_transfer_chunk_data(unsigned long data, int frames);
 
 extern bool vad_tdm_is_running(int tdm_idx);
 extern bool vad_pdm_is_running(void);
+bool vad_lb_is_running(int lb_id);
+void vad_lb_force_two_channel(bool en);
 
 extern void vad_enable(bool enable);
 extern void vad_set_toddr_info(struct toddr *to);
@@ -44,4 +46,5 @@ extern void vad_set_trunk_data_readable(bool en);
 
 extern int card_add_vad_kcontrols(struct snd_soc_card *card);
 
+extern void vad_set_lowerpower_mode(bool isLowPower);
 #endif

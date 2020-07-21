@@ -48,7 +48,7 @@
 /* Ref.2019/04/25: tl1 vdin0 afbce dynamically switch support,
  *                 vpp also should support this function
  */
-#define VDIN_VER "Ref.2019/04/25"
+#define VDIN_VER "Ref.2019/07/19:vf add hdr10 plus data"
 
 /*the counter of vdin*/
 #define VDIN_MAX_DEVS			2
@@ -116,6 +116,14 @@
 #define VDIN_AFBCE_EN_1080P             (1 << 5)
 #define VDIN_AFBCE_EN_720P              (1 << 6)
 #define VDIN_AFBCE_EN_SMALL             (1 << 7)
+
+enum COLOR_DEEPS_CFGe {
+	COLOR_DEEPS_AUTO = 0,
+	COLOR_DEEPS_8BIT = 8,
+	COLOR_DEEPS_10BIT = 10,
+	COLOR_DEEPS_12BIT = 12,
+	COLOR_DEEPS_MANUAL = 0x100,
+};
 
 static inline const char *vdin_fmt_convert_str(
 		enum vdin_format_convert_e fmt_cvt)
@@ -192,6 +200,8 @@ struct vdin_dv_s {
 	bool dv_config;
 	bool dv_crc_check;/*0:fail;1:ok*/
 	unsigned int dv_mem_alloced;
+	struct tvin_dv_vsif_s dv_vsif;/*dolby vsi info*/
+	bool low_latency;
 };
 
 struct vdin_afbce_s {
@@ -320,7 +330,7 @@ struct vdin_dev_s {
 	 *10:force config as 10bit
 	 *12:force config as 12bit
 	 */
-	unsigned int color_depth_config;
+	enum COLOR_DEEPS_CFGe color_depth_config;
 	/* new add from txl:color depth mode for 10bit
 	 *1: full pack mode;config 10bit as 10bit
 	 *0: config 10bit as 12bit
@@ -408,7 +418,7 @@ struct vdin_v4l2_param_s {
 extern unsigned int max_recycle_frame_cnt;
 extern unsigned int max_ignore_frame_cnt;
 extern unsigned int skip_frame_debug;
-
+extern unsigned int vdin_drop_cnt;
 extern unsigned int vdin0_afbce_debug_force;
 
 extern struct vframe_provider_s *vf_get_provider_by_name(

@@ -51,6 +51,12 @@ enum {
 	VIDEO_WIDEOPTION_MAX = 16
 };
 
+enum {
+	VFRAME_NONE,
+	VFRAME_MVC,
+	VFRAME_NO_MVC
+};
+
 /* TODO: move to register headers */
 #define VPP_VADJ2_BLMINUS_EN        (1 << 3)
 #define VPP_VADJ2_EN                (1 << 2)
@@ -237,6 +243,13 @@ static inline int amvideo_notifier_call_chain(unsigned long val, void *v)
 	return 0;
 }
 #endif
+
+/* 0: off, 1: vpp mute 2:dv mute */
+#define VIDEO_MUTE_OFF		0
+#define VIDEO_MUTE_ON_VPP	1
+#define VIDEO_MUTE_ON_DV	2
+void set_video_mute(bool on);
+int get_video_mute(void);
 
 int query_video_status(int type, int *value);
 u32 set_blackout_policy(int policy);

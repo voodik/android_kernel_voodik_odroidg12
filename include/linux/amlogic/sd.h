@@ -27,6 +27,15 @@
 #undef pr_fmt
 #define pr_fmt(fmt) "meson-mmc: " fmt
 
+#define AML_FIXED_ADJ_MIN	5
+#define AML_FIXED_ADJ_MAX	6
+#define AML_FIXED_ADJ_STEP	4
+#define AML_MOVE_DELAY1(x)	\
+	((x << 0)|(x << 6)|(x << 12)|(x << 18)|(x << 24))
+#define AML_MOVE_DELAY2(x)	\
+	((x << 0)|(x << 6)|(x << 12)|(x << 24))
+#define NO_FIXED_ADJ_MID	(1 << 31)
+
 #define	 AML_ERROR_RETRY_COUNTER		 10
 #define	 AML_TIMEOUT_RETRY_COUNTER	   2
 #define AML_CALIBRATION
@@ -36,6 +45,7 @@
 #define SD_EMMC_MANUAL_CMD23
 #define MAX_TUNING_RETRY 4
 #define TUNING_NUM_PER_POINT 40
+#define ADJ_WIN_PRINT_MAXLEN 256
 #define CALI_PATTERN_OFFSET ((SZ_1M * (36 + 3)) / 512)
 /* #define AML_RESP_WR_EXT */
 /* pio to transfer data */
@@ -193,6 +203,7 @@ enum mmc_chip_e {
 	MMC_CHIP_TL1 = 0X2b,
 	MMC_CHIP_G12B = 0x29b,
 	MMC_CHIP_SM1 = 0X2C,
+	MMC_CHIP_TM2 = 0X2D,
 };
 
 struct mmc_phase {
@@ -281,6 +292,7 @@ struct amlsd_platform {
 	unsigned int dly1;
 	unsigned int dly2;
 	unsigned int intf3;
+	unsigned int win_start;
 	unsigned int irq_sdio_sleep;
 	unsigned int clock;
 	/* signalling voltage (1.8V or 3.3V) */
@@ -299,6 +311,7 @@ struct amlsd_platform {
 	unsigned int gpio_power;
 	unsigned int power_level;
 	unsigned int calc_f;
+	unsigned int no_sduart;
 
 	unsigned int auto_clk_close;
 	unsigned int vol_switch;
@@ -331,6 +344,7 @@ struct amlsd_platform {
 	u64 align[10];
 	int base_line;
 	unsigned int count;
+	unsigned int cmd_c;
 	unsigned int delay_cell;
 	/* int order; */
 	unsigned int rx_err;
@@ -439,7 +453,8 @@ struct amlsd_host {
 	dma_addr_t		dma_gping; /* 0x400 */
 	dma_addr_t		dma_gpong; /* 0x800 */
 	char is_tunning;
-	char is_timming;
+	char cmd_retune;
+	char find_win;
 	char tuning_mode;
 	unsigned int is_sduart;
 	unsigned int irq;
@@ -464,6 +479,7 @@ struct amlsd_host {
 	unsigned long		clk_rate;
 
 	u8 *blk_test;
+	u8 *adj_win;
 	char *desc_buf;
 #ifdef CFG_SDEMMC_PIO
 	/* bounce buffer to accomplish 32bit apb access */

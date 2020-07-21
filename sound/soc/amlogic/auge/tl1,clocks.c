@@ -22,8 +22,6 @@
 #include "audio_clks.h"
 #include "regs.h"
 
-static spinlock_t aclk_lock;
-
 static const char *const mclk_parent_names[] = {
 	"mpll0", "mpll1", "mpll2", "mpll3", "hifi_pll",
 	"fclk_div3", "fclk_div4", "fclk_div5"};
@@ -231,9 +229,9 @@ CLOCK_COM_MUX(eqdrc, AUD_ADDR_OFFSET(EE_AUDIO_CLK_EQDRC_CTRL0), 0x7, 24);
 CLOCK_COM_DIV(eqdrc, AUD_ADDR_OFFSET(EE_AUDIO_CLK_EQDRC_CTRL0), 0, 16);
 CLOCK_COM_GATE(eqdrc, AUD_ADDR_OFFSET(EE_AUDIO_CLK_EQDRC_CTRL0), 31);
 /* audio vad  */
-CLOCK_COM_MUX(vad, AUD_ADDR_OFFSET(EE_AUDIO_VAD_CLK_CTRL), 0x7, 24);
-CLOCK_COM_DIV(vad, AUD_ADDR_OFFSET(EE_AUDIO_VAD_CLK_CTRL), 0, 16);
-CLOCK_COM_GATE(vad, AUD_ADDR_OFFSET(EE_AUDIO_VAD_CLK_CTRL), 31);
+CLOCK_COM_MUX(vad, AUD_ADDR_OFFSET(EE_AUDIO_CLK_VAD_CTRL), 0x7, 24);
+CLOCK_COM_DIV(vad, AUD_ADDR_OFFSET(EE_AUDIO_CLK_VAD_CTRL), 0, 16);
+CLOCK_COM_GATE(vad, AUD_ADDR_OFFSET(EE_AUDIO_CLK_VAD_CTRL), 31);
 
 static int tl1_clks_init(struct clk **clks, void __iomem *iobase)
 {

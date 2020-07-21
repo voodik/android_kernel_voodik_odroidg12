@@ -58,10 +58,14 @@
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			clocks = <&clkc CLKID_CPU_CLK>,
 				<&clkc CLKID_CPU_FCLK_P>,
-				<&clkc CLKID_SYS_PLL>;
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_PRE_CLK>;
 			clock-names = "core_clk",
 				"low_freq_clk_parent",
-				"high_freq_clk_parent";
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent";
 			operating-points-v2 = <&cpu_opp_table0>;
 			cpu-supply = <&vddcpu0>;
 			voltage-tolerance = <0>;
@@ -76,10 +80,14 @@
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			clocks = <&clkc CLKID_CPU_CLK>,
 				<&clkc CLKID_CPU_FCLK_P>,
-				<&clkc CLKID_SYS_PLL>;
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_PRE_CLK>;
 			clock-names = "core_clk",
 				"low_freq_clk_parent",
-				"high_freq_clk_parent";
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent";
 			operating-points-v2 = <&cpu_opp_table0>;
 			cpu-supply = <&vddcpu0>;
 			voltage-tolerance = <0>;
@@ -94,10 +102,14 @@
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			clocks = <&clkc CLKID_CPU_CLK>,
 				<&clkc CLKID_CPU_FCLK_P>,
-				<&clkc CLKID_SYS_PLL>;
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_PRE_CLK>;
 			clock-names = "core_clk",
 				"low_freq_clk_parent",
-				"high_freq_clk_parent";
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent";
 			operating-points-v2 = <&cpu_opp_table0>;
 			cpu-supply = <&vddcpu0>;
 			voltage-tolerance = <0>;
@@ -112,10 +124,14 @@
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			clocks = <&clkc CLKID_CPU_CLK>,
 				<&clkc CLKID_CPU_FCLK_P>,
-				<&clkc CLKID_SYS_PLL>;
+				<&clkc CLKID_SYS_PLL>,
+				<&clkc CLKID_DSU_CLK>,
+				<&clkc CLKID_DSU_PRE_CLK>;
 			clock-names = "core_clk",
 				"low_freq_clk_parent",
-				"high_freq_clk_parent";
+				"high_freq_clk_parent",
+				"dsu_clk",
+				"dsu_pre_parent";
 			operating-points-v2 = <&cpu_opp_table0>;
 			cpu-supply = <&vddcpu0>;
 			voltage-tolerance = <0>;
@@ -183,12 +199,12 @@
 		method = "smc";
 	};
 
-	meson_suspend:pm {
+	aml_pm {
 		compatible = "amlogic, pm";
 		status = "okay";
 		device_name = "aml_pm";
-		reg = <0xff8000a8 0x4>,
-			<0xff80023c 0x4>;
+		debug_reg = <0xff8000a8>;
+		exit_reg = <0xff80023c>;
 	};
 
 	secmon {
@@ -457,6 +473,7 @@
 		status = "okay";
 		reg = <0xFF6345E0 4>;
 		reg-names = "PREG_STICKY_REG8";
+		store_device = "data";
 	};
 
 	jtag {
@@ -484,6 +501,11 @@
 		      <0xff63c100 0x10>;
 	};
 
+	bl40: bl40 {
+		compatible = "amlogic, bl40-bootup";
+		status = "okay";
+	};
+
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;
@@ -499,7 +521,7 @@
 
 			gpio_intc: interrupt-controller@f080 {
 				compatible = "amlogic,meson-gpio-intc",
-						"amlogic,meson-g12a-gpio-intc";
+						"amlogic,meson-sm1-gpio-intc";
 				reg = <0xf080 0x10>;
 				interrupt-controller;
 				#interrupt-cells = <2>;
@@ -650,6 +672,7 @@
 			aoclkc: clock-controller@0 {
 				compatible = "amlogic,sm1-aoclkc";
 				#clock-cells = <1>;
+				#reset-cells = <1>;
 				reg = <0x0 0x3dc>;
 			};
 
@@ -757,6 +780,7 @@
 				compatible = "amlogic,sm1-clkc-2";
 				#clock-cells = <1>;
 				reg = <0x0 0x3dc>;
+				own-dsu-clk;
 			};
 		};/* end of hiubus*/
 
@@ -796,6 +820,82 @@
 			};
 		};/* end of audiobus*/
 
+		/* eARC */
+		audio_earc: bus@ff663000 {
+			compatible = "simple-bus";
+			reg = <0xff663000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+			ranges = <0x0 0xff663000 0x1000>;
+
+			earc: earc@0 {
+				compatible = "amlogic, sm1-snd-earc";
+				#sound-dai-cells = <0>;
+
+				status = "disabled";
+
+				reg =
+					<0x800 0x400>,
+					<0xc00 0x200>,
+					<0xe00 0x200>;
+				reg-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_top";
+
+				clocks = < &clkaudio CLKID_EARCRX_CMDC
+					&clkaudio CLKID_EARCRX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_FCLK_DIV4
+					&clkaudio CLKID_EARCTX_CMDC
+					&clkaudio CLKID_EARCTX_DMAC
+					&clkc CLKID_FCLK_DIV4
+					&clkc CLKID_MPLL1
+					>;
+				clock-names =
+					"rx_cmdc",
+					"rx_dmac",
+					"rx_cmdc_srcpll",
+					"rx_dmac_srcpll";
+
+				interrupts = <
+					GIC_SPI 87 IRQ_TYPE_LEVEL_HIGH>;
+				interrupt-names = "earc_rx";
+			};
+		};
+
+		/* Sound iomap */
+		aml_snd_iomap {
+			compatible = "amlogic, snd-iomap";
+			status = "okay";
+			#address-cells=<1>;
+			#size-cells=<1>;
+			ranges;
+			pdm_bus {
+				reg = <0xFF661000 0x400>;
+			};
+			audiobus_base {
+				reg = <0xFF660000 0x1000>;
+			};
+			audiolocker_base {
+				reg = <0xFF661400 0x400>;
+			};
+			eqdrc_base {
+				reg = <0xFF662000 0x1000>;
+			};
+			reset_base {
+				reg = <0xFFD01000 0x1000>;
+			};
+			vad_base {
+				reg = <0xFF661800 0x400>;
+			};
+			resampleA_base {
+				reg = <0xFF661c00 0x104>;
+			};
+			resampleB_base {
+				reg = <0xFF664000 0x104>;
+			};
+		};
 	}; /* end of soc*/
 
 	remote:rc@0xff808040 {
@@ -1090,15 +1190,15 @@
 		interrupts = <0 186 4>;
 		interrupt-names = "galcore";
 		reg = <0xff100000 0x800
-			/*reg base value:0xff100000 */
 			0xff000000 0x400000
-			/*Sram bse value:0xff000000*/
 			0xff63c118 0x0
 			0xff63c11c 0x0
-			/*0xff63c118,0xff63c11c :nanoq mem regs*/
 			0xffd01088 0x0
-			/*0xffd01088:reset reg*/
+			0xff63c1c8 0x0
 			>;
+		reg-names = "NN_REG","NN_SRAM","NN_MEM0",
+			"NN_MEM1","NN_RESET","NN_CLK";
+		nn_power_version = <3>;
 		nn_efuse = <0xff63003c 0x20>;
 	};
 	aocec: aocec {
@@ -1114,6 +1214,7 @@
 		cec_osd_string = "AML_MBOX"; /* Max Chars: 14    */
 		cec_version = <5>;/*5:1.4;6:2.0*/
 		port_num = <1>;
+		output = <1>;
 		ee_cec;
 		arc_port_mask = <0x2>;
 		interrupts = <0 203 1
@@ -1280,13 +1381,15 @@
 			0 32 1
 			0 43 1
 			0 44 1
-			0 45 1>;
+			0 45 1
+			0 72 1>;
 		interrupt-names = "vsync",
 			"demux",
 			"parser",
 			"mailbox_0",
 			"mailbox_1",
-			"mailbox_2";
+			"mailbox_2",
+			"parser_b";
 	};
 
 	vcodec_dec {
@@ -1365,7 +1468,7 @@
 		clocks = <&clkc CLKID_SD_EMMC_C>,
 			   <&clkc CLKID_SD_EMMC_C_P0_COMP>,
 			   <&clkc CLKID_FCLK_DIV2>,
-			   <&clkc CLKID_FCLK_DIV5>,
+			   <&clkc CLKID_FCLK_DIV2P5>,
 			   <&xtal>;
 		clock-names = "core", "clkin0", "clkin1", "clkin2", "xtal";
 
@@ -1441,7 +1544,7 @@
 			ocr_avail = <0x200080>; /**VDD voltage 3.3 ~ 3.4 */
 			max_req_size = <0x20000>; /**128KB*/
 			gpio_dat3 = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
-			jtag_pin = <&gpio GPIOC_0 GPIO_ACTIVE_HIGH>;
+			jtag_pin = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 			gpio_cd = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 			card_type = <5>;
 			/* 3:sdio device(ie:sdio-wifi),
@@ -1663,7 +1766,46 @@
 	cpu_ver_name {
 		compatible = "amlogic, cpu-major-id-sm1";
 	};
-};/* end of / */
+
+	efuse: efuse{
+		compatible = "amlogic, efuse";
+		read_cmd = <0x82000030>;
+		write_cmd = <0x82000031>;
+		get_max_cmd = <0x82000033>;
+		key = <&efusekey>;
+		clocks = <&clkc CLKID_EFUSE>;
+		clock-names = "efuse_clk";
+		status = "disabled";
+	};
+
+	efusekey:efusekey{
+		keynum = <4>;
+		key0 = <&key_0>;
+		key1 = <&key_1>;
+		key2 = <&key_2>;
+		key3 = <&key_3>;
+		key_0:key_0{
+			keyname = "mac";
+			offset = <0>;
+			size = <6>;
+		};
+		key_1:key_1{
+			keyname = "mac_bt";
+			offset = <6>;
+			size = <6>;
+		};
+		key_2:key_2{
+			keyname = "mac_wifi";
+			offset = <12>;
+			size = <6>;
+		};
+		key_3:key_3{
+			keyname = "usid";
+			offset = <18>;
+			size = <16>;
+		};
+	};
+}; /* end of / */
 
 &pinctrl_aobus {
 	sd_to_ao_uart_clr_pins:sd_to_ao_uart_clr_pins {
@@ -1812,6 +1954,16 @@
 			function = "jtag_a";
 		};
 	};
+
+	jtag_apao_pins:jtag_apao_pin {
+		mux {
+			groups = "jtag_a_tdi",
+			"jtag_a_tdo",
+			"jtag_a_clk",
+			"jtag_a_tms";
+			function = "jtag_a";
+		};
+	};
 };
 
 &pinctrl_periphs {
@@ -1823,6 +1975,7 @@
 			function = "emmc";
 			input-enable;
 			bias-pull-up;
+			drive-strength = <3>;
 		};
 	};
 
@@ -1841,6 +1994,7 @@
 			function = "emmc";
 			input-enable;
 			bias-pull-up;
+			drive-strength = <3>;
 		};
 	};
 
@@ -1850,6 +2004,7 @@
 			function = "emmc";
 			input-enable;
 			bias-pull-down;
+			drive-strength = <3>;
 		};
 	};
 
@@ -2131,6 +2286,15 @@
 		mux {
 			groups = "i2c2_sda_z",
 				"i2c2_sck_z";
+			function = "i2c2";
+			drive-strength = <2>;
+		};
+	};
+
+	i2c2_master_pins3:i2c2_pins3 {
+		mux {
+			groups = "i2c2_sda_z10",
+				"i2c2_sck_z11";
 			function = "i2c2";
 			drive-strength = <2>;
 		};

@@ -27,13 +27,12 @@
 
 
 /* struct ve_dnlp_s          video_ve_dnlp; */
-
 #define FLAG_RSV31              (1 << 31)
 #define FLAG_VADJ1_COLOR        (1 << 30)
 #define FLAG_VE_DNLP            (1 << 29)
 #define FLAG_VE_NEW_DNLP        (1 << 28)
-#define FLAG_RSV27              (1 << 27)
-#define FLAG_RSV26              (1 << 26)
+#define FLAG_VE_LC_CURV         (1 << 27)
+#define FLAG_HDR_OOTF_LATCH     BIT(26)
 #define FLAG_3D_BLACK_DIS       (1 << 25)
 #define FLAG_3D_BLACK_EN        (1 << 24)
 #define FLAG_3D_SYNC_DIS        (1 << 23)
@@ -97,9 +96,14 @@
 #define MTX_BYPASS_RGB_OGO			(1 << 0)
 #define MTX_RGB2YUVL_RGB_OGO		(1 << 1)
 
-#define SDR_SOURCE    (1 << 0)
-#define HDR10_SOURCE  (1 << 1)
-#define HLG_SOURCE    (1 << 2)
+#define UNKNOWN_SOURCE		0
+#define HDR10_SOURCE		1
+#define HDR10PLUS_SOURCE	2
+#define DOVI_SOURCE			3
+#define PRIMESL_SOURCE		4
+#define HLG_SOURCE			5
+#define SDR_SOURCE			6
+#define MVC_SOURCE           7
 
 enum cm_hist_e {
 	CM_HUE_HIST = 0,
@@ -214,6 +218,23 @@ enum pc_mode_e {
 #define AMVECM_IOC_G_PIC_MODE _IOR(_VE_CM, 0x59, struct am_vdj_mode_s)
 #define AMVECM_IOC_S_PIC_MODE _IOW(_VE_CM, 0x60, struct am_vdj_mode_s)
 
+
+/*HDR TYPE command list*/
+#define AMVECM_IOC_G_HDR_TYPE _IOR(_VE_CM, 0x61, enum hdr_type_e)
+
+
+/*Local contrast command list*/
+#define AMVECM_IOC_S_LC_CURVE _IOW(_VE_CM, 0x62, struct ve_lc_curve_parm_s)
+
+/*tone mapping struct*/
+struct hdr_tone_mapping_s {
+	unsigned int lutlength;
+	unsigned int *tm_lut;
+};
+
+#define AMVECM_IOC_S_HDR_TM  _IOW(_VE_CM, 0x63, struct hdr_tone_mapping_s)
+#define AMVECM_IOC_G_HDR_TM  _IOR(_VE_CM, 0x64, struct hdr_tone_mapping_s)
+
 struct am_vdj_mode_s {
 	int flag;
 	int brightness;
@@ -253,6 +274,23 @@ enum vpp_matrix_csc_e {
 	VPP_MATRIX_BT2020RGB_CUSRGB,
 	VPP_MATRIX_BT2020YUV_BT2020RGB_DYNAMIC = 0x50,
 	VPP_MATRIX_DEFAULT_CSCTYPE = 0xffff,
+};
+
+enum hdr_type_e {
+	HDRTYPE_NONE = UNKNOWN_SOURCE,
+	HDRTYPE_SDR = SDR_SOURCE,
+	HDRTYPE_HDR10 = HDR10_SOURCE,
+	HDRTYPE_HLG = HLG_SOURCE,
+	HDRTYPE_HDR10PLUS = HDR10PLUS_SOURCE,
+	HDRTYPE_DOVI = DOVI_SOURCE,
+	HDRTYPE_MVC = MVC_SOURCE,
+};
+
+enum pd_comb_fix_lvl_e {
+	PD_LOW_LVL = 0,
+	PD_MID_LVL,
+	PD_HIG_LVL,
+	PD_DEF_LVL
 };
 
 enum vpp_transfer_characteristic_e {
@@ -313,6 +351,12 @@ struct vecm_match_data_s {
 	u32 vlk_new_fsm;
 	enum vlock_hw_ver_e vlk_hwver;
 	u32 vlk_phlock_en;
+};
+
+enum vd_path_e {
+	VD1_PATH = 0,
+	VD2_PATH = 1,
+	VD_PATH_MAX = 2
 };
 
 /*overscan:
@@ -381,12 +425,12 @@ struct am_pq_parm_s {
 static inline void WRITE_VPP_REG(uint32_t reg,
 		const uint32_t value)
 {
-	aml_write_vcbus(reg, value);
+	aml_write_vcbus_s(reg, value);
 }
 
 static inline uint32_t READ_VPP_REG(uint32_t reg)
 {
-	return aml_read_vcbus(reg);
+	return aml_read_vcbus_s(reg);
 }
 
 static inline void WRITE_VPP_REG_BITS(uint32_t reg,
@@ -394,9 +438,7 @@ static inline void WRITE_VPP_REG_BITS(uint32_t reg,
 		const uint32_t start,
 		const uint32_t len)
 {
-	WRITE_VPP_REG(reg, ((READ_VPP_REG(reg) &
-		~(((1L << (len)) - 1) << (start))) |
-		(((value) & ((1L << (len)) - 1)) << (start))));
+	aml_vcbus_update_bits_s(reg, value, start, len);
 }
 
 static inline uint32_t READ_VPP_REG_BITS(uint32_t reg,
@@ -405,7 +447,7 @@ static inline uint32_t READ_VPP_REG_BITS(uint32_t reg,
 {
 	uint32_t val;
 
-	val = ((READ_VPP_REG(reg) >> (start)) & ((1L << (len)) - 1));
+	val = ((aml_read_vcbus_s(reg) >> (start)) & ((1L << (len)) - 1));
 
 	return val;
 }
@@ -464,5 +506,6 @@ extern int amvecm_drm_gamma_disable(u32 index);
 extern int am_meson_ctm_set(u32 index, struct drm_color_ctm *ctm);
 extern int am_meson_ctm_disable(void);
 
+extern void enable_osd1_mtx(unsigned int en);
 #endif /* AMVECM_H */
 

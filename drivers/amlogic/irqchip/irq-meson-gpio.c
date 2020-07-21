@@ -40,11 +40,13 @@
 #define REG_EDGE_POL_MASK(x)	(BIT(x) | BIT(16 + (x)))
 #define REG_EDGE_POL_EDGE(x)	BIT(x)
 #define REG_EDGE_POL_LOW(x)	BIT(16 + (x))
+#define REG_EDGE_BOTH_EDGE(x)	BIT(8 + (x))
 #define REG_PIN_SEL_SHIFT(x)	(((x) % 4) * 8)
 #define REG_FILTER_SEL_SHIFT(x)	((x) * 4)
 
 struct meson_gpio_irq_params {
 	unsigned int nr_hwirq;
+	u8 support_double_edge;
 };
 
 static const struct meson_gpio_irq_params meson8_params = {
@@ -83,6 +85,16 @@ static const struct meson_gpio_irq_params tl1_params = {
 	.nr_hwirq = 102,
 };
 
+static const struct meson_gpio_irq_params sm1_params = {
+	.nr_hwirq = 100,
+	.support_double_edge = 1,
+};
+
+static const struct meson_gpio_irq_params tm2_params = {
+	.nr_hwirq = 104,
+	.support_double_edge = 1,
+};
+
 static const struct of_device_id meson_irq_gpio_matches[] = {
 	{ .compatible = "amlogic,meson8-gpio-intc", .data = &meson8_params },
 	{ .compatible = "amlogic,meson8b-gpio-intc", .data = &meson8b_params },
@@ -93,11 +105,14 @@ static const struct of_device_id meson_irq_gpio_matches[] = {
 	{ .compatible = "amlogic,meson-g12a-gpio-intc", .data = &g12a_params },
 	{ .compatible = "amlogic,meson-txl-gpio-intc", .data = &txl_params },
 	{ .compatible = "amlogic,meson-tl1-gpio-intc", .data = &tl1_params },
+	{ .compatible = "amlogic,meson-sm1-gpio-intc", .data = &sm1_params },
+	{ .compatible = "amlogic,meson-tm2-gpio-intc", .data = &tm2_params },
 	{ }
 };
 
 struct meson_gpio_irq_controller {
 	unsigned int nr_hwirq;
+	u8 support_double_edge;
 	void __iomem *base;
 	u32 channel_irqs[NUM_CHANNEL];
 	DECLARE_BITMAP(channel_map, NUM_CHANNEL);
@@ -126,13 +141,14 @@ meson_gpio_irq_request_channel(struct meson_gpio_irq_controller *ctl,
 			       u32 **channel_hwirq)
 {
 	unsigned int reg, idx;
+	unsigned long flags;
 
-	spin_lock(&ctl->lock);
+	spin_lock_irqsave(&ctl->lock, flags);
 
 	/* Find a free channel */
 	idx = find_first_zero_bit(ctl->channel_map, NUM_CHANNEL);
 	if (idx >= NUM_CHANNEL) {
-		spin_unlock(&ctl->lock);
+		spin_unlock_irqrestore(&ctl->lock, flags);
 		pr_debug("No channel available\n");
 		return -ENOSPC;
 	}
@@ -157,7 +173,7 @@ meson_gpio_irq_request_channel(struct meson_gpio_irq_controller *ctl,
 	 */
 	*channel_hwirq = &(ctl->channel_irqs[idx]);
 
-	spin_unlock(&ctl->lock);
+	spin_unlock_irqrestore(&ctl->lock, flags);
 
 	pr_debug("hwirq %lu assigned to channel %d - irq %u\n",
 		 hwirq, idx, **channel_hwirq);
@@ -188,6 +204,7 @@ static int meson_gpio_irq_type_setup(struct meson_gpio_irq_controller *ctl,
 {
 	u32 val = 0;
 	unsigned int idx;
+	unsigned long flags;
 
 	idx = meson_gpio_irq_get_channel_idx(ctl, channel_hwirq);
 
@@ -200,8 +217,16 @@ static int meson_gpio_irq_type_setup(struct meson_gpio_irq_controller *ctl,
 	 */
 	type &= IRQ_TYPE_SENSE_MASK;
 
-	if (type == IRQ_TYPE_EDGE_BOTH)
-		return -EINVAL;
+	if (type == IRQ_TYPE_EDGE_BOTH) {
+		if (!ctl->support_double_edge)
+			return -EINVAL;
+		val |= REG_EDGE_BOTH_EDGE(idx);
+		spin_lock_irqsave(&ctl->lock, flags);
+		meson_gpio_irq_update_bits(ctl, REG_EDGE_POL,
+				   REG_EDGE_BOTH_EDGE(idx), val);
+		spin_unlock_irqrestore(&ctl->lock, flags);
+		return 0;
+	}
 
 	if (type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_EDGE_FALLING))
 		val |= REG_EDGE_POL_EDGE(idx);
@@ -209,12 +234,20 @@ static int meson_gpio_irq_type_setup(struct meson_gpio_irq_controller *ctl,
 	if (type & (IRQ_TYPE_LEVEL_LOW | IRQ_TYPE_EDGE_FALLING))
 		val |= REG_EDGE_POL_LOW(idx);
 
-	spin_lock(&ctl->lock);
+	spin_lock_irqsave(&ctl->lock, flags);
+
+	/* Double-edge has priority over all others. If a double-edge gpio
+	 * changes to another method's, we need to reset the corresponding bit
+	 * of double-edge register.
+	 */
+	if (ctl->support_double_edge)
+		meson_gpio_irq_update_bits(ctl, REG_EDGE_POL,
+					   REG_EDGE_BOTH_EDGE(idx), 0);
 
 	meson_gpio_irq_update_bits(ctl, REG_EDGE_POL,
 				   REG_EDGE_POL_MASK(idx), val);
 
-	spin_unlock(&ctl->lock);
+	spin_unlock_irqrestore(&ctl->lock, flags);
 
 	return 0;
 }
@@ -261,7 +294,7 @@ static struct irq_chip meson_gpio_irq_chip = {
 #ifdef CONFIG_SMP
 	.irq_set_affinity	= irq_chip_set_affinity_parent,
 #endif
-	.flags			= IRQCHIP_SET_TYPE_MASKED,
+	.flags = IRQCHIP_SET_TYPE_MASKED | IRQCHIP_SKIP_SET_WAKE,
 };
 
 static int meson_gpio_irq_domain_translate(struct irq_domain *domain,
@@ -369,6 +402,7 @@ static int __init meson_gpio_irq_parse_dt(struct device_node *node,
 
 	params = match->data;
 	ctl->nr_hwirq = params->nr_hwirq;
+	ctl->support_double_edge = params->support_double_edge;
 
 	ret = of_property_read_variable_u32_array(node,
 						  "amlogic,channel-interrupts",

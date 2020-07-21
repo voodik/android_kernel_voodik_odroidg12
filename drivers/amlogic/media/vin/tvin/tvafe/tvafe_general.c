@@ -23,8 +23,10 @@
 /*#include <mach/am_regs.h>*/
 
 #include <linux/amlogic/media/frame_provider/tvin/tvin.h>
+#include <linux/amlogic/media/vout/vdac_dev.h>
 #include "../tvin_global.h"
 #include "../tvin_format_table.h"
+#include "tvafe.h"
 #include "tvafe_regs.h"
 #include "tvafe_cvd.h"
 #include "tvafe_debug.h"
@@ -40,8 +42,6 @@
 #define VAFE_CLK_EN_WIDTH		1
 #define VAFE_CLK_SELECT			24
 #define VAFE_CLK_SELECT_WIDTH	2
-
-
 
 static unsigned int adc_pll_chg;
 
@@ -328,9 +328,8 @@ void tvafe_set_regmap(struct am_regs_s *p)
 for (i = 0; i < p->length; i++) {
 	switch (p->am_reg[i].type) {
 	case REG_TYPE_PHY:
-		#ifdef PQ_DEBUG_EN
-		    tvafe_pr_info("%s: bus type: phy..\n", __func__);
-		#endif
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: bus type: phy..\n", __func__);
 		break;
 	case REG_TYPE_CBUS:
 		if (p->am_reg[i].mask == 0xffffffff)
@@ -340,14 +339,13 @@ for (i = 0; i < p->length; i++) {
 			(aml_read_cbus(p->am_reg[i].addr) &
 			(~(p->am_reg[i].mask))) |
 			(p->am_reg[i].val & p->am_reg[i].mask));
-		#ifdef PQ_DEBUG_EN
-					tvafe_pr_info("%s: cbus: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: cbus: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
 				__func__, p->am_reg[i].addr, p->am_reg[i].addr,
-					(p->am_reg[i].val & p->am_reg[i].mask),
-					(p->am_reg[i].val & p->am_reg[i].mask),
-					p->am_reg[i].val, p->am_reg[i].val,
-					p->am_reg[i].mask, p->am_reg[i].mask);
-		#endif
+				(p->am_reg[i].val & p->am_reg[i].mask),
+				(p->am_reg[i].val & p->am_reg[i].mask),
+				p->am_reg[i].val, p->am_reg[i].val,
+				p->am_reg[i].mask, p->am_reg[i].mask);
 		break;
 	case REG_TYPE_APB:
 		if (p->am_reg[i].mask == 0xffffffff)
@@ -357,20 +355,18 @@ for (i = 0; i < p->length; i++) {
 			(R_APB_REG(p->am_reg[i].addr<<2) &
 			(~(p->am_reg[i].mask))) |
 			(p->am_reg[i].val & p->am_reg[i].mask));
-		#ifdef PQ_DEBUG_EN
-					tvafe_pr_info("%s: apb: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: apb: Reg0x%x(%u)=0x%x(%u)val=%x(%u)mask=%x(%u)\n",
 				__func__, p->am_reg[i].addr, p->am_reg[i].addr,
 					(p->am_reg[i].val & p->am_reg[i].mask),
 					(p->am_reg[i].val & p->am_reg[i].mask),
 					p->am_reg[i].val, p->am_reg[i].val,
 					p->am_reg[i].mask, p->am_reg[i].mask);
-		#endif
 		break;
 	default:
-	    #ifdef PQ_DEBUG_EN
-		tvafe_pr_info("%s: bus type error!!!bustype = 0x%x................\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: bus type error!!!bustype = 0x%x................\n",
 				__func__, p->am_reg[i].type);
-	    #endif
 		break;
 		}
 	}
@@ -537,7 +533,10 @@ void tvafe_set_ddemod_default(void)
 		W_HIU_REG(HHI_DADC_CNTL3, 0x00082183);
 
 		/*W_HIU_REG(HHI_VDAC_CNTL0, 0x00000200);*/
-		W_HIU_BIT(HHI_VDAC_CNTL0, 1, 9, 1);
+		/*W_HIU_BIT(HHI_VDAC_CNTL0, 1, 9, 1);*/
+		/* remove vdac reg write, make sure it write in vdac driver,
+		 * because multi module use it
+		 */
 
 	} else if (tvafe_cpu_type() == CPU_TYPE_TXHD) {
 		W_HIU_REG(HHI_DADC_CNTL, 0x00102038);
@@ -562,7 +561,10 @@ void tvafe_set_ddemod_default(void)
 		W_HIU_REG(HHI_DADC_CNTL3, 0x08300b83);
 
 		//HHI_VDAC_CNTL1
-		W_HIU_REG(0xbc, 0x0);
+		/*W_HIU_REG(0xbc, 0x0);*/
+		/* remove vdac reg write, make sure it write in vdac driver,
+		 * because multi module use it
+		 */
 	}
 
 }
@@ -577,28 +579,36 @@ void tvafe_enable_avout(enum tvin_port_e port, bool enable)
 		if (enable) {
 			tvafe_clk_gate_ctrl(1);
 			if (port == TVIN_PORT_CVBS3) {
-				vdac_enable(1, 0x1);
-				/* clock delay control */
-				W_HIU_BIT(HHI_VIID_CLK_DIV, 1, 19, 1);
-				/* vdac_clock_mux form atv demod */
-				W_HIU_BIT(HHI_VID_CLK_CNTL2, 1, 8, 1);
-				W_HIU_BIT(HHI_VID_CLK_CNTL2, 1, 4, 1);
-				/* vdac_clk gated clock control */
-				W_VCBUS_BIT(VENC_VDAC_DACSEL0, 1, 5, 1);
+				vdac_enable(1, VDAC_MODULE_AVOUT_ATV);
 			} else {
 				W_APB_REG(TVFE_ATV_DMD_CLP_CTRL, 0);
-				vdac_enable(1, 0x4);
+				vdac_enable(1, VDAC_MODULE_AVOUT_AV);
 			}
 		} else {
 			if (port == TVIN_PORT_CVBS3)
-				vdac_enable(0, 0x1);
+				vdac_enable(0, VDAC_MODULE_AVOUT_ATV);
 			else
-				vdac_enable(0, 0x4);
+				vdac_enable(0, VDAC_MODULE_AVOUT_AV);
 			tvafe_clk_gate_ctrl(0);
 		}
 	}
 }
 
+void adc_pll_down(void)
+{
+	if (!adc_pll_chg &&
+		tvafe_cpu_type() == CPU_TYPE_TL1 &&
+		R_HIU_BIT(HHI_ADC_PLL_CNTL0_TL1, 28, 1)) {
+		W_HIU_BIT(HHI_ADC_PLL_CNTL0_TL1, 0, 28, 1);
+		tvafe_pr_info("%s: ok\n", __func__);
+	}
+}
+
+/*module_sel*/
+/*ADC_EN_ATV_DEMOD	0x1*/
+/*ADC_EN_TVAFE		0x2*/
+/*ADC_EN_DTV_DEMOD	0x4*/
+/*ADC_EN_DTV_DEMODPLL	0x8*/
 int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 {
 	unsigned int adc_pll_lock_cnt = 0;
@@ -610,8 +620,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_lock(&pll_mutex);
 		adc_pll_chg &= ~module_sel;
 		mutex_unlock(&pll_mutex);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: init flag on:%d,module:0x%x,flag:0x%x\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: init flag on:%d,module:0x%x,flag:0x%x\n",
 				__func__, on, module_sel, adc_pll_chg);
 		return ret;
 	}
@@ -680,8 +690,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt == 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 		break;
 	case ADC_EN_TVAFE: /* tvafe */
@@ -770,8 +780,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt == 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 
 		break;
@@ -846,8 +856,8 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt >= 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
-			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
+			tvafe_pr_info("%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 		break;
 	case ADC_EN_DTV_DEMODPLL: /* dtv demod default*/
@@ -921,7 +931,7 @@ int adc_set_pll_cntl(bool on, unsigned int module_sel, void *pDtvPara)
 		mutex_unlock(&pll_mutex);
 		if (adc_pll_lock_cnt == 10)
 			tvafe_pr_info("%s: adc pll lock fail!!!\n", __func__);
-		if (tvafe_dbg_enable)
+		if (tvafe_dbg_print & TVAFE_DBG_NORMAL)
 			tvafe_pr_info("\n%s: on:%d,module:0x%x,flag:0x%x...\n",
 				__func__, on, module_sel, adc_pll_chg);
 		break;
@@ -958,14 +968,12 @@ EXPORT_SYMBOL(tvafe_adc_get_pll_flag);
 /*
  * tvafe init the whole module
  */
-static bool enableavout = true;
-module_param(enableavout, bool, 0644);
-MODULE_PARM_DESC(enableavout, "disable av out when load adc reg");
 void tvafe_init_reg(struct tvafe_cvd2_s *cvd2,
 	struct tvafe_cvd2_mem_s *mem, enum tvin_port_e port,
 	struct tvafe_pin_mux_s *pinmux)
 {
 	unsigned int module_sel = ADC_EN_TVAFE;
+	struct tvafe_user_param_s *user_param = tvafe_get_user_param();
 
 	if (port == TVIN_PORT_CVBS3)
 		module_sel = ADC_EN_ATV_DEMOD;
@@ -993,7 +1001,7 @@ void tvafe_init_reg(struct tvafe_cvd2_s *cvd2,
 
 		tvafe_set_cvbs_default(cvd2, mem, port, pinmux);
 		/*turn on/off av out*/
-		tvafe_enable_avout(port, enableavout);
+		tvafe_enable_avout(port, user_param->avout_en);
 		/* CDAC_CTRL_RESV2<1>=0 */
 	}
 

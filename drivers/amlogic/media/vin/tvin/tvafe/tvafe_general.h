@@ -137,7 +137,7 @@
 #define ADC_EN_ATV_DEMOD	0x1
 #define ADC_EN_TVAFE		0x2
 #define ADC_EN_DTV_DEMOD	0x4
-#define ADC_EN_DTV_DEMODPLL	0xC
+#define ADC_EN_DTV_DEMODPLL	0x8
 
 #define LOG_ADC_CAL
 /* #define LOG_VGA_EDID */
@@ -186,16 +186,12 @@ extern void tvafe_set_apb_bus_err_ctrl(void);
 extern void tvafe_enable_module(bool enable);
 extern void tvafe_enable_avout(enum tvin_port_e port, bool enable);
 
-/* vdac ctrl,adc/dac ref signal,cvbs out signal*/
-/* module index: atv demod:0x01; dtv demod:0x02; tvafe:0x4; dac:0x8*/
-void vdac_enable(bool on, unsigned int module_sel);
 extern void adc_set_pll_reset(void);
 extern int tvafe_adc_get_pll_flag(void);
 extern int tvafe_cpu_type(void);
 extern void tvafe_clk_gate_ctrl(int status);
 
 extern struct mutex pll_mutex;
-extern bool tvafe_dbg_enable;
 
 #endif  /* _TVAFE_GENERAL_H */
 

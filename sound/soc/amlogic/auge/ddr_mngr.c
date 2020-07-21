@@ -29,7 +29,6 @@
 
 #include "regs.h"
 #include "ddr_mngr.h"
-#include "audio_utils.h"
 
 #include "resample.h"
 #include "resample_hw.h"
@@ -64,8 +63,6 @@ static void aml_check_vad(struct toddr *to, bool enable);
 
 /* Audio EQ DRC */
 static struct frddr_attach attach_aed;
-static void aml_check_aed(bool enable, int dst);
-static bool aml_check_aed_module(int dst);
 
 static irqreturn_t aml_ddr_isr(int irq, void *devid)
 {
@@ -107,7 +104,6 @@ static struct toddr *register_toddr_l(struct device *dev,
 	/*		(1 << 31)|(1 << mask_bit));*/
 
 	to->dev = dev;
-	to->actrl = actrl;
 	to->in_use = true;
 	pr_debug("toddrs[%d] registered by device %s\n", i, dev_name(dev));
 	return to;
@@ -134,12 +130,6 @@ static int unregister_toddr_l(struct device *dev, void *data)
 
 	to = &toddrs[i];
 
-	/* check for loopback */
-	if (to->is_lb) {
-		loopback_set_status(0);
-		to->is_lb = 0;
-	}
-
 	/* disable audio ddr arb */
 	mask_bit = i;
 	actrl = to->actrl;
@@ -154,7 +144,6 @@ static int unregister_toddr_l(struct device *dev, void *data)
 
 	free_irq(to->irq, data);
 	to->dev = NULL;
-	to->actrl = NULL;
 	to->in_use = false;
 	pr_debug("toddrs[%d] released by device %s\n", i, dev_name(dev));
 
@@ -210,6 +199,19 @@ int aml_audio_unregister_toddr(struct device *dev, void *data)
 	ret = unregister_toddr_l(dev, data);
 	mutex_unlock(&ddr_mutex);
 	return ret;
+}
+
+void audio_toddr_irq_enable(struct toddr *to, bool en)
+{
+	if (!to || !to->in_use || to->irq < 0)
+		return;
+
+	mutex_lock(&ddr_mutex);
+	if (en)
+		enable_irq(to->irq);
+	else
+		disable_irq_nosync(to->irq);
+	mutex_unlock(&ddr_mutex);
 }
 
 static inline unsigned int
@@ -294,12 +296,7 @@ int aml_toddr_set_intrpt(struct toddr *to, unsigned int intrpt)
 
 unsigned int aml_toddr_get_position(struct toddr *to)
 {
-	struct aml_audio_controller *actrl = to->actrl;
-	unsigned int reg_base = to->reg_base;
-	unsigned int reg;
-
-	reg = calc_toddr_address(EE_AUDIO_TODDR_A_STATUS2, reg_base);
-	return aml_audiobus_read(actrl, reg);
+	return aml_toddr_read_status2(to);
 }
 
 unsigned int aml_toddr_get_addr(struct toddr *to, enum status_sel sel)
@@ -365,13 +362,6 @@ void aml_toddr_select_src(struct toddr *to, enum toddr_src src)
 
 	/* store to check toddr num */
 	to->src = src;
-
-	/* check whether loopback enable */
-	if (loopback_check_enable(src)) {
-		loopback_set_status(1);
-		to->is_lb = 1; /* in loopback */
-		src = LOOPBACK_A;
-	}
 
 	if (to->chipinfo
 		&& to->chipinfo->src_sel_ctrl) {
@@ -451,9 +441,37 @@ void aml_toddr_set_format(struct toddr *to, struct toddr_fmt *fmt)
 
 	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL0, reg_base);
 	aml_audiobus_update_bits(actrl, reg,
-		0x7 << 24 | 0x1fff << 3,
-		fmt->endian << 24 | fmt->type << 13 |
+		0x1 << 27 | 0x7 << 24 | 0x1fff << 3,
+		0x1 << 27 | fmt->endian << 24 | fmt->type << 13 |
 		fmt->msb << 8 | fmt->lsb << 3);
+}
+
+unsigned int aml_toddr_get_status(struct toddr *to)
+{
+	struct aml_audio_controller *actrl = to->actrl;
+	unsigned int reg_base = to->reg_base;
+	unsigned int reg;
+
+	reg = calc_toddr_address(EE_AUDIO_TODDR_A_STATUS1, reg_base);
+
+	return aml_audiobus_read(actrl, reg);
+}
+
+unsigned int aml_toddr_get_fifo_cnt(struct toddr *to)
+{
+	return (aml_toddr_get_status(to) & TODDR_FIFO_CNT) >> 8;
+}
+
+void aml_toddr_ack_irq(struct toddr *to, int status)
+{
+	struct aml_audio_controller *actrl = to->actrl;
+	unsigned int reg_base = to->reg_base;
+	unsigned int reg;
+
+	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL1, reg_base);
+
+	aml_audiobus_update_bits(actrl, reg, MEMIF_INT_MASK, status);
+	aml_audiobus_update_bits(actrl, reg, MEMIF_INT_MASK, 0);
 }
 
 void aml_toddr_insert_chanum(struct toddr *to)
@@ -521,6 +539,63 @@ unsigned int aml_toddr_read_status2(struct toddr *to)
 	return aml_audiobus_read(actrl, reg);
 }
 
+bool aml_toddr_burst_finished(struct toddr *to)
+{
+	unsigned int addr_request, addr_reply, i = 0;
+	struct aml_audio_controller *actrl = to->actrl;
+	unsigned int reg_base = to->reg_base;
+	unsigned int reg;
+	bool fifo_stop = false;
+
+	/* This is a SW workaround.
+	 * If not wait until the fifo stops,
+	 * DDR will stuck and could not recover unless reboot.
+	 */
+	for (i = 0; i < 10; i++) {
+		unsigned int cnt0, cnt1, cnt2;
+
+		cnt0 = aml_toddr_get_fifo_cnt(to);
+		udelay(10);
+		cnt1 = aml_toddr_get_fifo_cnt(to);
+		udelay(10);
+		cnt2 = aml_toddr_get_fifo_cnt(to);
+		pr_debug("i: %d, fifo cnt:[%d] cnt1:[%d] cnt2:[%d]\n",
+			i, cnt0, cnt1, cnt2);
+
+		/* fifo stopped */
+		if ((cnt0 == cnt1) && (cnt0 == cnt2) && (cnt0 < (0x40 - 2))) {
+			pr_debug("%s(), i (%d) cnt(%d) break out\n",
+				__func__, i, cnt2);
+			fifo_stop = true;
+			break;
+		}
+	}
+
+	/* max 200us delay */
+	for (i = 0; i < 200; i++) {
+		reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL1, reg_base);
+		aml_audiobus_update_bits(actrl,	reg, 0xf << 8, 0x0 << 8);
+		addr_request = aml_toddr_get_position(to);
+
+		reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL1, reg_base);
+		aml_audiobus_update_bits(actrl,	reg, 0xf << 8, 0x2 << 8);
+		addr_reply = aml_toddr_get_position(to);
+
+		if (addr_request == addr_reply) {
+			pr_debug("%s(), fifo_stop %d\n", __func__, fifo_stop);
+			return true;
+		}
+
+		udelay(1);
+		if ((i % 20) == 0)
+			pr_info("delay:[%dus]; FRDDR_STATUS2: [0x%x] [0x%x]\n",
+				i, addr_request, addr_reply);
+	}
+	pr_err("Error: 200us time out, TODDR_STATUS2: [0x%x] [0x%x]\n",
+				addr_request, addr_reply);
+	return false;
+}
+
 /* not for tl1 */
 static void aml_toddr_set_resample(struct toddr *to, bool enable)
 {
@@ -531,6 +606,7 @@ static void aml_toddr_set_resample(struct toddr *to, bool enable)
 	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL0, reg_base);
 	aml_audiobus_update_bits(actrl,	reg, 1<<30, !!enable<<30);
 }
+
 /* tl1 after */
 static void aml_toddr_set_resample_ab(struct toddr *to,
 		enum resample_idx index, bool enable)
@@ -542,8 +618,7 @@ static void aml_toddr_set_resample_ab(struct toddr *to,
 	reg = calc_toddr_address(EE_AUDIO_TODDR_A_CTRL1, reg_base);
 	if (index == RESAMPLE_A)
 		aml_audiobus_update_bits(actrl,	reg, 1 << 27, !!enable << 27);
-	else if (index == RESAMPLE_B)
-		aml_audiobus_update_bits(actrl,	reg, 1 << 26, !!enable << 26);
+
 }
 
 static void aml_resample_enable(
@@ -554,25 +629,6 @@ static void aml_resample_enable(
 	if (!to || !p_attach_resample) {
 		pr_err("%s(), NULL pointer.", __func__);
 		return;
-	}
-
-	if (to->chipinfo
-			&& to->chipinfo->asrc_src_sel_ctrl) {
-		/* fix asrc_src_sel */
-		/*
-		switch (p_attach_resample->attach_module) {
-		case LOOPBACK_A:
-			to->asrc_src_sel = ASRC_LOOPBACK_A;
-			break;
-		case LOOPBACK_B:
-			to->asrc_src_sel = ASRC_LOOPBACK_B;
-			break;
-		default:
-			to->asrc_src_sel = to->fifo_id;
-			break;
-		}
-		*/
-		to->asrc_src_sel = p_attach_resample->attach_module;
 	}
 
 	pr_info("toddr %d selects data to %s resample_%c for module:%s\n",
@@ -609,20 +665,27 @@ static void aml_resample_enable(
 				endian << 24 | toddr_type << 13);
 		}
 
-		resample_format_set(p_attach_resample->id,
-			to->channels, bitwidth);
-
-		/* toddr index for resample */
-		if (to->chipinfo
-			&& to->chipinfo->asrc_src_sel_ctrl)
-			resample_src_select_ab(p_attach_resample->id,
-				to->asrc_src_sel);
-		else
-			resample_src_select(to->fifo_id);
+		if (p_attach_resample->resample_version == 1) {
+			if (p_attach_resample->id == RESAMPLE_A) {
+				new_resampleA_set_format(
+						p_attach_resample->id,
+						to->channels, bitwidth);
+			}
+			new_resample_src_select(p_attach_resample->id,
+						to->fifo_id);
+		} else if (p_attach_resample->resample_version == 0) {
+			/* toddr index for resample */
+			if (to->chipinfo &&
+			    to->chipinfo->asrc_src_sel_ctrl) {
+				resample_src_select_ab(p_attach_resample->id,
+						       to->fifo_id);
+			} else {
+				resample_src_select(to->fifo_id);
+			}
+			resample_format_set(p_attach_resample->id,
+					    to->channels, bitwidth);
+		}
 	}
-
-	/* resample enable or not */
-	resample_enable(p_attach_resample->id, enable);
 
 	/* select reample data */
 	if (to->chipinfo
@@ -630,6 +693,12 @@ static void aml_resample_enable(
 		aml_toddr_set_resample_ab(to, p_attach_resample->id, enable);
 	else
 		aml_toddr_set_resample(to, enable);
+
+	/* resample enable or disable */
+	if (p_attach_resample->resample_version == 1)
+		new_resample_enable(p_attach_resample->id, enable);
+	else if (p_attach_resample->resample_version == 0)
+		resample_enable(p_attach_resample->id, enable);
 }
 
 void aml_set_resample(enum resample_idx id,
@@ -637,7 +706,6 @@ void aml_set_resample(enum resample_idx id,
 {
 	struct toddr_attach *p_attach_resample;
 	struct toddr *to;
-	bool update_running = false;
 
 	if (id == RESAMPLE_A)
 		p_attach_resample = &attach_resample_a;
@@ -647,31 +715,21 @@ void aml_set_resample(enum resample_idx id,
 	p_attach_resample->enable        = enable;
 	p_attach_resample->id            = id;
 	p_attach_resample->attach_module = resample_module;
+	p_attach_resample->resample_version = get_resample_version_id(id);
 
+	mutex_lock(&ddr_mutex);
 	to = fetch_toddr_by_src(
 		p_attach_resample->attach_module);
-
-	if (enable) {
-		if ((p_attach_resample->status == DISABLED)
-			|| (p_attach_resample->status == READY)) {
-
-			if (!to) {
-				p_attach_resample->status = READY;
-			} else {
-				p_attach_resample->status = RUNNING;
-				update_running = true;
-				pr_info("Capture with resample\n");
-			}
-		}
-	} else {
-		if (p_attach_resample->status == RUNNING)
-			update_running = true;
-
-		p_attach_resample->status = DISABLED;
+	if (to == NULL) {
+		pr_info("%s(), toddr NULL\n", __func__);
+		goto exit;
 	}
 
-	if (update_running && to)
+	if (p_attach_resample->status == RUNNING)
 		aml_resample_enable(to, p_attach_resample, enable);
+
+exit:
+	mutex_unlock(&ddr_mutex);
 }
 
 /*
@@ -681,32 +739,24 @@ void aml_set_resample(enum resample_idx id,
 static void aml_check_resample(struct toddr *to, bool enable)
 {
 	struct toddr_attach *p_attach_resample;
-	bool is_module_resample;
-	bool resample_b_check = false;
+	int i;
 
 	p_attach_resample = &attach_resample_a;
 
-start_check:
-	is_module_resample = false;
-	if (p_attach_resample->enable
-		&& (to->src == p_attach_resample->attach_module))
-		is_module_resample = true;
+	for (i = 0; i < get_resample_module_num(); i++) {
+		if (to->src == p_attach_resample->attach_module) {
+			/* save toddr status */
+			if (enable)
+				p_attach_resample->status = RUNNING;
+			else
+				p_attach_resample->status = DISABLED;
 
-	/* resample in enable */
-	if (is_module_resample) {
-		if (enable)
-			p_attach_resample->status = RUNNING;
-		else
-			p_attach_resample->status = DISABLED;
-
-		aml_resample_enable(to, p_attach_resample, enable);
-	}
-
-	if ((!resample_b_check)
-		&& (get_resample_module_num() == 2)) {
+			/*if disable toddr, disable attached resampler*/
+			if (p_attach_resample->enable)
+				aml_resample_enable(to, p_attach_resample,
+						    enable);
+		}
 		p_attach_resample = &attach_resample_b;
-		resample_b_check = true;
-		goto start_check;
 	}
 }
 
@@ -861,15 +911,22 @@ static void aml_check_vad(struct toddr *to, bool enable)
 /* from DDRS */
 static struct frddr *register_frddr_l(struct device *dev,
 	struct aml_audio_controller *actrl,
-	irq_handler_t handler, void *data)
+	irq_handler_t handler, void *data, bool rvd_dst)
 {
 	struct frddr *from;
 	unsigned int mask_bit;
 	int i, ret;
 
-	/* lookup unused frddr */
 	for (i = 0; i < DDRMAX; i++) {
-		if (!frddrs[i].in_use)
+		/* lookup reserved frddr */
+		if (frddrs[i].in_use == false &&
+			frddrs[i].reserved == true &&
+			rvd_dst == true)
+			break;
+		/* lookup unused frddr */
+		if (frddrs[i].in_use == false &&
+			frddrs[i].reserved == false &&
+			rvd_dst == false)
 			break;
 	}
 
@@ -892,7 +949,6 @@ static struct frddr *register_frddr_l(struct device *dev,
 		return NULL;
 	}
 	from->dev = dev;
-	from->actrl = actrl;
 	from->in_use = true;
 	pr_debug("frddrs[%d] registered by device %s\n", i, dev_name(dev));
 	return from;
@@ -933,7 +989,6 @@ static int unregister_frddr_l(struct device *dev, void *data)
 
 	free_irq(from->irq, data);
 	from->dev = NULL;
-	from->actrl = NULL;
 	from->in_use = false;
 	pr_debug("frddrs[%d] released by device %s\n", i, dev_name(dev));
 	return 0;
@@ -969,12 +1024,12 @@ struct frddr *fetch_frddr_by_src(int frddr_src)
 
 struct frddr *aml_audio_register_frddr(struct device *dev,
 	struct aml_audio_controller *actrl,
-	irq_handler_t handler, void *data)
+	irq_handler_t handler, void *data, bool rvd_dst)
 {
 	struct frddr *fr = NULL;
 
 	mutex_lock(&ddr_mutex);
-	fr = register_frddr_l(dev, actrl, handler, data);
+	fr = register_frddr_l(dev, actrl, handler, data, rvd_dst);
 	mutex_unlock(&ddr_mutex);
 	return fr;
 }
@@ -1010,10 +1065,6 @@ int aml_check_sharebuffer_valid(struct frddr *fr, int ss_sel)
 		if (frddrs[i].in_use
 			&& (frddrs[i].fifo_id != current_fifo_id)
 			&& (frddrs[i].dest == ss_sel)) {
-
-			pr_debug("%s, ss_sel:%d used, not for share buffer at same time\n",
-				__func__,
-				ss_sel);
 			ret = 0;
 			break;
 		}
@@ -1057,11 +1108,6 @@ static void frddr_set_sharebuffer_enable(
 				sel);
 			break;
 		}
-		s_m |= 0xff << 24;
-		if (enable)
-			s_v |= (fr->channels - 1) << 24;
-		else
-			s_v |= 0x0 << 24;
 	} else {
 		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_CTRL0,
 				reg_base);
@@ -1193,10 +1239,6 @@ void aml_frddr_enable(struct frddr *fr, bool enable)
 			aml_audiobus_write(actrl, reg, 0x0);
 		}
 	}
-
-	/* check for Audio EQ/DRC */
-	if (aml_check_aed_module(fr->dest))
-		aml_check_aed(enable, fr->dest);
 }
 
 void aml_frddr_select_dst(struct frddr *fr, enum frddr_dest dst)
@@ -1211,6 +1253,9 @@ void aml_frddr_select_dst(struct frddr *fr, enum frddr_dest dst)
 		&& fr->chipinfo->src_sel_ctrl) {
 		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_CTRL2, reg_base);
 		src_sel_en = 4;
+		/*update frddr channel*/
+		aml_audiobus_update_bits(actrl, reg,
+			0xff << 24, (fr->channels - 1) << 24);
 	} else {
 		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_CTRL0, reg_base);
 		src_sel_en = 3;
@@ -1245,9 +1290,10 @@ void aml_frddr_select_dst_ss(struct frddr *fr,
 	/* same source en */
 	if (fr->chipinfo
 		&& fr->chipinfo->same_src_fn
-		&& ss_valid
-	)
-		frddr_set_sharebuffer_enable(fr, dst, sel, enable);
+		&& ss_valid) {
+		frddr_set_sharebuffer_enable(fr,
+			dst, sel, enable);
+	}
 }
 
 void aml_frddr_set_fifos(struct frddr *fr,
@@ -1286,60 +1332,48 @@ void aml_frddr_set_format(struct frddr *fr,
 static void aml_aed_enable(struct frddr_attach *p_attach_aed, bool enable)
 {
 	struct frddr *fr = fetch_frddr_by_src(p_attach_aed->attach_module);
+	int aed_version = check_aed_version();
 
-	if (check_aed_v2()) {
+	if (aed_version == VERSION2 || aed_version == VERSION3) {
 		struct aml_audio_controller *actrl = fr->actrl;
 		unsigned int reg_base = fr->reg_base;
 		unsigned int reg;
 
 		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_CTRL2, reg_base);
-		aml_audiobus_update_bits(actrl,
-			reg, 0x1 << 3, enable << 3);
-
-		aed_set_ctrl(enable, 0, p_attach_aed->attach_module);
-		aed_set_format(fr->msb, fr->type, fr->fifo_id);
-		aed_enable(enable);
-	} else {
+		if (enable) {
+			aml_audiobus_update_bits(actrl,
+				reg, 0x1 << 3, enable << 3);
+			if (aed_version == VERSION3) {
+				aed_set_ctrl(enable, 0,
+					p_attach_aed->attach_module, 1);
+				aed_set_format(fr->msb,
+					fr->type, fr->fifo_id, 1);
+			} else {
+				aed_set_ctrl(enable, 0,
+					p_attach_aed->attach_module, 0);
+				aed_set_format(fr->msb,
+					fr->type, fr->fifo_id, 0);
+			}
+			aed_enable(enable);
+		} else {
+			aed_enable(enable);
+			if (aed_version == VERSION3) {
+				aed_set_ctrl(enable, 0,
+					p_attach_aed->attach_module, 1);
+			} else {
+				aed_set_ctrl(enable, 0,
+					p_attach_aed->attach_module, 0);
+			}
+			aml_audiobus_update_bits(actrl,
+				reg, 0x1 << 3, enable << 3);
+		}
+	} else if (aed_version == VERSION1) {
 		if (enable) {
 			/* frddr type and bit depth for AED */
 			aml_aed_format_set(fr->dest);
 		}
 		aed_src_select(enable, fr->dest, fr->fifo_id);
 	}
-}
-
-void aml_set_aed(bool enable, int aed_module)
-{
-	bool update_running = false;
-
-	/* when try to enable AED, if frddr is not in used,
-	 * set AED status as ready
-	 */
-	attach_aed.enable = enable;
-	attach_aed.attach_module = aed_module;
-
-	if (enable) {
-		if ((attach_aed.status == DISABLED)
-			|| (attach_aed.status == READY)) {
-			struct frddr *fr = fetch_frddr_by_src(aed_module);
-
-			if (!fr) {
-				attach_aed.status = READY;
-			} else {
-				attach_aed.status = RUNNING;
-				update_running = true;
-				pr_info("Playback with AED\n");
-			}
-		}
-	} else {
-		if (attach_aed.status == RUNNING)
-			update_running = true;
-
-		attach_aed.status = DISABLED;
-	}
-
-	if (update_running)
-		aml_aed_enable(&attach_aed, enable);
 }
 
 static bool aml_check_aed_module(int dst)
@@ -1353,21 +1387,87 @@ static bool aml_check_aed_module(int dst)
 	return is_module_aed;
 }
 
-static void aml_check_aed(bool enable, int dst)
+void aml_set_aed(bool enable, int aed_module)
 {
-	/* check effect module is sync with crruent frddr dst */
-	if (attach_aed.attach_module != dst)
-		return;
+	attach_aed.enable = enable;
+	attach_aed.attach_module = aed_module;
+}
 
-	/* AED in enable */
-	if (attach_aed.enable) {
-		if (enable)
-			attach_aed.status = RUNNING;
-		else
-			attach_aed.status = DISABLED;
-
+void aml_aed_top_enable(struct frddr *fr, bool enable)
+{
+	if (aml_check_aed_module(fr->dest))
 		aml_aed_enable(&attach_aed, enable);
+}
+
+void aml_aed_set_frddr_reserved(void)
+{
+	frddrs[DDR_A].reserved = true;
+}
+
+void aml_frddr_check(struct frddr *fr)
+{
+	unsigned int tmp, tmp1, i = 0;
+	struct aml_audio_controller *actrl = fr->actrl;
+	unsigned int reg_base = fr->reg_base;
+	unsigned int reg;
+
+	/*max 200us delay*/
+	for (i = 0; i < 200; i++) {
+		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_CTRL1, reg_base);
+		aml_audiobus_update_bits(actrl,	reg, 0xf << 8, 0x0 << 8);
+		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_STATUS2, reg_base);
+		tmp = aml_audiobus_read(actrl, reg);
+
+		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_CTRL1, reg_base);
+		aml_audiobus_update_bits(actrl,	reg, 0xf << 8, 0x2 << 8);
+		reg = calc_frddr_address(EE_AUDIO_FRDDR_A_STATUS2, reg_base);
+		tmp1 = aml_audiobus_read(actrl, reg);
+
+		if (tmp == tmp1)
+			return;
+
+		udelay(1);
+		pr_debug("delay:[%dus]; FRDDR_STATUS2: [0x%x] [0x%x]\n",
+			i, tmp, tmp1);
 	}
+	pr_err("Error: 200us time out, FRDDR_STATUS2: [0x%x] [0x%x]\n",
+				tmp, tmp1);
+	return;
+}
+
+void aml_frddr_reset(struct frddr *fr, int offset)
+{
+	unsigned int reg = 0, val = 0;
+
+	if (fr == NULL) {
+		pr_err("%s(), frddr NULL pointer\n", __func__);
+		return;
+	}
+
+	if ((offset != 0) && (offset != 1)) {
+		pr_err("%s(), invalid offset = %d\n", __func__, offset);
+		return;
+	}
+
+	if (fr->fifo_id == 0) {
+		reg = EE_AUDIO_SW_RESET0(offset);
+		val = REG_BIT_RESET_FRDDRA;
+	} else if (fr->fifo_id == 1) {
+		reg = EE_AUDIO_SW_RESET0(offset);
+		val = REG_BIT_RESET_FRDDRB;
+	} else if (fr->fifo_id == 2) {
+		reg = EE_AUDIO_SW_RESET0(offset);
+		val = REG_BIT_RESET_FRDDRC;
+	} else if (fr->fifo_id == 3) {
+		reg = EE_AUDIO_SW_RESET1;
+		val = REG_BIT_RESET_FRDDRD;
+	} else {
+		pr_err("invalid frddr id %d\n", fr->fifo_id);
+		return;
+	}
+
+	audiobus_update_bits(reg, val, val);
+	audiobus_update_bits(reg, val, 0);
 }
 
 void frddr_init_without_mngr(unsigned int frddr_index, unsigned int src0_sel)
@@ -1470,7 +1570,8 @@ static int toddr_src_enum_set(struct snd_kcontrol *kcontrol,
 static int frddr_src_idx = -1;
 
 static const char *const frddr_src_sel_texts[] = {
-	"TDMOUT_A", "TDMOUT_B", "TDMOUT_C", "SPDIFOUT_A", "SPDIFOUT_B"
+	"TDMOUT_A", "TDMOUT_B", "TDMOUT_C",
+	"SPDIFOUT_A", "SPDIFOUT_B", "EARCTX_DMAC"
 };
 
 static const struct soc_enum frddr_output_source_enum =
@@ -1484,7 +1585,7 @@ int frddr_src_get(void)
 
 const char *frddr_src_get_str(int idx)
 {
-	if (idx < 0 || idx > 4)
+	if (idx < 0 || idx >= FRDDR_MAX)
 		return NULL;
 
 	return frddr_src_sel_texts[idx];
@@ -1618,74 +1719,90 @@ static struct notifier_block ddr_pm_notifier_block = {
 	.notifier_call = ddr_pm_event,
 };
 
+/* table Must in order */
+static struct ddr_info ddr_info[] = {
+	{EE_AUDIO_TODDR_A_CTRL0, EE_AUDIO_FRDDR_A_CTRL0, "toddr_a", "frddr_a"},
+	{EE_AUDIO_TODDR_B_CTRL0, EE_AUDIO_FRDDR_B_CTRL0, "toddr_b", "frddr_b"},
+	{EE_AUDIO_TODDR_C_CTRL0, EE_AUDIO_FRDDR_C_CTRL0, "toddr_c", "frddr_c"},
+	{EE_AUDIO_TODDR_D_CTRL0, EE_AUDIO_FRDDR_D_CTRL0, "toddr_d", "frddr_d"},
+};
+
+static int ddr_get_toddr_base_addr_by_idx(int idx)
+{
+	return ddr_info[idx].toddr_addr;
+}
+
+static int ddr_get_frddr_base_addr_by_idx(int idx)
+{
+	return ddr_info[idx].frddr_addr;
+}
+
+static char *ddr_get_toddr_name_by_idx(int idx)
+{
+	return ddr_info[idx].toddr_name;
+}
+
+static char *ddr_get_frddr_name_by_idx(int idx)
+{
+	return ddr_info[idx].frddr_name;
+}
+
 static int aml_ddr_mngr_platform_probe(struct platform_device *pdev)
 {
+	struct device_node *node = pdev->dev.of_node;
+	struct device_node *node_prt = NULL;
+	struct platform_device *pdev_parent;
+	struct aml_audio_controller *actrl = NULL;
 	struct ddr_chipinfo *p_ddr_chipinfo;
 	int ddr_num = 3; /* early chipset support max 3 ddr num */
 	int i, ret;
 
+	/* get audio controller */
+	node_prt = of_get_parent(node);
+	if (!node_prt)
+		return -ENXIO;
+
+	pdev_parent = of_find_device_by_node(node_prt);
+	of_node_put(node_prt);
+	actrl = (struct aml_audio_controller *)
+				platform_get_drvdata(pdev_parent);
+
 	p_ddr_chipinfo = (struct ddr_chipinfo *)
 		of_device_get_match_data(&pdev->dev);
-	if (!p_ddr_chipinfo)
-		dev_warn_once(&pdev->dev,
-			"check whether to update ddr_mngr chipinfo\n");
-
-	/* irqs */
-	toddrs[DDR_A].irq = platform_get_irq_byname(pdev, "toddr_a");
-	toddrs[DDR_B].irq = platform_get_irq_byname(pdev, "toddr_b");
-	toddrs[DDR_C].irq = platform_get_irq_byname(pdev, "toddr_c");
-
-	frddrs[DDR_A].irq = platform_get_irq_byname(pdev, "frddr_a");
-	frddrs[DDR_B].irq = platform_get_irq_byname(pdev, "frddr_b");
-	frddrs[DDR_C].irq = platform_get_irq_byname(pdev, "frddr_c");
-
-	if (p_ddr_chipinfo
-		&& (p_ddr_chipinfo->fifo_num == 4)) {
-		toddrs[DDR_D].irq = platform_get_irq_byname(pdev, "toddr_d");
-		frddrs[DDR_D].irq = platform_get_irq_byname(pdev, "frddr_d");
-		if (toddrs[DDR_D].irq < 0 || frddrs[DDR_D].irq < 0)
-			dev_err(&pdev->dev, "check irq for DDR_D\n");
-		ddr_num = p_ddr_chipinfo->fifo_num;
+	if (!p_ddr_chipinfo) {
+		dev_err(&pdev->dev,
+			"check to update ddr_mngr chipinfo\n");
+		return -EINVAL;
 	}
+
+	if (p_ddr_chipinfo->fifo_num == 2)
+		ddr_num = p_ddr_chipinfo->fifo_num;
+	else if (p_ddr_chipinfo->fifo_num == 4)
+		ddr_num = p_ddr_chipinfo->fifo_num;
 
 	for (i = 0; i < ddr_num; i++) {
-		pr_info("%d, irqs toddr %d, frddr %d\n",
-			i, toddrs[i].irq, frddrs[i].irq);
+		toddrs[i].irq =
+			platform_get_irq_byname(pdev,
+						ddr_get_toddr_name_by_idx(i));
+		toddrs[i].reg_base = ddr_get_toddr_base_addr_by_idx(i);
+		toddrs[i].fifo_id  = i;
+		toddrs[i].chipinfo = p_ddr_chipinfo;
+		toddrs[i].actrl    = actrl;
+
+		frddrs[i].irq =
+			platform_get_irq_byname(pdev,
+						ddr_get_frddr_name_by_idx(i));
+		frddrs[i].reg_base = ddr_get_frddr_base_addr_by_idx(i);
+		frddrs[i].fifo_id  = i;
+		frddrs[i].chipinfo = p_ddr_chipinfo;
+		frddrs[i].actrl    = actrl;
+
+		dev_info(&pdev->dev, "%d, irqs toddr %d, frddr %d\n",
+			 i, toddrs[i].irq, frddrs[i].irq);
+
 		if (toddrs[i].irq <= 0 || frddrs[i].irq <= 0) {
-			dev_err(&pdev->dev, "platform_get_irq_byname failed\n");
+			dev_err(&pdev->dev, "%s, get irq failed\n", __func__);
 			return -ENXIO;
-		}
-	}
-
-	/* inits */
-	toddrs[DDR_A].reg_base = EE_AUDIO_TODDR_A_CTRL0;
-	toddrs[DDR_B].reg_base = EE_AUDIO_TODDR_B_CTRL0;
-	toddrs[DDR_C].reg_base = EE_AUDIO_TODDR_C_CTRL0;
-	toddrs[DDR_A].fifo_id  = DDR_A;
-	toddrs[DDR_B].fifo_id  = DDR_B;
-	toddrs[DDR_C].fifo_id  = DDR_C;
-
-	frddrs[DDR_A].reg_base = EE_AUDIO_FRDDR_A_CTRL0;
-	frddrs[DDR_B].reg_base = EE_AUDIO_FRDDR_B_CTRL0;
-	frddrs[DDR_C].reg_base = EE_AUDIO_FRDDR_C_CTRL0;
-	frddrs[DDR_A].fifo_id  = DDR_A;
-	frddrs[DDR_B].fifo_id  = DDR_B;
-	frddrs[DDR_C].fifo_id  = DDR_C;
-
-	if (p_ddr_chipinfo) {
-		toddrs[DDR_A].chipinfo = p_ddr_chipinfo;
-		toddrs[DDR_B].chipinfo = p_ddr_chipinfo;
-		toddrs[DDR_C].chipinfo = p_ddr_chipinfo;
-		frddrs[DDR_A].chipinfo = p_ddr_chipinfo;
-		frddrs[DDR_B].chipinfo = p_ddr_chipinfo;
-		frddrs[DDR_C].chipinfo = p_ddr_chipinfo;
-
-		if (p_ddr_chipinfo->fifo_num == 4) {
-			toddrs[DDR_D].reg_base = EE_AUDIO_TODDR_D_CTRL0;
-			toddrs[DDR_D].fifo_id  = DDR_D;
-
-			frddrs[DDR_D].reg_base = EE_AUDIO_FRDDR_D_CTRL0;
-			frddrs[DDR_D].fifo_id  = DDR_D;
 		}
 	}
 

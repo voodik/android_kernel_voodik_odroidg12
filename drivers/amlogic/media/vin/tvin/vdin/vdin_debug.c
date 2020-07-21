@@ -767,6 +767,7 @@ static void vdin_dump_state(struct vdin_dev_s *devp)
 	pr_info("cma_mem_size:0x%x\n", devp->cma_mem_size);
 	pr_info("cma_mem_mode:%d\n", devp->cma_mem_mode);
 	pr_info("force_yuv444_malloc:%d\n", devp->force_yuv444_malloc);
+	vdin_check_hdmi_hdr(devp);
 	vdin_dump_vf_state(devp->vfp);
 	if (vf) {
 		pr_info("current vframe index(%u):\n", vf->index);
@@ -808,26 +809,9 @@ static void vdin_dump_state(struct vdin_dev_s *devp)
 	pr_info("vdin_irq_flag: %d, vdin_rest_flag: %d, irq_cnt: %d, rdma_irq_cnt: %d\n",
 		devp->vdin_irq_flag, devp->vdin_reset_flag,
 		devp->irq_cnt, devp->rdma_irq_cnt);
-	pr_info("game_mode :  %d\n", devp->game_mode);
-	pr_info("dolby_input :  %d\n", devp->dv.dolby_input);
-	if ((devp->cma_config_en != 1) || !(devp->cma_config_flag & 0x100))
-		pr_info("dolby_mem_start = %ld, dolby_mem_size = %d\n",
-			(devp->mem_start +
-			devp->mem_size - devp->canvas_max_num*dolby_size_byte),
-			dolby_size_byte);
-	else
-		for (i = 0; i < devp->canvas_max_num; i++)
-			pr_info("dolby_mem_start[%d] = %ld, dolby_mem_size = %d\n",
-				i, (devp->vfmem_start[i] + devp->vfmem_size -
-				dolby_size_byte), dolby_size_byte);
-	for (i = 0; i < devp->canvas_max_num; i++) {
-		pr_info("dv_mem(%d):0x%x\n",
-			devp->vfp->dv_buf_size[i],
-			devp->vfp->dv_buf_mem[i]);
-	}
-	pr_info("dv_flag:%d;dv_config:%d,dolby_vision:%d\n",
-		devp->dv.dv_flag, devp->dv.dv_config, devp->prop.dolby_vision);
-	pr_info("size of struct vdin_dev_s: %d\n", devp->vdin_dev_ssize);
+	pr_info("vdin_drop_cnt: %d\n", vdin_drop_cnt);
+	pr_info("game_mode cfg :  0x%x\n", game_mode);
+	pr_info("game_mode cur:  0x%x\n", devp->game_mode);
 
 	pr_info("afbce_flag: 0x%x\n", devp->afbce_flag);
 	pr_info("afbce_mode: %d\n", devp->afbce_mode);
@@ -854,6 +838,57 @@ static void vdin_dump_state(struct vdin_dev_s *devp)
 				devp->afbce_info->frame_body_size);
 		}
 	}
+
+	pr_info("dolby_input :  %d\n", devp->dv.dolby_input);
+	if ((devp->cma_config_en != 1) || !(devp->cma_config_flag & 0x100))
+		pr_info("dolby_mem_start = %ld, dolby_mem_size = %d\n",
+			(devp->mem_start +
+			devp->mem_size - devp->canvas_max_num*dolby_size_byte),
+			dolby_size_byte);
+	else
+		for (i = 0; i < devp->canvas_max_num; i++)
+			pr_info("dolby_mem_start[%d] = %ld, dolby_mem_size = %d\n",
+				i, (devp->vfmem_start[i] + devp->vfmem_size -
+				dolby_size_byte), dolby_size_byte);
+	for (i = 0; i < devp->canvas_max_num; i++) {
+		pr_info("dv_mem(%d):0x%x\n",
+			devp->vfp->dv_buf_size[i],
+			devp->vfp->dv_buf_mem[i]);
+	}
+	pr_info("dvEn:%d,dv_flag:%d;dv_cfg:%d,dolby_ver:%d,low_latency:(%d,%d,%d)\n",
+		is_dolby_vision_enable(),
+		devp->dv.dv_flag, devp->dv.dv_config, devp->prop.dolby_vision,
+		devp->dv.low_latency, devp->prop.low_latency,
+		devp->vfp->low_latency);
+
+	pr_info("size of struct vdin_dev_s: %d\n", devp->vdin_dev_ssize);
+	pr_info("devp->dv.dv_vsif:(%d,%d,%d,%d,%d,%d,%d,%d);\n",
+		devp->dv.dv_vsif.dobly_vision_signal,
+		devp->dv.dv_vsif.backlt_ctrl_MD_present,
+		devp->dv.dv_vsif.auxiliary_MD_present,
+		devp->dv.dv_vsif.eff_tmax_PQ_hi,
+		devp->dv.dv_vsif.eff_tmax_PQ_low,
+		devp->dv.dv_vsif.auxiliary_runmode,
+		devp->dv.dv_vsif.auxiliary_runversion,
+		devp->dv.dv_vsif.auxiliary_debug0);
+	pr_info("devp->prop.dv_vsif:(%d,%d,%d,%d,%d,%d,%d,%d)\n",
+		devp->prop.dv_vsif.dobly_vision_signal,
+		devp->prop.dv_vsif.backlt_ctrl_MD_present,
+		devp->prop.dv_vsif.auxiliary_MD_present,
+		devp->prop.dv_vsif.eff_tmax_PQ_hi,
+		devp->prop.dv_vsif.eff_tmax_PQ_low,
+		devp->prop.dv_vsif.auxiliary_runmode,
+		devp->prop.dv_vsif.auxiliary_runversion,
+		devp->prop.dv_vsif.auxiliary_debug0);
+	pr_info("devp->vfp->dv_vsif:(%d,%d,%d,%d,%d,%d,%d,%d)\n",
+		devp->vfp->dv_vsif.dobly_vision_signal,
+		devp->vfp->dv_vsif.backlt_ctrl_MD_present,
+		devp->vfp->dv_vsif.auxiliary_MD_present,
+		devp->vfp->dv_vsif.eff_tmax_PQ_hi,
+		devp->vfp->dv_vsif.eff_tmax_PQ_low,
+		devp->vfp->dv_vsif.auxiliary_runmode,
+		devp->vfp->dv_vsif.auxiliary_runversion,
+		devp->vfp->dv_vsif.auxiliary_debug0);
 	pr_info("Vdin driver version :  %s\n", VDIN_VER);
 }
 
@@ -1933,7 +1968,7 @@ start_chk:
 		if (!parm[1])
 			pr_err("miss parameters .\n");
 		else if (kstrtoul(parm[1], 10, &val) == 0) {
-			devp->color_depth_config = val;
+			devp->color_depth_config = val | COLOR_DEEPS_MANUAL;
 			pr_info("color_depth(%d):%d\n\n", devp->index,
 				devp->color_depth_config);
 		}

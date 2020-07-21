@@ -52,7 +52,7 @@ enum {
 static void __iomem *codecio_reg_map[CODECIO_BUS_MAX];
 static u32 codecio_reg_max[CODECIO_BUS_MAX];
 
-static int codecio_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
+static inline int codecio_reg_read(u32 bus_type, u32 reg, u32 *val)
 {
 	if (bus_type < CODECIO_BUS_MAX) {
 		if (
@@ -71,7 +71,7 @@ static int codecio_reg_read(u32 bus_type, unsigned int reg, unsigned int *val)
 		return -1;
 }
 
-static int codecio_reg_write(u32 bus_type, unsigned int reg, unsigned int val)
+static inline int codecio_reg_write(u32 bus_type, u32 reg, u32 val)
 {
 	if (bus_type < CODECIO_BUS_MAX) {
 		if (

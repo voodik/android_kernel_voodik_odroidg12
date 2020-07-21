@@ -18,14 +18,15 @@
 #ifndef __AML_SPDIF_H__
 #define __AML_SPDIF_H__
 #include <linux/clk.h>
-
+#if 0
 enum SPDIF_ID {
 	SPDIF_A,
 	SPDIF_B,
 	SPDIF_ID_CNT
 };
+#endif
 
-int spdif_set_audio_clk(enum SPDIF_ID id,
-		struct clk *clk_src, int rate, bool same);
+extern int spdif_set_audio_clk(int id,
+		struct clk *clk_src, int rate, int same);
 
 #endif

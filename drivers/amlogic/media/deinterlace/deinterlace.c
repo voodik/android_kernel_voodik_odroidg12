@@ -66,6 +66,8 @@
 #include "deinterlace_dbg.h"
 #include "nr_downscale.h"
 #include "di_pps.h"
+#include "di_pqa.h"
+
 #define CREATE_TRACE_POINTS
 #include "deinterlace_trace.h"
 
@@ -409,6 +411,7 @@ void DI_VSYNC_WR_MPEG_REG_BITS(unsigned int addr, unsigned int val,
 		VSYNC_WR_MPEG_REG_BITS(addr, val, start, len);
 }
 
+#if 0
 unsigned int DI_POST_REG_RD(unsigned int addr)
 {
 	if (IS_ERR_OR_NULL(de_devp))
@@ -432,6 +435,35 @@ int DI_POST_WR_REG_BITS(u32 adr, u32 val, u32 start, u32 len)
 	return VSYNC_WR_MPEG_REG_BITS(adr, val, start, len);
 }
 EXPORT_SYMBOL(DI_POST_WR_REG_BITS);
+#else
+static unsigned int lDI_POST_REG_RD(unsigned int addr)
+{
+	if (IS_ERR_OR_NULL(de_devp))
+		return 0;
+	if (de_devp->flags & DI_SUSPEND_FLAG) {
+		pr_err("[DI] REG 0x%x access prohibited.\n", addr);
+		return 0;
+	}
+	return VSYNC_RD_MPEG_REG(addr);
+}
+
+static int lDI_POST_WR_REG_BITS(u32 adr, u32 val, u32 start, u32 len)
+{
+	if (IS_ERR_OR_NULL(de_devp))
+		return 0;
+	if (de_devp->flags & DI_SUSPEND_FLAG) {
+		pr_err("[DI] REG 0x%x access prohibited.\n", adr);
+		return -1;
+	}
+	return VSYNC_WR_MPEG_REG_BITS(adr, val, start, len);
+}
+
+static const struct di_ext_ops di_ext = {
+	.di_post_reg_rd             = lDI_POST_REG_RD,
+	.di_post_wr_reg_bits        = lDI_POST_WR_REG_BITS,
+};
+
+#endif
 /**********************************/
 
 /*****************************
@@ -677,7 +709,7 @@ static int __init di_read_canvas_reverse(char *str)
 {
 	unsigned char *ptr = str;
 
-	pr_dbg("%s: bootargs is %s.\n", __func__, str);
+	di_pr_info("%s: bootargs is %s.\n", __func__, str);
 	if (strstr(ptr, "1")) {
 		invert_top_bot |= 0x1;
 		overturn = true;
@@ -3481,6 +3513,7 @@ static void pre_de_done_buf_config(void)
 	struct di_buf_s *post_wr_buf = NULL;
 	unsigned int glb_frame_mot_num = 0;
 	unsigned int glb_field_mot_num = 0;
+	unsigned int pull_down_info = 0;
 
 	ddbg_mod_save(eDI_DBG_MOD_PRE_DONEB, 0, di_pre_stru.in_seq);/*dbg*/
 	if (di_pre_stru.di_wr_buf) {
@@ -3503,13 +3536,22 @@ static void pre_de_done_buf_config(void)
 			di_pre_stru.di_post_wr_buf = di_pre_stru.di_wr_buf;
 		post_wr_buf = di_pre_stru.di_post_wr_buf;
 
+		if (post_wr_buf)
+			post_wr_buf->vframe->di_pulldown = 0;
+
 		if (post_wr_buf && !di_pre_stru.cur_prog_flag) {
 			read_pulldown_info(&glb_frame_mot_num,
 				&glb_field_mot_num);
-			if (pulldown_enable)
-				pulldown_detection(&post_wr_buf->pd_config,
+			if (pulldown_enable) {
+				pull_down_info = pulldown_detection(
+					&post_wr_buf->pd_config,
 					di_pre_stru.mtn_status, overturn,
 					di_pre_stru.di_inp_buf->vframe);
+				post_wr_buf->vframe->di_pulldown
+					= pull_down_info;
+
+			}
+			post_wr_buf->vframe->di_pulldown |= 0x08;
 			if (combing_fix_en)
 				cur_lev = adaptive_combing_fixing(
 				di_pre_stru.mtn_status,
@@ -5170,6 +5212,8 @@ module_param(post_cnt, uint, 0664);
 MODULE_PARM_DESC(post_cnt, "/n show blend mode/n");
 static bool post_refresh;
 module_param_named(post_refresh, post_refresh, bool, 0644);
+unsigned int di_last_display;
+
 static int
 de_post_process(void *arg, unsigned int zoom_start_x_lines,
 		unsigned int zoom_end_x_lines, unsigned int zoom_start_y_lines,
@@ -5214,6 +5258,7 @@ de_post_process(void *arg, unsigned int zoom_start_x_lines,
 
 	di_post_stru.cur_disp_index = di_buf->index;
 
+	di_last_display = di_buf->index;/*tmp for keep buf*/
 	if (get_vpp_reg_update_flag(zoom_start_x_lines) || post_refresh)
 		di_post_stru.update_post_reg_flag = 1;
 
@@ -5365,7 +5410,9 @@ de_post_process(void *arg, unsigned int zoom_start_x_lines,
 		}
 		di_post_stru.update_post_reg_flag = 1;
 		/* if height decrease, mtn will not enough */
-		if (di_buf->pd_config.global_mode != PULL_DOWN_BUF1 &&
+		if ((di_buf->pd_config.global_mode
+			!= PULL_DOWN_BUF1) &&
+			!di_buf->di_buf_dup_p[2] &&
 			!post_wr_en)
 			di_buf->pd_config.global_mode = PULL_DOWN_EI;
 	}
@@ -6587,6 +6634,8 @@ static void di_unreg_process_irq(void)
 		up(&di_sema);
 	}
 #endif
+	/*dbg*/
+	pr_info("di:retry cnt=%d\n", di_pre_stru.retry_cnt);
 }
 
 static void di_reg_process(void)
@@ -6897,9 +6946,14 @@ static void di_reg_process_irq(void)
 					vframe->sig_fmt);
 
 		di_patch_post_update_mc_sw(DI_MC_SW_REG, true);
-		cue_int();
+		cue_int(vframe);
 		if (de_devp->flags & DI_LOAD_REG_FLAG)
 			up(&di_sema);
+
+		di_pre_stru.retry_en = false;
+		di_pre_stru.retry_cnt = 0;
+		di_pre_stru.retry_index = 0;
+
 		init_flag = 1;
 		di_pre_stru.reg_req_flag_irq = 1;
 	}
@@ -6943,10 +6997,13 @@ static void di_process(void)
 					(di_pre_stru.pre_de_clear_flag == 2)) {
 					RDMA_WR(DI_INTR_CTRL, data32);
 #endif
-				pre_process_time =
+				if (di_pre_stru.pre_de_clear_flag == 2) {
+					di_pre_stru.retry_en = true;
+				} else {
+					pre_process_time =
 					di_pre_stru.pre_de_busy_timer_count;
-				pre_de_done_buf_config();
-
+					pre_de_done_buf_config();
+				}
 				di_pre_stru.pre_de_process_done = 0;
 				di_pre_stru.pre_de_clear_flag = 0;
 #ifdef CHECK_DI_DONE
@@ -6974,6 +7031,22 @@ static void di_process(void)
 			}
 		}
 		di_unlock_irqfiq_restore(irq_flag2);
+
+		/************/
+		if (di_pre_stru.retry_en &&
+		    (di_pre_stru.pre_de_busy == 0) &&
+		    (di_pre_stru.pre_de_process_done == 0) &&
+		    !atomic_read(&di_flag_unreg) &&
+		    (di_pre_stru.pre_de_process_flag == 0)) {
+			di_pre_stru.retry_index =
+				di_pre_stru.field_count_for_cont;
+			di_pre_stru.field_count_for_cont--;
+			di_print("di:retry set%d\n", di_pre_stru.retry_index);
+			pre_de_process();
+			di_pre_stru.retry_en = false;
+			di_pre_stru.retry_cnt++;
+		}
+
 		if ((di_pre_stru.pre_de_busy == 0) &&
 			(di_pre_stru.pre_de_process_done == 0)) {
 			if ((pre_run_flag == DI_RUN_FLAG_RUN) ||
@@ -7757,11 +7830,14 @@ static void di_vf_put(vframe_t *vf, void *arg)
 			__func__, vf);
 		return;
 	}
-	//if (di_post_stru.keep_buf == di_buf) {
-	//	pr_info("[DI]recycle buffer %d, get cnt %d.\n",
-	//		di_buf->index, disp_frame_count);
+	if (di_post_stru.keep_buf	&&
+	    (di_post_stru.keep_buf == di_buf	||
+	     di_last_display != di_post_stru.keep_buf->index)) {
+	/*if (di_post_stru.keep_buf == di_buf) {*/
+		pr_info("[DI]recycle buffer %d, get cnt %d.\n",
+			di_post_stru.keep_buf->index, disp_frame_count);
 		recycle_keep_buffer();
-	//}
+	}
 
 	if (di_buf->type == VFRAME_TYPE_POST) {
 		di_lock_irqfiq_save(irq_flag2);
@@ -7997,6 +8073,7 @@ show_frame_format(struct device *dev,
 }
 static DEVICE_ATTR(frame_format, 0444, show_frame_format, NULL);
 
+#if 0	/*move to di_local.c*/
 static int __init rmem_di_device_init(struct reserved_mem *rmem,
 	struct device *dev)
 {
@@ -8027,6 +8104,7 @@ static void rmem_di_device_release(struct reserved_mem *rmem,
 		di_devp->mem_size = 0;
 	}
 }
+#endif
 #ifdef CONFIG_AMLOGIC_MEDIA_RDMA
 unsigned int RDMA_RD_BITS(unsigned int adr, unsigned int start,
 			  unsigned int len)
@@ -8175,6 +8253,7 @@ static void set_di_flag(void)
 	mtn_int_combing_glbmot();
 }
 
+#if 0	/*move to di_local.c*/
 static const struct reserved_mem_ops rmem_di_ops = {
 	.device_init	= rmem_di_device_init,
 	.device_release = rmem_di_device_release,
@@ -8192,7 +8271,7 @@ static int __init rmem_di_setup(struct reserved_mem *rmem)
 	return 0;
 }
 RESERVEDMEM_OF_DECLARE(di, "amlogic, di-mem", rmem_di_setup);
-
+#endif
 static void di_get_vpu_clkb(struct device *dev, struct di_dev_s *pdev)
 {
 
@@ -8243,6 +8322,23 @@ static int di_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct di_dev_s *di_devp = NULL;
+
+	di_pr_info("%s:\n", __func__);
+
+#if 1	/*move from init*/
+	ret = alloc_chrdev_region(&di_devno, 0, DI_COUNT, DEVICE_NAME);
+	if (ret < 0) {
+		pr_err("%s: failed to allocate major number\n", __func__);
+		goto fail_alloc_cdev_region;
+	}
+	di_pr_info("%s: major %d\n", __func__, MAJOR(di_devno));
+	di_clsp = class_create(THIS_MODULE, CLASS_NAME);
+	if (IS_ERR(di_clsp)) {
+		ret = PTR_ERR(di_clsp);
+		pr_err("%s: failed to create class\n", __func__);
+		goto fail_class_create;
+	}
+#endif
 
 	di_devp = kmalloc(sizeof(struct di_dev_s), GFP_KERNEL);
 	if (!di_devp) {
@@ -8430,7 +8526,9 @@ static int di_probe(struct platform_device *pdev)
 	di_debugfs_init();	/*2018-07-18 add debugfs*/
 	di_patch_post_update_mc_sw(DI_MC_SW_IC, true);
 
-	pr_info("%s:ok\n", __func__);
+	dil_attach_ext_api(&di_ext);
+
+	di_pr_info("%s:ok\n", __func__);
 	return ret;
 
 fail_cdev_add:
@@ -8438,13 +8536,20 @@ fail_cdev_add:
 	kfree(di_devp);
 
 fail_kmalloc_dev:
+#if 1	/*move from init*/
+	class_destroy(di_clsp);
+fail_class_create:
+	unregister_chrdev_region(di_devno, DI_COUNT);
+fail_alloc_cdev_region:
 	return ret;
+#endif
 }
 
 static int di_remove(struct platform_device *pdev)
 {
 	struct di_dev_s *di_devp = NULL;
 
+	di_pr_info("%s:\n", __func__);
 	di_devp = platform_get_drvdata(pdev);
 
 	if (cpu_after_eq(MESON_CPU_MAJOR_ID_TXLX))
@@ -8495,11 +8600,17 @@ static int di_remove(struct platform_device *pdev)
 
 	}
 	device_destroy(di_clsp, di_devno);
+#if 1	/*move from exit*/
+	class_destroy(di_clsp);
+	di_debugfs_exit();
+	unregister_chrdev_region(di_devno, DI_COUNT);
+#endif
 	kfree(di_devp);
 /* free drvdata */
 	dev_set_drvdata(&pdev->dev, NULL);
 	platform_set_drvdata(pdev, NULL);
 
+	di_pr_info("%s:ok\n", __func__);
 	return 0;
 }
 
@@ -8646,7 +8757,7 @@ static int __init di_module_init(void)
 	int ret = 0;
 
 	di_pr_info("%s ok.\n", __func__);
-
+#if 0	/*move to prob*/
 	ret = alloc_chrdev_region(&di_devno, 0, DI_COUNT, DEVICE_NAME);
 	if (ret < 0) {
 		pr_err("%s: failed to allocate major number\n", __func__);
@@ -8659,26 +8770,30 @@ static int __init di_module_init(void)
 		pr_err("%s: failed to create class\n", __func__);
 		goto fail_class_create;
 	}
-
+#endif
 	ret = platform_driver_register(&di_driver);
 	if (ret != 0) {
 		pr_err("%s: failed to register driver\n", __func__);
-		goto fail_pdrv_register;
+		return -ENODEV;//goto fail_pdrv_register;
 	}
 	return 0;
+#if 0	/*move to prob*/
 fail_pdrv_register:
 	class_destroy(di_clsp);
 fail_class_create:
 	unregister_chrdev_region(di_devno, DI_COUNT);
 fail_alloc_cdev_region:
 	return ret;
+#endif
 }
 
 static void __exit di_module_exit(void)
 {
+#if 0	/*move to remove*/
 	class_destroy(di_clsp);
 	di_debugfs_exit();
 	unregister_chrdev_region(di_devno, DI_COUNT);
+#endif
 	platform_driver_unregister(&di_driver);
 }
 

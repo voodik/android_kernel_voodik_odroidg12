@@ -245,12 +245,12 @@
 		method = "smc";
 	};
 
-	meson_suspend:pm {
+	aml_pm {
 		compatible = "amlogic, pm";
 		status = "okay";
 		device_name = "aml_pm";
-		reg = <0xff8000a8 0x4>,
-			<0xff80023c 0x4>;
+		debug_reg = <0xff8000a8>;
+		exit_reg = <0xff80023c>;
 	};
 
 	secmon {
@@ -1497,7 +1497,7 @@
 			ocr_avail = <0x200080>; /**VDD voltage 3.3 ~ 3.4 */
 			max_req_size = <0x20000>; /**128KB*/
 			gpio_dat3 = <&gpio GPIOC_3 GPIO_ACTIVE_HIGH>;
-			jtag_pin = <&gpio GPIOC_0 GPIO_ACTIVE_HIGH>;
+			jtag_pin = <&gpio GPIOC_1 GPIO_ACTIVE_HIGH>;
 			gpio_cd = <&gpio GPIOC_6 GPIO_ACTIVE_HIGH>;
 			card_type = <5>;
 			/* 3:sdio device(ie:sdio-wifi),
@@ -1591,20 +1591,11 @@
 					node_name = "cpufreq_cool1";
 					device_type = "cpufreq";
 				};
-				cpucore_cool_cluster0 {
+				cpucore_cool_cluster {
 					min_state = <1>;
 					dyn_coeff = <0>;
-					cluster_id = <0>;
 					gpu_pp = <2>;
-					node_name = "cpucore_cool0";
-					device_type = "cpucore";
-				};
-				cpucore_cool_cluster1 {
-					min_state = <0>;
-					dyn_coeff = <0>;
-					cluster_id = <1>;
-					gpu_pp = <2>;
-					node_name = "cpucore_cool1";
+					node_name = "cpucore_cool";
 					device_type = "cpucore";
 				};
 				gpufreq_cool {
@@ -1630,10 +1621,7 @@
 			cpufreq_cool1:cpufreq_cool1 {
 				#cooling-cells = <2>; /* min followed by max */
 			};
-			cpucore_cool0:cpucore_cool0 {
-				#cooling-cells = <2>; /* min followed by max */
-			};
-			cpucore_cool1:cpucore_cool1 {
+			cpucore_cool:cpucore_cool {
 				#cooling-cells = <2>; /* min followed by max */
 			};
 			gpufreq_cool0:gpufreq_cool0 {
@@ -1685,14 +1673,9 @@
 					cooling-device = <&cpufreq_cool1 0 9>;
 					contribution = <1024>;
 				};
-				cpucore_cooling_map0 {
+				cpucore_cooling_map {
 					trip = <&pcontrol>;
-					cooling-device = <&cpucore_cool0 0 1>;
-					contribution = <1024>;
-				};
-				cpucore_cooling_map1 {
-					trip = <&pcontrol>;
-					cooling-device = <&cpucore_cool1 0 4>;
+					cooling-device = <&cpucore_cool 0 5>;
 					contribution = <1024>;
 				};
 				gpufreq_cooling_map {

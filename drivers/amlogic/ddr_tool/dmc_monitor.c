@@ -43,6 +43,34 @@
 
 static struct dmc_monitor *dmc_mon;
 
+static unsigned long init_dev_mask   __initdata;
+static unsigned long init_start_addr __initdata;
+static unsigned long init_end_addr   __initdata;
+
+static int __init early_dmc_param(char *buf)
+{
+	unsigned long s_addr, e_addr, mask;
+	/*
+	 * Patten:  dmc_montiro=[start_addr],[end_addr],[mask]
+	 * Example: dmc_monitor=0x00000000,0x20000000,0x7fce
+	 */
+	if (!buf)
+		return -EINVAL;
+
+	if (sscanf(buf, "%lx,%lx,%lx", &s_addr, &e_addr, &mask) != 3)
+		return -EINVAL;
+
+	init_start_addr = s_addr;
+	init_end_addr   = e_addr;
+	init_dev_mask   = mask;
+
+	pr_info("%s, buf:%s, %lx-%lx, %lx\n",
+		__func__, buf, s_addr, e_addr, mask);
+
+	return 0;
+}
+early_param("dmc_monitor", early_dmc_param);
+
 unsigned long dmc_rw(unsigned long addr, unsigned long value, int rw)
 {
 	struct arm_smccc_res smccc;
@@ -109,6 +137,30 @@ unsigned int get_all_dev_mask(void)
 	return ret;
 }
 
+static unsigned int get_other_dev_mask(void)
+{
+	unsigned int ret = 0;
+	int i;
+
+	for (i = 0; i < PORT_MAJOR; i++) {
+		if (dmc_mon->port[i].port_id >= PORT_MAJOR)
+			break;
+
+		/*
+		 * we don't want id with arm mali and device
+		 * because these devices can access all ddr range
+		 * and generate value-less report
+		 */
+		if (strstr(dmc_mon->port[i].port_name, "ARM")  ||
+		    strstr(dmc_mon->port[i].port_name, "MALI") ||
+		    strstr(dmc_mon->port[i].port_name, "DEVICE"))
+			continue;
+
+		ret |= (1 << dmc_mon->port[i].port_id);
+	}
+	return ret;
+}
+
 static size_t dump_reg(char *buf)
 {
 	size_t sz = 0, i;
@@ -130,7 +182,7 @@ static size_t dump_reg(char *buf)
 static irqreturn_t dmc_monitor_irq_handler(int irq, void *dev_instance)
 {
 	if (dmc_mon->ops && dmc_mon->ops->handle_irq)
-		dmc_mon->ops->handle_irq(dmc_mon);
+		dmc_mon->ops->handle_irq(dmc_mon, dev_instance);
 
 	return IRQ_HANDLED;
 }
@@ -220,6 +272,8 @@ static ssize_t dev_store(struct class *cla,
 	}
 	if (!strncmp(buf, "all", 3))
 		dmc_mon->device = get_all_dev_mask();
+	else if (!strncmp(buf, "other", 5))
+		dmc_mon->device = get_other_dev_mask();
 	else {
 		i = dev_name_to_id(buf);
 		if (i < 0) {
@@ -316,6 +370,10 @@ static int dmc_monitor_probe(struct platform_device *pdev)
 	}
 	INIT_DELAYED_WORK(&dmc_mon->work, clear_irq_work);
 	schedule_delayed_work(&dmc_mon->work, HZ);
+
+	if (init_dev_mask)
+		dmc_set_monitor(init_start_addr,
+				init_end_addr, init_dev_mask, 1);
 
 	return 0;
 inval:
