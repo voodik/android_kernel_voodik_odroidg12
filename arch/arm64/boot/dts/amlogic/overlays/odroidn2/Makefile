@@ -13,7 +13,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDN2) += spi0.dtbo		\
 					irblaster.dtbo		\
 					odroidn2-opp.dtbo	\
 					onewire.dtbo		\
-					can0.dtbo
+					can0.dtbo		\
+					fanspeed-full.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
