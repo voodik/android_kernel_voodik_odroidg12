@@ -15,7 +15,9 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDN2) += spi0.dtbo		\
 					odroidn2_plus-opp.dtbo	\
 					onewire.dtbo		\
 					can0.dtbo		\
-					fanspeed-full.dtbo
+					fanspeed-full.dtbo		\
+					pwm_cd.dtbo		\
+					pwm_ef.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
