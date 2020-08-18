@@ -31,7 +31,10 @@ struct am_vout_mode {
 	unsigned int flags;
 };
 
+extern struct am_meson_logo logo;
 extern struct osd_device_data_s osd_meson_dev;
 char *am_meson_crtc_get_voutmode(struct drm_display_mode *mode);
+void am_meson_free_logo_memory(void);
+bool am_meson_crtc_check_mode(struct drm_display_mode *mode, char *outputmode);
 
 #endif /* __AM_MESON_VPU_H */

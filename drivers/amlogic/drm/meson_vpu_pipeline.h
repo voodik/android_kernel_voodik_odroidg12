@@ -39,7 +39,7 @@
 #define MESON_BLOCK_MAX_NAME_LEN 32
 /*ratio base for scaler calc;maybe need bigger than 1000*/
 #define RATIO_BASE 1000
-#define MESON_OSD_INPUT_W_LIMIT 1920
+#define MESON_OSD_INPUT_W_LIMIT 3840
 
 #define MAX_DIN_NUM 4
 #define MAX_DOUT_NUM 2
@@ -169,6 +169,7 @@ struct meson_vpu_osd_layer_info {
 	u32 afbc_inter_format;
 	u32 afbc_en;
 	u32 fb_size;
+	u32 premult_en;
 };
 
 struct meson_vpu_osd {
@@ -205,6 +206,7 @@ struct meson_vpu_osd_state {
 	int r_mode;
 	u32 plane_index;
 	u32 fb_size;
+	u32 premult_en;
 };
 
 struct meson_vpu_afbc {

@@ -53,6 +53,8 @@
 #define VIDTYPE_RGB_444			0x20000000
 #define VIDTYPE_V4L_EOS			0x80000000
 
+/* 2019-04-22 Suggestions from brian.zhu*/
+#define VIDTYPE_DI_PW			0x40000000
 #define DISP_RATIO_FORCECONFIG          0x80000000
 #define DISP_RATIO_FORCE_NORMALWIDE     0x40000000
 #define DISP_RATIO_FORCE_FULL_STRETCH   0x20000000
@@ -481,6 +483,7 @@ struct vframe_s {
 	 * bit 0: flm32
 	 *****************/
 	u32 di_pulldown;
+	u32 di_gmv;
 } /*vframe_t */;
 
 #if 0

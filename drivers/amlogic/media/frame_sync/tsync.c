@@ -214,6 +214,7 @@ static int tsync_dec_reset_flag;
 static int tsync_dec_reset_video_start;
 static int tsync_automute_on;
 static int tsync_video_started;
+static int is_tunnel_mode;
 
 static int debug_pts_checkin;
 static int debug_pts_checkout;
@@ -745,6 +746,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 	switch (event) {
 	case VIDEO_START:
 		tsync_video_started = 1;
+		tsync_set_av_state(0, 2);
 
 	//set tsync mode to vmaster to avoid video block caused
 	// by avpts-diff too much
@@ -802,6 +804,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 
 	case VIDEO_STOP:
 		tsync_stat = TSYNC_STAT_PCRSCR_SETUP_NONE;
+		tsync_set_av_state(0, 3);
 		timestamp_vpts_set(0);
 		timestamp_pcrscr_set(0);
 		timestamp_pcrscr_enable(0);
@@ -947,6 +950,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		break;
 	case AUDIO_START:
 		/* reset discontinue var */
+		tsync_set_av_state(1, AUDIO_START);
 		tsync_set_sync_adiscont(0);
 		tsync_set_sync_adiscont_diff(0);
 		tsync_set_sync_vdiscont(0);
@@ -1009,6 +1013,7 @@ void tsync_avevent_locked(enum avevent_e event, u32 param)
 		break;
 
 	case AUDIO_STOP:
+		tsync_set_av_state(1, AUDIO_STOP);
 		timestamp_apts_enable(0);
 		timestamp_apts_set(-1);
 		tsync_abreak = 0;
@@ -1201,6 +1206,11 @@ int tsync_set_apts(unsigned int pts)
 	unsigned int oldpts = timestamp_apts_get();
 	int oldmod = tsync_mode;
 
+	if (tsync_mode == TSYNC_MODE_PCRMASTER) {
+		tsync_pcr_set_apts(pts);
+		return 0;
+	}
+
 	if (tsync_abreak)
 		tsync_abreak = 0;
 	if (!tsync_enable) {
@@ -1238,7 +1248,7 @@ int tsync_set_apts(unsigned int pts)
 		t = timestamp_pcrscr_get();
 
 	if (tsync_mode == TSYNC_MODE_AMASTER) {
-		/* special used for Dolby Certification AVSync test */
+		/* special used for Dobly Certification AVSync test */
 		if (dobly_avsync_test) {
 			if (get_vsync_pts_inc_mode()
 				&&
@@ -1431,6 +1441,18 @@ int tsync_set_startsync_mode(int mode)
 	return startsync_mode = mode;
 }
 EXPORT_SYMBOL(tsync_set_startsync_mode);
+
+int tsync_set_tunnel_mode(int mode)
+{
+	return is_tunnel_mode = mode;
+}
+EXPORT_SYMBOL(tsync_set_tunnel_mode);
+
+int tsync_get_tunnel_mode(void)
+{
+	return is_tunnel_mode;
+}
+EXPORT_SYMBOL(tsync_get_tunnel_mode);
 
 bool tsync_check_vpts_discontinuity(unsigned int vpts)
 {
@@ -1731,11 +1753,8 @@ static ssize_t show_discontinue(struct class *class,
 {
 	pts_discontinue = vpts_discontinue || apts_discontinue;
 	if (pts_discontinue) {
-		sprintf(buf, "1: pts_discontinue, ");
-		sprintf(buf, "%sapts_discontinue_diff=%d, ",
-				buf, apts_discontinue_diff);
-		return sprintf(buf, "%svpts_discontinue_diff=%d,\n",
-				buf, vpts_discontinue_diff);
+		return sprintf(buf, "apts diff %d, vpts diff=%d\n",
+			apts_discontinue_diff, vpts_discontinue_diff);
 	}
 
 	return sprintf(buf, "0: pts_continue\n");

@@ -242,7 +242,8 @@ static int parse_para(const char *para, int para_num, int *result)
 	char *token = NULL;
 	char *params, *params_base;
 	int *out = result;
-	int len = 0, count = 0;
+	ssize_t len;
+	int count = 0;
 	int res = 0;
 	int ret = 0;
 
@@ -490,30 +491,6 @@ static ssize_t debug_first_frame_write(struct class *cla,
 	return count;
 }
 
-static ssize_t debug_10bit_frame_read(struct class *cla,
-		struct class_attribute *attr, char *buf)
-{
-	return snprintf(buf,
-		80,
-		"current debug_10bit_frame is %d\n",
-		ppmgr_device.debug_10bit_frame);
-}
-
-static ssize_t debug_10bit_frame_write(struct class *cla,
-		struct class_attribute *attr, const char *buf, size_t count)
-{
-	long tmp;
-
-	int ret = kstrtol(buf, 0, &tmp);
-
-	if (ret != 0) {
-		PPMGRDRV_ERR("ERROR converting %s to long int!\n", buf);
-		return ret;
-	}
-	ppmgr_device.debug_10bit_frame = tmp;
-	return count;
-}
-
 static ssize_t rect_read(struct class *cla, struct class_attribute *attr,
 				char *buf)
 {
@@ -530,7 +507,7 @@ static ssize_t rect_write(struct class *cla, struct class_attribute *attr,
 	char *strp = (char *)buf;
 	char *endp = NULL;
 	int value_array[4];
-	static int buflen;
+	static ssize_t buflen;
 	static char *tokenlen;
 	int i;
 	long tmp;
@@ -594,7 +571,14 @@ static ssize_t dump_path_write(struct class *cla, struct class_attribute *attr,
 		PPMGRDRV_INFO("buf kstrdup failed\n");
 		return 0;
 	}
-	strcpy(ppmgr_device.dump_path, tmp);
+	if (strlen(tmp) >= sizeof(ppmgr_device.dump_path) - 1) {
+		memcpy(ppmgr_device.dump_path, tmp,
+		       sizeof(ppmgr_device.dump_path) - 1);
+		ppmgr_device.dump_path[
+			sizeof(ppmgr_device.dump_path) - 1] = '\0';
+	} else {
+		strcpy(ppmgr_device.dump_path, tmp);
+	}
 
 	return count;
 
@@ -630,7 +614,7 @@ static void set_disp_para(const char *para)
 static ssize_t disp_write(struct class *cla, struct class_attribute *attr,
 				const char *buf, size_t count)
 {
-	int buflen;
+	ssize_t buflen;
 
 	buflen = strlen(buf);
 	if (buflen <= 0)
@@ -721,7 +705,7 @@ static ssize_t ppscaler_rect_write(struct class *cla,
 					struct class_attribute *attr,
 					const char *buf, size_t count)
 {
-	int buflen;
+	ssize_t buflen;
 
 	buflen = strlen(buf);
 	if (buflen <= 0)
@@ -1402,11 +1386,6 @@ __ATTR(debug_first_frame,
 	debug_first_frame_read,
 	debug_first_frame_write),
 
-__ATTR(debug_10bit_frame,
-	0644,
-	debug_10bit_frame_read,
-	debug_10bit_frame_write),
-
 __ATTR(dump_path,
 	0644,
 	dump_path_read,
@@ -1743,7 +1722,6 @@ int init_ppmgr_device(void)
 	ppmgr_device.tb_detect_init_mute = 0;
 	ppmgr_device.ppmgr_debug = 0;
 	ppmgr_device.debug_first_frame = 0;
-	ppmgr_device.debug_10bit_frame = 0;
 	PPMGRDRV_INFO("ppmgr_dev major:%d\n", ret);
 
 	ppmgr_device.cla = init_ppmgr_cls();

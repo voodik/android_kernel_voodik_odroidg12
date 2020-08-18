@@ -44,8 +44,10 @@
 #include "atvdemod_func.h"
 #include "atvauddemod_func.h"
 
-
-#define AMLATVDEMOD_VER "V2.13"
+/********************************CODE CHANGE LIST*****************************/
+/* Date --- Version --- Note *************************************************/
+/* 2019/11/05 --- V2.15 --- Add dynamic monitoring line frequency deviation. */
+#define AMLATVDEMOD_VER "V2.15"
 
 struct aml_atvdemod_device *amlatvdemod_devp;
 
@@ -358,7 +360,7 @@ static ssize_t aml_atvdemod_store(struct class *class,
 		int blk = 0, reg = 0;
 
 		for (blk = 0; blk <= APB_BLOCK_ADDR_TOP; ++blk) {
-			for (reg = 0; reg <= 0x40; ++reg) {
+			for (reg = 0; reg < 0x40; ++reg) {
 				val = atv_dmd_rd_long(blk, reg);
 				pr_err("[0x%04x] = 0x%x.\n",
 						(blk << 8) + (reg << 2), val);

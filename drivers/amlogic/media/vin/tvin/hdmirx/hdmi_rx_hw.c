@@ -1991,15 +1991,21 @@ void hdmirx_20_init(void)
 	data32 |= SCRAMBLE_SEL	<< 0;  /* [1:0]    scramble_sel */
 	hdmirx_wr_dwc(DWC_HDMI20_CONTROL,    data32);
 
-data32  = 0;
-data32 |= 0    << 1;  /* [1]      hpd_low */
-data32 |= 1    << 0;  /* [0]      power_provided */
-hdmirx_wr_dwc(DWC_SCDC_CONFIG,   data32);
+	data32  = 0;
+	data32 |= 1	<< 24; /* [25:24]  i2c_spike_suppr */
+	data32 |= 0	<< 20; /* [20]     i2c_timeout_en */
+	data32 |= 0	<< 0;  /* [19:0]   i2c_timeout_cnt */
+	hdmirx_wr_dwc(DWC_SCDC_I2CCONFIG,    data32);
 
 	data32  = 0;
 	data32 |= 1    << 1;  /* [1]      hpd_low */
 	data32 |= 0    << 0;  /* [0]      power_provided */
 	hdmirx_wr_dwc(DWC_SCDC_CONFIG,   data32);
+
+	data32  = 0;
+	data32 |= 0xabcdef << 8;  /* [31:8]   manufacture_oui */
+	data32 |= 1	<< 0;  /* [7:0]    sink_version */
+	hdmirx_wr_dwc(DWC_SCDC_WRDATA0,	data32);
 
 data32  = 0;
 data32 |= 10	<< 20; /* [29:20]  chlock_max_err */

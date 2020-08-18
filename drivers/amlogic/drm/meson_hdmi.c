@@ -35,16 +35,10 @@
 #include <linux/amlogic/media/vout/hdmi_tx/hdmi_tx_module.h>
 #include "meson_hdmi.h"
 #include "meson_hdcp.h"
+#include "meson_vpu.h"
 
 #define DEVICE_NAME "amhdmitx"
 struct am_hdmi_tx am_hdmi_info;
-
-struct am_vout_mode {
-	char name[DRM_DISPLAY_MODE_LEN];
-	enum vmode_e mode;
-	int width, height, vrefresh;
-	unsigned int flags;
-};
 
 static struct am_vout_mode am_vout_modes[] = {
 	{ "1080p60hz", VMODE_HDMI, 1920, 1080, 60, 0},
@@ -300,7 +294,6 @@ void am_hdmi_encoder_enable(struct drm_encoder *encoder)
 	vout_notifier_call_chain(VOUT_EVENT_MODE_CHANGE_PRE, &vmode);
 	set_vout_vmode(vmode);
 	vout_notifier_call_chain(VOUT_EVENT_MODE_CHANGE, &vmode);
-	am_hdmi->hdcp_work = NULL;
 	mdelay(1000);
 	am_hdmi_hdcp_work_state_change(am_hdmi, 0);
 }
@@ -584,6 +577,11 @@ static const struct of_device_id am_meson_hdmi_dt_ids[] = {
 
 MODULE_DEVICE_TABLE(of, am_meson_hdmi_dt_ids);
 
+struct drm_connector *am_meson_hdmi_connector(void)
+{
+	return &am_hdmi_info.connector;
+}
+
 static int am_meson_hdmi_bind(struct device *dev,
 	struct device *master, void *data)
 {
@@ -596,12 +594,9 @@ static int am_meson_hdmi_bind(struct device *dev,
 	int ret;
 	int irq;
 
-	am_hdmi = devm_kzalloc(priv->dev, sizeof(*am_hdmi),
-				       GFP_KERNEL);
-	if (!am_hdmi)
-		return -ENOMEM;
-	memcpy(&am_hdmi_info, am_hdmi, sizeof(*am_hdmi));
+	DRM_INFO("[%s] in\n", __func__);
 	am_hdmi = &am_hdmi_info;
+	memset(am_hdmi, 0, sizeof(*am_hdmi));
 
 	DRM_INFO("drm hdmitx init and version:%s\n", DRM_HDMITX_VER);
 	am_hdmi->priv = priv;
@@ -662,6 +657,7 @@ static int am_meson_hdmi_bind(struct device *dev,
 				DRM_DEBUG_KMS("HDCP init failed, skipping.\n");
 		}
 	}
+	DRM_INFO("[%s] out\n", __func__);
 	return 0;
 }
 
@@ -679,6 +675,7 @@ static const struct component_ops am_meson_hdmi_ops = {
 
 static int am_meson_hdmi_probe(struct platform_device *pdev)
 {
+	DRM_INFO("[%s] in\n", __func__);
 	return component_add(&pdev->dev, &am_meson_hdmi_ops);
 }
 

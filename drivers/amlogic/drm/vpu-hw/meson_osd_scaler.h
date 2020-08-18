@@ -79,6 +79,15 @@
 #define OSD_ZOOM_TOTAL_BITS 24
 #define OSD_PHASE_BITS 16
 
+#define OSD_SCALER_COEFF_H 1
+#define OSD_SCALER_COEFF_V 0
+
+enum scaler_coef_e {
+	COEFS_BICUBIC = 0,
+	COEFS_2POINT_BINILEAR,
+	COEFS_4POINT_TRIANGLE
+};
+
 enum f2v_vphase_type_e {
 	F2V_IT2IT = 0,
 	F2V_IB2IB,
