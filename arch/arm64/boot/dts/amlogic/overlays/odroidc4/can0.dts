@@ -14,7 +14,7 @@
 			can0: can@0 {
 				compatible = "microchip,mcp2515";
 				gpio-irq = <&gpio GPIOX_3 GPIO_ACTIVE_LOW>;
-				reg = <0>;
+				reg = <1>;
 				spi-max-frequency = <10000000>;
 				status = "okay";
 			};
