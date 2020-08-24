@@ -1,0 +1,15 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	fragment@0 {
+		// GPIOA 13
+		target = <&spdifout>;
+
+		__overlay__ {
+			mux {
+				groups = "spdif_out_a13";
+			};
+		};
+	};
+};
