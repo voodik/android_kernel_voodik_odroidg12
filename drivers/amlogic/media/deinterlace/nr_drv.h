@@ -186,5 +186,6 @@ bool set_nr_ctrl_reg_table(unsigned int addr, unsigned int value);
 
 extern void cue_int(struct vframe_s *vf);
 
+extern bool nr_demo_flag;
 #endif
 

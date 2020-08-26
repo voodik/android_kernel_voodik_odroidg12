@@ -42,12 +42,18 @@ static u64 afbc_wb_modifier[] = {
 	DRM_FORMAT_MOD_INVALID
 };
 
-static void meson_plane_position_calc(
-	struct meson_vpu_osd_layer_info *plane_info,
-	struct drm_plane_state *state,
-	struct drm_display_mode *mode)
+static void
+meson_plane_position_calc(struct meson_vpu_osd_layer_info *plane_info,
+			  struct drm_plane_state *state,
+			  struct drm_display_mode *disp_mode)
 {
 	u32 dst_w, dst_h, src_w, src_h, scan_mode_out;
+	struct drm_display_mode *mode;
+
+	if (IS_ERR_OR_NULL(state->crtc))
+		mode = disp_mode;
+	else
+		mode = &state->crtc->mode;
 
 	scan_mode_out = mode->flags & DRM_MODE_FLAG_INTERLACE;
 	plane_info->src_x = state->src_x;
@@ -147,7 +153,7 @@ static int meson_plane_fb_check(struct drm_plane *plane,
 	#else
 	struct drm_gem_cma_object *gem;
 	#endif
-	dma_addr_t phyaddr;
+	phys_addr_t phyaddr;
 
 	#ifdef CONFIG_DRM_MESON_USE_ION
 	meson_fb = container_of(fb, struct am_meson_fb, base);
@@ -155,9 +161,21 @@ static int meson_plane_fb_check(struct drm_plane *plane,
 		DRM_INFO("meson_fb is NULL!\n");
 		return -EINVAL;
 	}
-	phyaddr = am_meson_gem_object_get_phyaddr(drv, meson_fb->bufp);
-	if (meson_fb->bufp->bscatter)
-		DRM_ERROR("am_meson_plane meet a scatter framebuffer.\n");
+	DRM_DEBUG("meson_fb[id:%d,ref:%d]=0x%p\n",
+		  meson_fb->base.base.id,
+		  atomic_read(&meson_fb->base.base.refcount.refcount),
+		  meson_fb);
+	if (meson_fb->logo && meson_fb->logo->alloc_flag &&
+	    meson_fb->logo->start) {
+		phyaddr = meson_fb->logo->start;
+		DRM_DEBUG("logo->phyaddr=0x%pa\n", &phyaddr);
+	} else  if (meson_fb->bufp) {
+		phyaddr = am_meson_gem_object_get_phyaddr(drv, meson_fb->bufp);
+	} else {
+		phyaddr = 0;
+		DRM_INFO("don't find phyaddr!\n");
+		return -EINVAL;
+	}
 	#else
 	if (!fb) {
 		DRM_INFO("fb is NULL!\n");
@@ -182,12 +200,6 @@ static int meson_plane_get_fb_info(struct drm_plane *plane,
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 	struct drm_framebuffer *fb = new_state->fb;
 	struct meson_drm *drv = osd_plane->drv;
-	#ifdef CONFIG_DRM_MESON_USE_ION
-	struct am_meson_fb *meson_fb;
-	#else
-	struct drm_gem_cma_object *gem;
-	#endif
-	dma_addr_t phyaddr;
 
 	if (!drv) {
 		DRM_INFO("%s new_state/meson_drm is NULL!\n", __func__);
@@ -197,29 +209,7 @@ static int meson_plane_get_fb_info(struct drm_plane *plane,
 		DRM_INFO("%s invalid plane_index!\n", __func__);
 		return -EINVAL;
 	}
-
-	#ifdef CONFIG_DRM_MESON_USE_ION
-	meson_fb = container_of(fb, struct am_meson_fb, base);
-	if (!meson_fb) {
-		DRM_INFO("meson_fb is NULL!\n");
-		return 0;
-	}
-	phyaddr = am_meson_gem_object_get_phyaddr(drv, meson_fb->bufp);
-	if (meson_fb->bufp->bscatter)
-		DRM_ERROR("ERROR:am_meson_plane meet a scatter framebuffer.\n");
-	plane_info->fb_size = meson_fb->bufp->base.size;
-	#else
-	if (!fb) {
-		DRM_INFO("fb is NULL!\n");
-		return -EINVAL;
-	}
-	/* Update Canvas with buffer address */
-	gem = drm_fb_cma_get_gem_obj(fb, 0);
-	phyaddr = gem->paddr;
-	#endif
-
 	plane_info->pixel_format = fb->pixel_format;
-	plane_info->phy_addr = phyaddr;
 	plane_info->byte_stride = fb->pitches[0];
 
 	/*setup afbc info*/
@@ -261,6 +251,13 @@ static int meson_plane_atomic_get_property(struct drm_plane *plane,
 					struct drm_property *property,
 					uint64_t *val)
 {
+	struct am_osd_plane *osd_plane;
+	struct am_meson_plane_state *plane_state;
+
+	osd_plane = to_am_osd_plane(plane);
+	plane_state = to_am_meson_plane_state(state);
+	if (property == osd_plane->prop_premult_en)
+		*val = plane_state->premult_en;
 	return 0;
 }
 
@@ -269,6 +266,14 @@ static int meson_plane_atomic_set_property(struct drm_plane *plane,
 					 struct drm_property *property,
 					 uint64_t val)
 {
+	struct am_osd_plane *osd_plane;
+	struct am_meson_plane_state *plane_state;
+
+	osd_plane = to_am_osd_plane(plane);
+	plane_state = to_am_meson_plane_state(state);
+	if (property == osd_plane->prop_premult_en)
+		plane_state->premult_en = val;
+
 	return 0;
 }
 
@@ -355,7 +360,7 @@ static void meson_plane_cleanup_fb(struct drm_plane *plane,
 {
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 
-	DRM_DEBUG("%s osd %d.\n", __func__, osd_plane->plane_index);
+	DRM_DEBUG("osd %d.\n", osd_plane->plane_index);
 }
 
 static void meson_plane_atomic_update(struct drm_plane *plane,
@@ -372,6 +377,7 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 	struct meson_vpu_pipeline_state *mvps;
 	struct am_osd_plane *osd_plane = to_am_osd_plane(plane);
 	struct meson_drm *drv = osd_plane->drv;
+	struct am_meson_plane_state *plane_state;
 	int ret;
 
 	if (!state || !drv) {
@@ -410,6 +416,8 @@ static int meson_plane_atomic_check(struct drm_plane *plane,
 		return ret;
 	}
 
+	plane_state = to_am_meson_plane_state(state);
+	plane_info->premult_en = plane_state->premult_en;
 	plane_info->enable = 1;
 	DRM_DEBUG("index=%d, zorder=%d\n",
 		plane_info->plane_index, plane_info->zorder);
@@ -437,6 +445,24 @@ static const struct drm_plane_helper_funcs am_osd_helper_funcs = {
 	.atomic_check	= meson_plane_atomic_check,
 	.atomic_disable	= meson_plane_atomic_disable,
 };
+
+int drm_plane_create_premult_en_property(struct drm_plane *plane)
+{
+	struct drm_device *dev = plane->dev;
+	struct drm_property *prop;
+	struct am_osd_plane *osd_plane;
+
+	osd_plane = to_am_osd_plane(plane);
+	prop = drm_property_create_bool(dev, DRM_MODE_PROP_ATOMIC,
+					"PREMULT_EN");
+	if (!prop)
+		return -ENOMEM;
+
+	drm_object_attach_property(&plane->base, prop, 0);
+	osd_plane->prop_premult_en = prop;
+
+	return 0;
+}
 
 static struct am_osd_plane *am_plane_create(struct meson_drm *priv, int i)
 {
@@ -469,6 +495,7 @@ static struct am_osd_plane *am_plane_create(struct meson_drm *priv, int i)
 				 format_modifiers,
 				 type, plane_name);
 
+	drm_plane_create_premult_en_property(plane);
 	drm_plane_helper_add(plane, &am_osd_helper_funcs);
 	osd_drm_debugfs_add(&osd_plane->plane_debugfs_dir,
 			    plane_name, osd_plane->plane_index);

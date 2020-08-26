@@ -31,6 +31,7 @@
 
 struct am_meson_plane_state {
 	struct drm_plane_state base;
+	u32 premult_en;
 };
 
 struct am_osd_plane {
@@ -38,6 +39,7 @@ struct am_osd_plane {
 	struct meson_drm *drv; //point to struct parent.
 	struct dentry *plane_debugfs_dir;
 	int plane_index;
+	struct drm_property *prop_premult_en;
 };
 
 #define to_am_osd_plane(x) container_of(x, \

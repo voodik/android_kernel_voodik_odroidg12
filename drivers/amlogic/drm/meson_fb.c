@@ -18,8 +18,7 @@
 #include <drm/drm_atomic_helper.h>
 
 #include "meson_fb.h"
-
-#define to_am_meson_fb(x) container_of(x, struct am_meson_fb, base)
+#include "meson_vpu.h"
 
 void am_meson_fb_destroy(struct drm_framebuffer *fb)
 {
@@ -27,6 +26,9 @@ void am_meson_fb_destroy(struct drm_framebuffer *fb)
 
 	drm_gem_object_unreference_unlocked(&meson_fb->bufp->base);
 	drm_framebuffer_cleanup(fb);
+	if (meson_fb->logo && meson_fb->logo->alloc_flag)
+		am_meson_free_logo_memory();
+	DRM_DEBUG("meson_fb=0x%p,\n", meson_fb);
 	kfree(meson_fb);
 }
 
@@ -58,9 +60,12 @@ am_meson_fb_alloc(struct drm_device *dev,
 	if (!meson_fb)
 		return ERR_PTR(-ENOMEM);
 
-	meson_gem = container_of(obj, struct am_meson_gem_object, base);
-	meson_fb->bufp = meson_gem;
-
+	if (obj) {
+		meson_gem = container_of(obj, struct am_meson_gem_object, base);
+		meson_fb->bufp = meson_gem;
+	} else {
+		meson_fb->bufp = NULL;
+	}
 	drm_helper_mode_fill_fb_struct(&meson_fb->base, mode_cmd);
 
 	ret = drm_framebuffer_init(dev, &meson_fb->base,
@@ -70,6 +75,10 @@ am_meson_fb_alloc(struct drm_device *dev,
 			ret);
 		goto err_free_fb;
 	}
+	DRM_INFO("meson_fb[id:%d,ref:%d]=0x%p,meson_fb->bufp=0x%p\n",
+		 meson_fb->base.base.id,
+		 atomic_read(&meson_fb->base.base.refcount.refcount),
+		 meson_fb, meson_fb->bufp);
 
 	return &meson_fb->base;
 
@@ -113,6 +122,10 @@ struct drm_framebuffer *am_meson_fb_create(struct drm_device *dev,
 		kfree(meson_fb);
 		return ERR_PTR(ret);
 	}
+	DRM_DEBUG("meson_fb[in:%d,ref:%d]=0x%px,meson_fb->bufp=0x%p\n",
+		  meson_fb->base.base.id,
+		  atomic_read(&meson_fb->base.base.refcount.refcount),
+		  meson_fb, meson_fb->bufp);
 
 	return &meson_fb->base;
 }

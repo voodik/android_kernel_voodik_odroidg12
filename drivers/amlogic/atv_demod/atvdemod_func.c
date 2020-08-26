@@ -260,7 +260,7 @@ void atv_dmd_misc(void)
 	/* for audio non-standard signal, first set gain 0 to mute,
 	 * then unmute in detection.
 	 */
-	if (audio_atv_ov || atv_audio_overmodulated_en)
+	if ((audio_atv_ov || atv_audio_overmodulated_en) && non_std_en == 0)
 		aml_audio_valume_gain_set(0);
 	else
 		aml_audio_valume_gain_set(audio_gain_val);
@@ -287,8 +287,8 @@ void atv_dmd_misc(void)
 		atv_dmd_wr_long(APB_BLOCK_ADDR_VDAGC, 0x0c, 0x387c0831);
 		atv_dmd_wr_long(APB_BLOCK_ADDR_CARR_RCVY, 0x24, 0xc020901);
 	} else {
-		if (tuner_id == AM_TUNER_R840 || tuner_id == AM_TUNER_R842
-				|| non_std_en == 4) {
+		if ((tuner_id == AM_TUNER_R840 || tuner_id == AM_TUNER_R842) &&
+		    non_std_en == 4) {
 			/* Reduce target amplitude and response speed */
 			atv_dmd_wr_long(APB_BLOCK_ADDR_AGC_PWM, 0x08,
 					0x17070200);
@@ -338,45 +338,67 @@ void atv_dmd_misc(void)
 	pr_dbg("%s done.\n", __func__);
 }
 
-void atv_dmd_ring_filter(bool on)
+void atv_dmd_ring_filter(bool on, int std)
 {
-	unsigned long filter_status = 0;
+	int i = 0;
+	int filter = 0;
+	unsigned long status = 0;
+	unsigned long data = 0;
+	const unsigned int reg_addr[10] = {
+		0x10, 0x14, 0x18, 0x1c, 0x20, 0x24, 0x28, 0x2c, 0x30, 0x34,
+	};
+	const unsigned int peak_filter[][10] = {
+		/* default */
+		{ 0x8423F6, 0xFF86A967, 0x37FE45, 0xFF86A967, 0x3C223B,
+			0x8423F6, 0xFF86A967, 0x37FE45, 0xFF86A967, 0x3C223B },
+		/* ntsc-m */
+		{ 0x8274bf, 0x1d175c, 0x2aa526, 0x1d175c, 0x2d19e4,
+			0x8274bf, 0x1d175c, 0x2aa526, 0x1d175c, 0x2d19e4 },
+		/* pal-i */
+		{ 0x94d888, 0x5a39fb, 0xd8ebb, 0x5a39fb, 0x226744,
+			0x94d888, 0x5a39fb, 0xd8ebb, 0x5a39fb, 0x226744 }
+	};
+
 	if (!is_meson_tl1_cpu() && !is_meson_tm2_cpu())
 		return;
 
-	filter_status = atv_dmd_rd_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x4c);
-	if (((filter_status & 0x01) && on) || (!(filter_status & 0x01) && !on))
+	if (on) {
+		if (std == AML_ATV_DEMOD_VIDEO_MODE_PROP_PAL_BG) {
+			filter = 2;
+		} else if (std == AML_ATV_DEMOD_VIDEO_MODE_PROP_PAL_DK) {
+			filter = 2;
+		} else if (std == AML_ATV_DEMOD_VIDEO_MODE_PROP_PAL_I) {
+			filter = 2;
+		} else if (std == AML_ATV_DEMOD_VIDEO_MODE_PROP_NTSC_M ||
+				std == AML_ATV_DEMOD_VIDEO_MODE_PROP_NTSC) {
+			filter = 1;
+		} else {
+			filter = 0;
+			on = false;
+		}
+	} else {
+		filter = 0;
+	}
+
+	status = atv_dmd_rd_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x4c);
+	data = atv_dmd_rd_long(APB_BLOCK_ADDR_GDE_EQUAL, reg_addr[0]);
+	if ((data == peak_filter[filter][0]) && on && (status & 0x01))
 		return;
 
-	if (on) {
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x10, 0x8274bf);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x14, 0x1d175c);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x18, 0x2aa526);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x1c, 0x1d175c);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x20, 0x2d19e4);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x24, 0x8274bf);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x28, 0x1d175c);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x2c, 0x2aa526);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x30, 0x1d175c);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x34, 0x2d19e4);
+	if (!on && !(status & 0x01))
+		return;
 
+	/* disable filter */
+	atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x4c, 0x0);
+
+	for (i = 0; i < 10; ++i) {
+		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL,
+				reg_addr[i], peak_filter[filter][i]);
+	}
+
+	if (on) {
 		/* enable filter */
 		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x4c, 0x1);
-	} else {
-		/* default value */
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x10, 0x8423F6);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x14, 0xFF86A967);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x18, 0x37FE45);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x1c, 0xFF86A967);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x20, 0x3C223B);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x24, 0x8423F6);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x28, 0xFF86A967);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x2c, 0x37FE45);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x30, 0xFF86A967);
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x34, 0x3C223B);
-
-		/* disable filter */
-		atv_dmd_wr_long(APB_BLOCK_ADDR_GDE_EQUAL, 0x4c, 0x0);
 	}
 
 	pr_dbg("%s do atv_dmd_ring_filter %d ...\n", __func__, on);
@@ -2021,12 +2043,10 @@ int atvdemod_init(struct atv_demod_priv *priv)
 	if (!priv->scanning || non_std_en)
 		atv_dmd_misc();
 
-	if (!priv->scanning &&
-		(broad_std == AML_ATV_DEMOD_VIDEO_MODE_PROP_NTSC_M ||
-		broad_std == AML_ATV_DEMOD_VIDEO_MODE_PROP_NTSC))
-		atv_dmd_ring_filter(true);
+	if (!priv->scanning)
+		atv_dmd_ring_filter(true, broad_std);
 	else
-		atv_dmd_ring_filter(false);
+		atv_dmd_ring_filter(false, broad_std);
 
 	atv_dmd_soft_reset();
 
@@ -2523,5 +2543,47 @@ void aml_audio_overmodulation(int enable)
 					tmp_v);
 		}
 #endif
+	}
+}
+
+void atvdemod_horiz_freq_detection(void)
+{
+	unsigned long data = 0;
+	int field_lock = 0;
+	int line_lock = 0;
+	int line = 0;
+	int std_line = 0;
+	unsigned long horiz_freq = 0;
+
+	data = atv_dmd_rd_long(APB_BLOCK_ADDR_VDAGC, 0x4c);
+	field_lock = data & 0x4;    /* bit2 */
+	line_lock = data & 0x10;    /* bit4 */
+	line = (data >> 6) & 0x3ff; /* bit[15-6] */
+
+	switch (broad_std) {
+	case AML_ATV_DEMOD_VIDEO_MODE_PROP_NTSC:
+	case AML_ATV_DEMOD_VIDEO_MODE_PROP_PAL_M:
+		std_line = 525;
+		break;
+	default:
+		std_line = 625;
+		break;
+	}
+
+	if (field_lock == 0 && line_lock == 0) {
+		/* bit[31-8] */
+		data = atv_dmd_rd_long(APB_BLOCK_ADDR_VDAGC, 0x10);
+
+		/* fh +/- (200 / 0.23841858) */
+		if ((line - std_line) > 7)
+			horiz_freq = freq_hz_cvrt + 0x347;
+		else if ((line - std_line) < -7)
+			horiz_freq = freq_hz_cvrt - 0x347;
+		else
+			horiz_freq = freq_hz_cvrt;
+
+		data = (horiz_freq << 8) | (data & 0xff);
+
+		atv_dmd_wr_long(APB_BLOCK_ADDR_VDAGC, 0x10, data);
 	}
 }

@@ -534,7 +534,6 @@ static int ramoops_parse_dt(struct platform_device *pdev,
 
 #define parse_size(name, field) {					\
 		ret = ramoops_parse_dt_size(pdev, name, &value);	\
-		pr_info(" <%s> %s  %d", __func__, name, value);		\
 		if (ret < 0)						\
 			return ret;					\
 		field = value;						\
