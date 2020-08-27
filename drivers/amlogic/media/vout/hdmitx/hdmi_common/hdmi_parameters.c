@@ -2870,25 +2870,25 @@ struct hdmi_format_para *hdmi_get_fmt_paras(enum hdmi_vic vic)
 }
 
 /*
-void debug_modeline(struct modeline_table tbl)
-{
-	pr_info("modeline - horpixels %d\n", tbl.horpixels);
-	pr_info("modeline - verpixels %d\n", tbl.verpixels);
-	pr_info("modeline - pixel_clock %d\n", tbl.pixel_clock);
-	pr_info("modeline - hor_freq %d\n", tbl.hor_freq);
-	pr_info("modeline - ver_freq %d\n", tbl.ver_freq);
-	pr_info("modeline - hdisp %d\n", tbl.hdisp);
-	pr_info("modeline - hsyncstart %d\n", tbl.hsyncstart);
-	pr_info("modeline - hsyncend %d\n", tbl.hsyncend);
-	pr_info("modeline - htotal %d\n", tbl.htotal);
-	pr_info("modeline - vdisp %d\n", tbl.vdisp);
-	pr_info("modeline - vsyncstart %d\n", tbl.vsyncstart);
-	pr_info("modeline - vsyncend %d\n", tbl.vsyncend);
-	pr_info("modeline - vtotal %d\n", tbl.vtotal);
-	pr_info("modeline - hsync_polarity %d\n", tbl.hsync_polarity);
-	pr_info("modeline - vsync_polarity %d\n", tbl.vsync_polarity);
-	pr_info("modeline - progress_mode %d\n", tbl.progress_mode);
-}
+* void debug_modeline(struct modeline_table tbl)
+* {
+* pr_info("modeline - horpixels %d\n", tbl.horpixels);
+* pr_info("modeline - verpixels %d\n", tbl.verpixels);
+* pr_info("modeline - pixel_clock %d\n", tbl.pixel_clock);
+* pr_info("modeline - hor_freq %d\n", tbl.hor_freq);
+* pr_info("modeline - ver_freq %d\n", tbl.ver_freq);
+* pr_info("modeline - hdisp %d\n", tbl.hdisp);
+* pr_info("modeline - hsyncstart %d\n", tbl.hsyncstart);
+* pr_info("modeline - hsyncend %d\n", tbl.hsyncend);
+* pr_info("modeline - htotal %d\n", tbl.htotal);
+* pr_info("modeline - vdisp %d\n", tbl.vdisp);
+* pr_info("modeline - vsyncstart %d\n", tbl.vsyncstart);
+* pr_info("modeline - vsyncend %d\n", tbl.vsyncend);
+* pr_info("modeline - vtotal %d\n", tbl.vtotal);
+* pr_info("modeline - hsync_polarity %d\n", tbl.hsync_polarity);
+* pr_info("modeline - vsync_polarity %d\n", tbl.vsync_polarity);
+* pr_info("modeline - progress_mode %d\n", tbl.progress_mode);
+* }
 */
 
 void debug_hdmi_fmt_param(struct hdmi_format_para param)

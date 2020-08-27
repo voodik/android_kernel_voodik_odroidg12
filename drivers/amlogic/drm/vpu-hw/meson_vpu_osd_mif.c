@@ -227,6 +227,14 @@ void osd_block_enable(struct osd_mif_reg_s *reg, bool flag)
 	VSYNCOSD_WR_MPEG_REG_BITS(reg->viu_osd_ctrl_stat, flag, 0, 1);
 }
 
+/*osd alpha_div en
+ *if input is premult,alpha_div=1,else alpha_div=0
+ */
+void osd_alpha_div_enable(struct osd_mif_reg_s *reg, bool flag)
+{
+	VSYNCOSD_WR_MPEG_REG_BITS(reg->viu_osd_mali_unpack_ctrl, flag, 28, 1);
+}
+
 /*osd ctrl config*/
 void osd_ctrl_set(struct osd_mif_reg_s *reg)
 {
@@ -354,6 +362,7 @@ static int osd_check_state(struct meson_vpu_block *vblk,
 	mvos->phy_addr = plane_info->phy_addr;
 	mvos->pixel_format = plane_info->pixel_format;
 	mvos->fb_size = plane_info->fb_size;
+	mvos->premult_en = plane_info->premult_en;
 	return 0;
 }
 
@@ -371,6 +380,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	u32 pixel_format, canvas_index, src_h, byte_stride, phy_addr;
 	struct osd_scope_s scope_src = {0, 1919, 0, 1079};
 	struct osd_mif_reg_s *reg = osd->reg;
+	bool alpha_div_en;
 
 	crtc = vblk->pipeline->crtc;
 	amc = to_am_meson_crtc(crtc);
@@ -379,6 +389,7 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 		DRM_DEBUG("set_state break for NULL.\n");
 		return;
 	}
+	alpha_div_en = mvos->premult_en ? 1 : 0;
 	src_h = mvos->src_h;
 	byte_stride = mvos->byte_stride;
 	phy_addr = mvos->phy_addr;
@@ -388,12 +399,15 @@ static void osd_set_state(struct meson_vpu_block *vblk,
 	scope_src.v_end = mvos->src_y + mvos->src_h - 1;
 	pixel_format = mvos->pixel_format;
 	canvas_index = osd_canvas[vblk->index][osd_canvas_index[vblk->index]];
+	/*Toto: need to separate*/
+	osd_ctrl_set(osd->reg);
 	canvas_config(canvas_index, phy_addr, byte_stride, src_h,
 		CANVAS_ADDR_NOWRAP, CANVAS_BLKMODE_LINEAR);
 	osd_canvas_index[vblk->index] ^= 1;
 	osd_canvas_config(reg, canvas_index);
 	osd_input_size_config(reg, scope_src);
 	osd_color_config(reg, pixel_format);
+	osd_alpha_div_enable(reg, alpha_div_en);
 	DRM_DEBUG("plane_index=%d,HW-OSD=%d\n",
 		mvos->plane_index, vblk->index);
 	DRM_DEBUG("canvas_index[%d]=0x%x,phy_addr=0x%x\n",
@@ -519,7 +533,6 @@ static void osd_hw_init(struct meson_vpu_block *vblk)
 		return;
 	}
 	osd->reg = &osd_mif_reg[vblk->index];
-	osd_ctrl_set(osd->reg);
 	DRM_DEBUG("%s hw_init done.\n", osd->base.name);
 }
 

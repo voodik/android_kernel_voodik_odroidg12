@@ -59,6 +59,7 @@ struct meson_drm {
 
 	struct meson_vpu_pipeline *pipeline;
 	struct meson_vpu_funcs *funcs;
+	struct am_meson_logo *logo;
 
 	u32 num_crtcs;
 	struct am_meson_crtc *crtcs[MESON_MAX_CRTC];
@@ -76,6 +77,7 @@ static inline int meson_vpu_is_compatible(struct meson_drm *priv,
 extern int am_meson_register_crtc_funcs(struct drm_crtc *crtc,
 				 const struct meson_crtc_funcs *crtc_funcs);
 extern void am_meson_unregister_crtc_funcs(struct drm_crtc *crtc);
+struct drm_connector *am_meson_hdmi_connector(void);
 
 #ifdef CONFIG_DEBUG_FS
 int meson_debugfs_init(struct drm_minor *minor);

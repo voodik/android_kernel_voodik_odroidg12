@@ -256,9 +256,6 @@ static struct osd_device_data_s osd_tm2 = {
 	.osd0_sc_independ = 1,
 };
 struct osd_device_data_s osd_meson_dev;
-static u32 logo_memsize;
-static struct page *logo_page;
-static struct delayed_work osd_dwork;
 static struct platform_device *gp_dev;
 static unsigned long gem_mem_start, gem_mem_size;
 
@@ -350,6 +347,28 @@ char *am_meson_crtc_get_voutmode(struct drm_display_mode *mode)
 	return NULL;
 }
 
+bool am_meson_crtc_check_mode(struct drm_display_mode *mode, char *outputmode)
+{
+	int i;
+
+	if (!mode || !outputmode)
+		return false;
+	if (!strcmp(mode->name, "panel"))
+		return true;
+
+	for (i = 0; i < ARRAY_SIZE(am_vout_modes); i++) {
+		if (!strcmp(am_vout_modes[i].name, outputmode) &&
+		    am_vout_modes[i].width == mode->hdisplay &&
+		    am_vout_modes[i].height == mode->vdisplay &&
+		    am_vout_modes[i].vrefresh == mode->vrefresh &&
+		    am_vout_modes[i].flags ==
+		    (mode->flags & DRM_MODE_FLAG_INTERLACE)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void am_meson_crtc_handle_vsync(struct am_meson_crtc *amcrtc)
 {
 	unsigned long flags;
@@ -390,18 +409,43 @@ static irqreturn_t am_meson_vpu_irq(int irq, void *arg)
 	return IRQ_HANDLED;
 }
 
-static void mem_free_work(struct work_struct *work)
+void am_meson_free_logo_memory(void)
 {
-	if (logo_memsize > 0) {
+	phys_addr_t logo_addr = page_to_phys(logo.logo_page);
+
+	if (logo.size > 0) {
 #ifdef CONFIG_CMA
-		pr_info("%s, free memory: addr:0x%x\n",
-			__func__, logo_memsize);
+		DRM_INFO("%s, free memory: addr:0x%pa,size:0x%x\n",
+			 __func__, &logo_addr, logo.size);
 
 		dma_release_from_contiguous(&gp_dev->dev,
-					    logo_page,
-			logo_memsize >> PAGE_SHIFT);
+					    logo.logo_page,
+					    logo.size >> PAGE_SHIFT);
 #endif
 	}
+	logo.alloc_flag = 0;
+}
+
+static int am_meson_logo_info_update(struct meson_drm *priv)
+{
+	logo.start = page_to_phys(logo.logo_page);
+	logo.alloc_flag = 1;
+	/*config 1080p logo as default*/
+	if (!logo.width || !logo.height) {
+		logo.width = 1920;
+		logo.height = 1080;
+	}
+	if (!logo.bpp)
+		logo.bpp = 16;
+	if (!logo.outputmode_t) {
+		strcpy(logo.outputmode, "1080p60hz");
+	} else {
+		strncpy(logo.outputmode, logo.outputmode_t, VMODE_NAME_LEN_MAX);
+		logo.outputmode[VMODE_NAME_LEN_MAX - 1] = '\0';
+	}
+	priv->logo = &logo;
+
+	return 0;
 }
 
 static int am_meson_vpu_bind(struct device *dev,
@@ -418,7 +462,7 @@ static int am_meson_vpu_bind(struct device *dev,
 	int ret, irq;
 
 	/* Allocate crtc struct */
-	pr_info("[%s] in\n", __func__);
+	DRM_INFO("[%s] in\n", __func__);
 	amcrtc = devm_kzalloc(dev, sizeof(*amcrtc),
 			      GFP_KERNEL);
 	if (!amcrtc)
@@ -434,34 +478,40 @@ static int am_meson_vpu_bind(struct device *dev,
 	ret = of_reserved_mem_device_init(&pdev->dev);
 	if (ret != 0) {
 		dev_err(dev, "failed to init reserved memory\n");
+	} else {
 #ifdef CONFIG_CMA
 		gp_dev = pdev;
 		cma = dev_get_cma_area(&pdev->dev);
 		if (cma) {
-			logo_memsize = cma_get_size(cma);
-			pr_info("reserved memory base:0x%x, size:0x%x\n",
-				(u32)cma_get_base(cma), logo_memsize);
-			if (logo_memsize > 0) {
-				logo_page =
+			logo.size = cma_get_size(cma);
+			DRM_INFO("reserved memory base:0x%x, size:0x%x\n",
+				 (u32)cma_get_base(cma), logo.size);
+			if (logo.size > 0) {
+				logo.logo_page =
 				dma_alloc_from_contiguous(&pdev->dev,
-							  logo_memsize >>
+							  logo.size >>
 							  PAGE_SHIFT,
 							  0);
-				if (!logo_page) {
-					pr_err("allocate buffer failed:%d\n",
-					       logo_memsize);
-				}
+				if (!logo.logo_page)
+					DRM_INFO("allocate buffer failed\n");
+				else
+					am_meson_logo_info_update(private);
 			}
 		} else {
-			pr_info("------ NO CMA\n");
+			DRM_INFO("------ NO CMA\n");
 		}
 #endif
-	} else {
-		dma_declare_coherent_memory(drm_dev->dev, gem_mem_start,
-					    gem_mem_start, gem_mem_size,
-					    DMA_MEMORY_EXCLUSIVE);
-		pr_info("meson drm mem_start = 0x%x, size = 0x%x\n",
-			(u32)gem_mem_start, (u32)gem_mem_size);
+		if (gem_mem_start) {
+			dma_declare_coherent_memory(drm_dev->dev,
+						    gem_mem_start,
+						    gem_mem_start,
+						    gem_mem_size,
+						    DMA_MEMORY_EXCLUSIVE);
+			pr_info("meson drm mem_start = 0x%x, size = 0x%x\n",
+				(u32)gem_mem_start, (u32)gem_mem_size);
+		} else {
+			DRM_INFO("------ NO reserved dma\n");
+		}
 	}
 
 	ret = am_meson_plane_create(private);
@@ -495,10 +545,7 @@ static int am_meson_vpu_bind(struct device *dev,
 		return ret;
 
 	disable_irq(amcrtc->vblank_irq);
-
-	INIT_DELAYED_WORK(&osd_dwork, mem_free_work);
-	schedule_delayed_work(&osd_dwork, msecs_to_jiffies(60 * 1000));
-	pr_info("[%s] out\n", __func__);
+	DRM_INFO("[%s] out\n", __func__);
 	return 0;
 }
 

@@ -55,7 +55,7 @@ static int am_meson_gem_alloc_ion_buff(
 		bscatter = true;
 	}
 
-	if (IS_ERR(handle)) {
+	if (IS_ERR_OR_NULL(handle)) {
 		DRM_ERROR("%s: FAILED, flags:0x%x.\n",
 			__func__, flags);
 		return -ENOMEM;

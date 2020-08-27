@@ -31,6 +31,7 @@ extern unsigned int aud_std;
 extern unsigned int aud_mode;
 extern bool audio_thd_en;
 extern bool aud_reinit;
+extern bool aud_mono_only;
 extern bool atv_audio_overmodulated_en;
 extern unsigned int non_std_en;
 
@@ -70,7 +71,7 @@ extern void read_version_register(void);
 extern void check_communication_interface(void);
 extern void power_on_receiver(void);
 extern void atv_dmd_misc(void);
-extern void atv_dmd_ring_filter(bool on);
+void atv_dmd_ring_filter(bool on, int std);
 extern void configure_receiver(int Broadcast_Standard,
 			       unsigned int Tuner_IF_Frequency,
 			       int Tuner_Input_IF_inverted, int GDE_Curve,
@@ -214,6 +215,7 @@ extern void set_atvdemod_scan_mode(int val);
 extern int atvauddemod_init(void);
 extern int amlfmt_aud_standard(int broad_std);
 extern void atvauddemod_set_outputmode(void);
+void atvdemod_horiz_freq_detection(void);
 
 /*from amldemod/amlfrontend.c*/
 extern int vdac_enable_check_dtv(void);

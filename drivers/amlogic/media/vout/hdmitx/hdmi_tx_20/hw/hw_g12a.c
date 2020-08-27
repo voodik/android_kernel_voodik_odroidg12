@@ -331,7 +331,7 @@ void set_g12a_hpll_clk_out(unsigned int frac_rate, unsigned int clk)
 		/* calculate "m" */
 		m1 = (clk * 0x3A) / 1422000;
 		m2 = (clk * 0xE1) / 5405400;
-		m = (m1 + m2)/2;
+		m = ((m1 + m2) / 2) + 1;
 		m &= 0xff;
 		m |= 0x3b000400;
 		hd_write_reg(P_HHI_HDMI_PLL_CNTL0, m);
