@@ -256,10 +256,6 @@ static int meson_gpio_kp_probe(struct platform_device *pdev)
 				return -EINVAL;
 			}
 		}
-		//get all gpio desc.
-		desc = devm_gpiod_get_index(&pdev->dev, "key", i, GPIOD_IN);
-		if (IS_ERR_OR_NULL(desc))
-			return -EINVAL;
 		keypad->key[i].desc = desc;
 		//The gpio default is high level.
 		keypad->key[i].current_status = 1;
