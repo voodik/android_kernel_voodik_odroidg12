@@ -71,22 +71,22 @@
 			button@1 {
 				label = "GPIO Key F7";
 				linux,code = <65>;
-				gpios = <&gpio GPIOX_3 1>;
+				gpios = <&gpio GPIOX_4 1>;
 			};
 			button@2 {
 				label = "GPIO Key F8";
 				linux,code = <66>;
-				gpios = <&gpio GPIOX_4 1>;
+				gpios = <&gpio GPIOX_7 1>;
 			};
 			button@3 {
 				label = "GPIO Key F9";
 				linux,code = <67>;
-				gpios = <&gpio GPIOX_7 1>;
+				gpios = <&gpio GPIOX_0 1>;
 			};
 			button@4 {
 				label = "GPIO Key F10";
 				linux,code = <68>;
-				gpios = <&gpio GPIOX_8 1>;
+				gpios = <&gpio GPIOX_1 1>;
 			};
 	};
 };
