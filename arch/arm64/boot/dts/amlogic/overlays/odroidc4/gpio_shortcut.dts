@@ -1,6 +1,8 @@
 /dts-v1/;
 /plugin/;
 
+#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/gpio/gpio.h>
 /{
 	fragmetn@0 {
 		target-path ="/";
