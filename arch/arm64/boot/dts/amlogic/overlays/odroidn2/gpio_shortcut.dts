@@ -1,0 +1,42 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/gpio/gpio.h>
+/{
+	fragmetn@0 {
+		target-path ="/";
+
+		__overlay__ {
+			gpio_keys_polled {
+				status = "okay";
+				compatible =
+					"gpio-keys-polled";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				poll-interval = <100>;
+				autorepeat;
+				button@1 {
+					label = "GPIO Key F7";
+					linux,code = <65>;
+					gpios = <&gpio GPIOX_4 1>;
+				};
+				button@2 {
+					label = "GPIO Key F8";
+					linux,code = <66>;
+					gpios = <&gpio GPIOX_7 1>;
+				};
+				button@3 {
+					label = "GPIO Key F9";
+					linux,code = <67>;
+					gpios = <&gpio GPIOX_0 1>;
+				};
+				button@4 {
+					label = "GPIO Key F10";
+					linux,code = <68>;
+					gpios = <&gpio GPIOX_1 1>;
+				};
+			};
+		};
+	};
+};
