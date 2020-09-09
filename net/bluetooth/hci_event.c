@@ -3759,8 +3759,8 @@ static void hci_num_comp_pkts_evt(struct hci_dev *hdev, struct sk_buff *skb)
 		return;
 	}
 
-	if (skb->len < sizeof(*ev) || skb->len < sizeof(*ev) +
-	    ev->num_hndl * sizeof(struct hci_comp_pkts_info)) {
+	if (skb->len < sizeof(*ev) ||
+	    skb->len < struct_size(ev, handles, ev->num_hndl)) {
 		BT_DBG("%s bad parameters", hdev->name);
 		return;
 	}
@@ -3847,8 +3847,8 @@ static void hci_num_comp_blocks_evt(struct hci_dev *hdev, struct sk_buff *skb)
 		return;
 	}
 
-	if (skb->len < sizeof(*ev) || skb->len < sizeof(*ev) +
-	    ev->num_hndl * sizeof(struct hci_comp_blocks_info)) {
+	if (skb->len < sizeof(*ev) ||
+	    skb->len < struct_size(ev, handles, ev->num_hndl)) {
 		BT_DBG("%s bad parameters", hdev->name);
 		return;
 	}
@@ -5409,7 +5409,8 @@ static struct hci_conn *check_pending_le_conn(struct hci_dev *hdev,
 
 static void process_adv_report(struct hci_dev *hdev, u8 type, bdaddr_t *bdaddr,
 			       u8 bdaddr_type, bdaddr_t *direct_addr,
-			       u8 direct_addr_type, s8 rssi, u8 *data, u8 len)
+			       u8 direct_addr_type, s8 rssi, u8 *data, u8 len,
+			       bool ext_adv)
 {
 	struct discovery_state *d = &hdev->discovery;
 	struct smp_irk *irk;
@@ -5431,8 +5432,8 @@ static void process_adv_report(struct hci_dev *hdev, u8 type, bdaddr_t *bdaddr,
 		return;
 	}
 
-	if (len > HCI_MAX_AD_LENGTH) {
-		pr_err_ratelimited("legacy adv larger than 31 bytes");
+	if (!ext_adv && len > HCI_MAX_AD_LENGTH) {
+		bt_dev_err_ratelimited(hdev, "legacy adv larger than 31 bytes");
 		return;
 	}
 
@@ -5496,7 +5497,7 @@ static void process_adv_report(struct hci_dev *hdev, u8 type, bdaddr_t *bdaddr,
 	 */
 	conn = check_pending_le_conn(hdev, bdaddr, bdaddr_type, type,
 								direct_addr);
-	if (conn && type == LE_ADV_IND && len <= HCI_MAX_AD_LENGTH) {
+	if (!ext_adv && conn && type == LE_ADV_IND && len <= HCI_MAX_AD_LENGTH) {
 		/* Store report for later inclusion by
 		 * mgmt_device_connected
 		 */
@@ -5551,7 +5552,7 @@ static void process_adv_report(struct hci_dev *hdev, u8 type, bdaddr_t *bdaddr,
 	 * event or send an immediate device found event if the data
 	 * should not be stored for later.
 	 */
-	if (!has_pending_adv_report(hdev)) {
+	if (!ext_adv &&	!has_pending_adv_report(hdev)) {
 		/* If the report will trigger a SCAN_REQ store it for
 		 * later merging.
 		 */
@@ -5586,7 +5587,8 @@ static void process_adv_report(struct hci_dev *hdev, u8 type, bdaddr_t *bdaddr,
 		/* If the new report will trigger a SCAN_REQ store it for
 		 * later merging.
 		 */
-		if (type == LE_ADV_IND || type == LE_ADV_SCAN_IND) {
+		if (!ext_adv && (type == LE_ADV_IND ||
+				 type == LE_ADV_SCAN_IND)) {
 			store_pending_adv_report(hdev, bdaddr, bdaddr_type,
 						 rssi, flags, data, len);
 			return;
@@ -5622,17 +5624,11 @@ static void hci_le_adv_report_evt(struct hci_dev *hdev, struct sk_buff *skb)
 		struct hci_ev_le_advertising_info *ev = ptr;
 		s8 rssi;
 
-		if (ptr > (void *)skb_tail_pointer(skb) - sizeof(*ev)) {
-			bt_dev_err(hdev, "Malicious advertising data.");
-			break;
-		}
-
-		if (ev->length <= HCI_MAX_AD_LENGTH &&
-		    ev->data + ev->length <= skb_tail_pointer(skb)) {
+		if (ev->length <= HCI_MAX_AD_LENGTH) {
 			rssi = ev->data[ev->length];
 			process_adv_report(hdev, ev->evt_type, &ev->bdaddr,
 					   ev->bdaddr_type, NULL, 0, rssi,
-					   ev->data, ev->length);
+					   ev->data, ev->length, false);
 		} else {
 			bt_dev_err(hdev, "Dropping invalid advertising data");
 		}
@@ -5704,7 +5700,8 @@ static void hci_le_ext_adv_report_evt(struct hci_dev *hdev, struct sk_buff *skb)
 		if (legacy_evt_type != LE_ADV_INVALID) {
 			process_adv_report(hdev, legacy_evt_type, &ev->bdaddr,
 					   ev->bdaddr_type, NULL, 0, ev->rssi,
-					   ev->data, ev->length);
+					   ev->data, ev->length,
+					   !(evt_type & LE_EXT_ADV_LEGACY_PDU));
 		}
 
 		ptr += sizeof(*ev) + ev->length;
@@ -5903,7 +5900,8 @@ static void hci_le_direct_adv_report_evt(struct hci_dev *hdev,
 	for (; num_reports; num_reports--, ev++)
 		process_adv_report(hdev, ev->evt_type, &ev->bdaddr,
 				   ev->bdaddr_type, &ev->direct_addr,
-				   ev->direct_addr_type, ev->rssi, NULL, 0);
+				   ev->direct_addr_type, ev->rssi, NULL, 0,
+				   false);
 
 	hci_dev_unlock(hdev);
 }
