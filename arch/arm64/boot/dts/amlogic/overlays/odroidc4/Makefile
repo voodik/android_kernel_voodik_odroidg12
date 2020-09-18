@@ -20,7 +20,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					pwm_b-backlight.dtbo	\
 					wifi_bt_combo.dtbo	\
 					sdio.dtbo		\
-					gpio_shortcut.dtbo
+					gpio_shortcut.dtbo	\
+					esp8089.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
