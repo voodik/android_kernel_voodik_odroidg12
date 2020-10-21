@@ -37,10 +37,6 @@
 	status = "okay";
 };
 
-&sd_emmc_c {
-	status = "disabled";
-};
-
 &i2c2 {
 	pcf8563: rtc@51 {
 		compatible = "nxp,pcf8563";
