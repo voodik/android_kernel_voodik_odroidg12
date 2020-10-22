@@ -21,7 +21,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					wifi_bt_combo.dtbo	\
 					sdio.dtbo		\
 					gpio_shortcut.dtbo	\
-					esp8089.dtbo
+					esp8089.dtbo	\
+					fanspeed-full.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
