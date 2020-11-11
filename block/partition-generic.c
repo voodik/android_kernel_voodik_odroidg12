@@ -222,8 +222,14 @@ static int part_uevent(struct device *dev, struct kobj_uevent_env *env)
 	struct hd_struct *part = dev_to_part(dev);
 
 	add_uevent_var(env, "PARTN=%u", part->partno);
-	if (part->info && part->info->volname[0])
-		add_uevent_var(env, "PARTNAME=%s", part->info->volname);
+	if (part->info && part->info->volname[0]) {
+#ifdef CONFIG_MPT_PARTITION
+		if (part->info->volname[0] == 0x09)
+			add_uevent_var(env, "PARTNAME=%s", &(part->info->volname[1]));
+		else
+#endif
+			add_uevent_var(env, "PARTNAME=%s", part->info->volname);
+	}
 	return 0;
 }
 
@@ -331,11 +337,18 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
 	}
 
 	dname = dev_name(ddev);
-
-	if (isdigit(dname[strlen(dname) - 1]))
-		dev_set_name(pdev, "%sp%d", dname, partno);
-	else
-		dev_set_name(pdev, "%s%d", dname, partno);
+#ifdef CONFIG_MPT_PARTITION
+	if (p->info->volname[0] == 0x09)
+		dev_set_name(pdev, "%s", &(p->info->volname[1]));
+	else{
+#endif
+		if (isdigit(dname[strlen(dname) - 1]))
+			dev_set_name(pdev, "%sp%d", dname, partno);
+		else
+			dev_set_name(pdev, "%s%d", dname, partno);
+#ifdef CONFIG_MPT_PARTITION
+	}
+#endif
 
 	device_initialize(pdev);
 	pdev->class = &block_class;

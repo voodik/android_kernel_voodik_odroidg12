@@ -24,6 +24,7 @@
 #include "msdos.h"
 #include "efi.h"
 #include "aix.h"
+#include "mpt.h"
 
 /*
  * Many architectures don't like unaligned accesses, while
@@ -581,6 +582,9 @@ int msdos_partition(struct parsed_partitions *state)
 		subtypes[n].parse(state, start_sect(p) * sector_size,
 				  nr_sects(p) * sector_size, slot);
 	}
+#ifdef CONFIG_MPT_PARTITION
+	mpt_partition(state);
+#endif
 	put_dev_sector(sect);
 	return 1;
 }

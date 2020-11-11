@@ -267,3 +267,10 @@ config CMDLINE_PARTITION
 	help
 	  Say Y here if you want to read the partition table from bootargs.
 	  The format for the command line is just like mtdparts.
+
+config MPT_PARTITION
+	bool "MPT partition support" if PARTITION_ADVANCED
+	default y
+	help
+	  Say Y here if you would like to use hard disks under Linux which
+	  were partitioned using MPT.
