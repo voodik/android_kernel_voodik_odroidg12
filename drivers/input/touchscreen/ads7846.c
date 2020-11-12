@@ -37,6 +37,7 @@
 #endif
 #include <linux/module.h>
 #include <asm/irq.h>
+#include <asm/unaligned.h>
 
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
     #include <linux/amlogic/aml_gpio_consumer.h>
@@ -421,7 +422,7 @@ static int ads7845_read12_ser(struct device *dev, unsigned command)
 
 	if (status == 0) {
 		/* BE12 value, then padding */
-		status = be16_to_cpu(*((u16 *)&req->sample[1]));
+		status = get_unaligned_be16(&req->sample[1]);
 		status = status >> 3;
 		status &= 0x0fff;
 	}
