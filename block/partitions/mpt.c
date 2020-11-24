@@ -83,11 +83,28 @@ static void applyInfo(struct parsed_partitions *state, int slot, struct ptable_t
 	state->parts[state->next].has_info = true;
 }
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+#define BOOT_DEVICE_LENGTH 12
+
+static char boot_device[BOOT_DEVICE_LENGTH] = "";
+
+static int __init get_boot_device(char *str)
+{
+	if (str) {
+		strncpy(boot_device, str, sizeof(str) - 1);
+		boot_device[sizeof(str)-1] = '\0';
+	}
+	return 0;
+}
+__setup("boot_device=", get_boot_device);
+#endif
+
 int mpt_partition(struct parsed_partitions *state)
 {
 	Sector sect;
 	unsigned char *data;
 	struct ptable_t *mpt;
+	struct gendisk *disk;
 
 	data = read_part_sector(state, MPT_PARTITION_SECTOR_OFFSET, &sect);
 	if (!data)
@@ -98,6 +115,14 @@ int mpt_partition(struct parsed_partitions *state)
 	if (!is_mpt_valid(mpt, 1)) {
 		put_dev_sector(sect);
 		return 0;
+	}
+
+	disk = state->bdev->bd_disk;
+	if (strncmp(disk->disk_name, boot_device, strlen(disk->disk_name))) {
+		printk(KERN_CONT "current, boot - (%s, %s)\n",
+				disk->disk_name, boot_device);
+
+		return 1;
 	}
 
 	printk(KERN_CONT "magic - %s\n", mpt->magic);
