@@ -1,5 +1,6 @@
 menuconfig AMLOGIC_SND_SOC_AUGE
 	bool "Amlogic Auge ASoC"
+	select SND_SOC_PCM5102A
 	default n
 	help
 		Say Y or M if you want to add support for codecs attached to

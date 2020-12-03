@@ -13,6 +13,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					pcf8563.dtbo		\
 					onewire.dtbo		\
 					can0.dtbo		\
+					hifishield.dtbo		\
+					hifishield2.dtbo	\
 					pwm_ab.dtbo		\
 					pwm_cd.dtbo		\
 					pwm_ef.dtbo		\
