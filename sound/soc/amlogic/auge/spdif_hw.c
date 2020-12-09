@@ -23,6 +23,12 @@
 
 #include <linux/amlogic/media/sound/aout_notify.h>
 
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+#include <linux/platform_data/board_odroid.h>
+#else
+#define board_is_odroidn2()	(0)
+#endif
+
 /*#define G12A_PTM*/
 /*#define __PTM_SPDIF_INTERNAL_LB__*/
 
@@ -663,12 +669,15 @@ void spdifout_play_with_zerodata(unsigned int spdif_id, bool reenable)
 
 		/* spdif clk */
 		//spdifout_clk_ctrl(spdif_id, true);
+
+		if (!board_is_odroidn2()) {
 		/* spdif to hdmitx */
-#if defined(CONFIG_ARCH_MESON64_ODROIDN2)
-		/* ODROID spdif_b only to hdmitx */
-		if (spdif_id == 1)
-#endif
-		spdifout_to_hdmitx_ctrl(spdif_id);
+			spdifout_to_hdmitx_ctrl(spdif_id);
+		} else {
+			/* ODROID-N2 spdif_b only to hdmitx */
+			if (spdif_id == 1)
+			spdifout_to_hdmitx_ctrl(spdif_id);
+		}
 
 		/* spdif ctrl */
 		spdifout_fifo_ctrl(spdif_id,
