@@ -667,7 +667,7 @@
 		compatible = "amlogic, g12a-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 
-		/* ODROID-C4: spdif_out GPIOAO_10(J7.2), HDMI out*/
+		/* ODROID-C4: spdif_out GPIOAO_10(J7.2) */
 		aml-audio-card,dai-link@0 {
 			mclk-fs = <128>;
 			continuous-clock;
@@ -681,7 +681,7 @@
 			};
 		};
 
-		/* ODROID-C4: Line-out(J4) */
+		/* ODROID-C4: Line-out(J4), HDMI out */
 		aml-audio-card,dai-link@1 {
 			format = "i2s";
 			mclk-fs = <256>;
@@ -788,7 +788,7 @@
 		clocks = <&clkaudio CLKID_AUDIO_MCLK_C
 				&clkc CLKID_MPLL2>;
 		clock-names = "mclk", "clk_srcpll";
-		i2s2hdmi = <0>;
+		i2s2hdmi = <1>;
 		status = "okay";
 	};
 
