@@ -508,10 +508,6 @@ static int amlogic_new_usb3_v2_probe(struct platform_device *pdev)
 	int ret;
 	struct device_node *tsi_pci;
 	u32 pwr_ctl = 0;
-	u32 u3_ctrl_sleep_shift = 0;
-	u32 u3_hhi_mem_pd_shift = 0;
-	u32 u3_hhi_mem_pd_mask = 0;
-	u32 u3_ctrl_iso_shift = 0;
 #if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
 	struct gpio_desc *huben_gd = NULL;
 	struct gpio_desc *hubrst_gd = NULL;

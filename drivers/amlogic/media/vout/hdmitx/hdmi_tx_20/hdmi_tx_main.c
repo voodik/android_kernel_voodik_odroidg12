@@ -5728,11 +5728,6 @@ static int amhdmitx_get_dt_info(struct platform_device *pdev)
 		ret = of_property_read_u32(pdev->dev.of_node, "ic_type",
 			&(hdmitx_device.chip_type));
 
-		/* Get dongle_mode information */
-		ret = of_property_read_u32(pdev->dev.of_node, "dongle_mode",
-			&dongle_mode);
-		hdmitx_device.dongle_mode = !!dongle_mode;
-
 		ret = of_property_read_u32(pdev->dev.of_node,
 			"repeater_tx", &val);
 		if (!ret)
