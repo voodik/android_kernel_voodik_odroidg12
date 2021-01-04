@@ -7144,7 +7144,12 @@ static void osd_set_freescale(u32 index,
 		else
 			osd_hw.free_scale[index].h_enable = 0;
 
-		if (dst_height > 1080)
+		/*
+		 * On amlogic hwcomposer, fb size is limited to 1920x1080
+		 * in case of higher resolution over 2560x1080.
+		 * Other cases, native vertical size is used.
+		 */
+		if ((dst_height > 1080) && (dst_width >= 2560))
 			osd_hw.free_scale[index].v_enable = 1;
 		else
 			osd_hw.free_scale[index].v_enable = 0;
