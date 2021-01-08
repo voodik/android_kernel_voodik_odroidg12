@@ -508,8 +508,6 @@ static int aml_dai_tdm_prepare(struct snd_pcm_substream *substream,
 			i2s_to_hdmitx_ctrl(p_tdm->id);
 			aout_notifier_call_chain(AOUT_EVENT_IEC_60958_PCM,
 				substream);
-		} else {
-			i2s_to_hdmitx_disable();
 		}
 
 		fifo_id = aml_frddr_get_fifo_id(fr);
@@ -923,10 +921,17 @@ static int aml_tdm_set_clk_pad(struct aml_tdm *p_tdm)
 					p_tdm->clk_sel);
 	}
 
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	aml_tdm_sclk_pad_select(p_tdm->actrl,
+				mpad_offset,
+				p_tdm->id,
+				p_tdm->clk_sel);
+#else
 	aml_tdm_sclk_pad_select(p_tdm->actrl,
 				mpad_offset,
 				p_tdm->id,
 				p_tdm->id);
+#endif
 
 	return 0;
 }
