@@ -1300,6 +1300,10 @@
 #define USB_VENDOR_ID_DELL_P2418HT		0x1fd2
 #define USB_DEVICE_ID_DELL_P2418HT		0x6103
 
+/* UPERFECT HDMI capacitive Screen */
+#define USB_VENDOR_ID_UPERFECT		0x27c0
+#define USB_DEVICE_ID_UPERFECT		0x0818
+
 /* SHARP HDMI capacitive Screen */
 #define USB_VENDOR_ID_TEST	0x0
 #define USB_DEVICE_ID_TEST	0x0
