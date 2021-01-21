@@ -479,9 +479,11 @@ static inline void meson_spicc_tx(struct meson_spicc_device *spicc)
 
 static void meson_spicc_setup_pio_burst(struct meson_spicc_device *spicc)
 {
-	unsigned int burst_len = min_t(unsigned int,
-		  spicc->xfer_remain / spicc->bytes_per_word,
-		  spicc->data->fifo_size);
+	unsigned int burst_len;
+
+	burst_len = min_t(unsigned int,
+			  spicc->xfer_remain / spicc->bytes_per_word,
+			  spicc->data->fifo_size);
 
 	/* Setup Xfer variables */
 	spicc->tx_remain = burst_len;
@@ -599,18 +601,6 @@ static int meson_spicc_transfer_one(struct spi_master *master,
 	spicc->rx_buf = (u8 *)xfer->rx_buf;
 	spicc->xfer_remain = xfer->len;
 
-#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-	if ((xfer->len >= 64) && (xfer->bits_per_word == 8) && ((xfer->len % 8) == 0)) {
-		int cnt = xfer->len / 8;
-		int i;
-
-		u64 *tx_buf = (u64 *) &spicc->tx_buf[0];
-		for (i = 0; i < cnt; i++)
-			tx_buf[i] = __swab64p((__u64 *) &spicc->tx_buf[i * 8]);
-
-		xfer->bits_per_word = 64;
-	}
-#endif
 	/* Pre-calculate word size */
 	spicc->bytes_per_word =
 	   DIV_ROUND_UP(spicc->xfer->bits_per_word, 8);
