@@ -139,7 +139,7 @@ enum {
 	MT7601U_STATE_MORE_STATS,
 };
 
-DECLARE_EWMA(rssi, 10, 4);
+DECLARE_EWMA(rssi, 1024, 4);
 
 /**
  * struct mt7601u_dev - adapter structure
