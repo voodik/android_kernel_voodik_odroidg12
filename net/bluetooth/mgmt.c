@@ -42,7 +42,7 @@
 #include <linux/overflow.h>
 
 #define MGMT_VERSION	1
-#define MGMT_REVISION	19
+#define MGMT_REVISION	20
 
 static const u16 mgmt_commands[] = {
 	MGMT_OP_READ_INDEX_LIST,
