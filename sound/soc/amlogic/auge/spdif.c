@@ -1532,7 +1532,7 @@ static struct snd_soc_dai_driver aml_spdif_dai[] = {
 		.remove = aml_dai_spdif_remove,
 		.playback = {
 			  .channels_min = 1,
-			  .channels_max = 8,
+			  .channels_max = 2,
 			  .rates = AML_DAI_SPDIF_RATES,
 			  .formats = AML_DAI_SPDIF_FORMATS,
 		},
