@@ -511,7 +511,7 @@ static void l2cap_chan_destroy(struct kref *kref)
 
 void l2cap_chan_hold(struct l2cap_chan *c)
 {
-	BT_DBG("chan %p orig refcnt %d", c, atomic_read(&c->kref.refcount));
+	BT_DBG("chan %p orig refcnt %u", c, kref_read(&c->kref));
 
 	kref_get(&c->kref);
 }
@@ -528,7 +528,7 @@ struct l2cap_chan *l2cap_chan_hold_unless_zero(struct l2cap_chan *c)
 
 void l2cap_chan_put(struct l2cap_chan *c)
 {
-	BT_DBG("chan %p orig refcnt %d", c, atomic_read(&c->kref.refcount));
+	BT_DBG("chan %p orig refcnt %u", c, kref_read(&c->kref));
 
 	kref_put(&c->kref, l2cap_chan_destroy);
 }
@@ -7348,7 +7348,7 @@ static int l2cap_stream_rx(struct l2cap_chan *chan, struct l2cap_ctrl *control,
 	if (l2cap_classify_txseq(chan, txseq) == L2CAP_TXSEQ_EXPECTED) {
 		l2cap_pass_to_tx(chan, control);
 
-		BT_DBG("buffer_seq %d->%d", chan->buffer_seq,
+		BT_DBG("buffer_seq %u->%u", chan->buffer_seq,
 		       __next_seq(chan, chan->buffer_seq));
 
 		chan->buffer_seq = __next_seq(chan, chan->buffer_seq);
@@ -8454,7 +8454,7 @@ void l2cap_recv_acldata(struct hci_conn *hcon, struct sk_buff *skb, u16 flags)
 	if (!conn)
 		goto drop;
 
-	BT_DBG("conn %p len %d flags 0x%x", conn, skb->len, flags);
+	BT_DBG("conn %p len %u flags 0x%x", conn, skb->len, flags);
 
 	switch (flags) {
 	case ACL_START:
@@ -8484,10 +8484,10 @@ void l2cap_recv_acldata(struct hci_conn *hcon, struct sk_buff *skb, u16 flags)
 			return;
 		}
 
-		BT_DBG("Start: total len %d, frag len %d", len, skb->len);
+		BT_DBG("Start: total len %d, frag len %u", len, skb->len);
 
 		if (skb->len > len) {
-			BT_ERR("Frame is too long (len %d, expected len %d)",
+			BT_ERR("Frame is too long (len %u, expected len %d)",
 			       skb->len, len);
 			l2cap_conn_unreliable(conn, ECOMM);
 			goto drop;
@@ -8500,7 +8500,7 @@ void l2cap_recv_acldata(struct hci_conn *hcon, struct sk_buff *skb, u16 flags)
 		break;
 
 	case ACL_CONT:
-		BT_DBG("Cont: frag len %d (expecting %d)", skb->len, conn->rx_len);
+		BT_DBG("Cont: frag len %u (expecting %u)", skb->len, conn->rx_len);
 
 		if (!conn->rx_skb) {
 			BT_ERR("Unexpected continuation frame (len %d)", skb->len);
@@ -8521,7 +8521,7 @@ void l2cap_recv_acldata(struct hci_conn *hcon, struct sk_buff *skb, u16 flags)
 		}
 
 		if (skb->len > conn->rx_len) {
-			BT_ERR("Fragment is too long (len %d, expected %d)",
+			BT_ERR("Fragment is too long (len %u, expected %u)",
 			       skb->len, conn->rx_len);
 			l2cap_recv_reset(conn);
 			l2cap_conn_unreliable(conn, ECOMM);
