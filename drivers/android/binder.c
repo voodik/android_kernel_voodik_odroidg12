@@ -187,7 +187,6 @@ enum binder_stat_types {
 
 struct binder_stats {
 	atomic_t br[_IOC_NR(BR_ONEWAY_SPAM_SUSPECT) + 1];
-	atomic_t br[_IOC_NR(BR_FAILED_REPLY) + 1];
 	atomic_t bc[_IOC_NR(BC_REPLY_SG) + 1];
 	atomic_t obj_created[BINDER_STAT_COUNT];
 	atomic_t obj_deleted[BINDER_STAT_COUNT];
@@ -5218,18 +5217,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 		break;
 	}
-	case BINDER_ENABLE_ONEWAY_SPAM_DETECTION: {
-		uint32_t enable;
-
-		if (copy_from_user(&enable, ubuf, sizeof(enable))) {
-			ret = -EINVAL;
-			goto err;
-		}
-		binder_inner_proc_lock(proc);
-		proc->oneway_spam_detection_enabled = (bool)enable;
-		binder_inner_proc_unlock(proc);
-		break;
-	}
 	case BINDER_FREEZE: {
 		struct binder_freeze_info info;
 		struct binder_proc **target_procs = NULL, *target_proc;
@@ -5306,6 +5293,18 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			ret = -EFAULT;
 			goto err;
 		}
+		break;
+	}
+	case BINDER_ENABLE_ONEWAY_SPAM_DETECTION: {
+		uint32_t enable;
+
+		if (copy_from_user(&enable, ubuf, sizeof(enable))) {
+			ret = -EINVAL;
+			goto err;
+		}
+		binder_inner_proc_lock(proc);
+		proc->oneway_spam_detection_enabled = (bool)enable;
+		binder_inner_proc_unlock(proc);
 		break;
 	}
 	default:

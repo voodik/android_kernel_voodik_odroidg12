@@ -471,8 +471,8 @@ enum binder_driver_return_protocol {
 
 	BR_FROZEN_REPLY = _IO('r', 18),
 	/*
-<<<<<<< HEAD
-	 * void *: cookie
+	 * The target of the last transaction (either a bcTRANSACTION or
+	 * a bcATTEMPT_ACQUIRE) is frozen.  No parameters.
 	 */
 
 	BR_ONEWAY_SPAM_SUSPECT = _IO('r', 19),
@@ -480,10 +480,6 @@ enum binder_driver_return_protocol {
 	 * Current process sent too many oneway calls to target, and the last
 	 * asynchronous transaction makes the allocated async buffer size exceed
 	 * detection threshold.  No parameters.
-=======
-	 * The target of the last transaction (either a bcTRANSACTION or
-	 * a bcATTEMPT_ACQUIRE) is frozen.  No parameters.
->>>>>>> d02072fd7b32 (BACKPORT: FROMGIT: binder: BINDER_FREEZE ioctl)
 	 */
 };
 
