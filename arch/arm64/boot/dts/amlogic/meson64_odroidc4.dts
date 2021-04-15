@@ -906,6 +906,13 @@
 			drive-strength = <2>;
 		};
 	};
+	ao_b_uart_pins2: ao_b_uart2 {
+		mux { /* GPIOAO_8, GPIOAO_9 */
+			groups = "uart_ao_tx_b_8",
+				"uart_ao_rx_b_9";
+			function = "uart_ao_b";
+		};
+	};
 }; /* end of pinctrl_aobus */
 
 &spicc0 {
