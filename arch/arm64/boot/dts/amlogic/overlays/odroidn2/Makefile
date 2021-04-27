@@ -22,7 +22,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDN2) += spi0.dtbo		\
 					pwm_d-backlight.dtbo	\
 					gpio_spdif.dtbo	\
 					sdio.dtbo		\
-					gpio_shortcut.dtbo
+					gpio_shortcut.dtbo		\
+					codec_mm_cma.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
