@@ -758,6 +758,10 @@
 		reg = <0x0 0xff808040 0x0 0x44>;
 		status = "ok";
 	};
+
+	gpio-reset {
+		/delete-node/ usb_hub_en;
+	};
 }; /* end of / */
 
 &audiobus {
