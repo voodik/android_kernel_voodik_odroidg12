@@ -604,6 +604,7 @@ struct btrtl_device_info *btrtl_initialize(struct hci_dev *hdev,
 	hci_ver = resp->hci_ver;
 	hci_rev = le16_to_cpu(resp->hci_rev);
 	lmp_subver = le16_to_cpu(resp->lmp_subver);
+
 	if (resp->hci_ver == 0x8 && le16_to_cpu(resp->hci_rev) == 0x826c &&
 	    resp->lmp_ver == 0x8 && le16_to_cpu(resp->lmp_subver) == 0xa99e)
 		btrtl_dev->drop_fw = true;
@@ -730,6 +731,31 @@ int btrtl_download_firmware(struct hci_dev *hdev,
 }
 EXPORT_SYMBOL_GPL(btrtl_download_firmware);
 
+void btrtl_set_quirks(struct hci_dev *hdev, struct btrtl_device_info *btrtl_dev)
+{
+	/* Enable controller to do both LE scan and BR/EDR inquiry
+	 * simultaneously.
+	 */
+	set_bit(HCI_QUIRK_SIMULTANEOUS_DISCOVERY, &hdev->quirks);
+
+	/* Enable central-peripheral role (able to create new connections with
+	 * an existing connection in slave role).
+	 */
+	/* Enable WBS supported for the specific Realtek devices. */
+	switch (btrtl_dev->project_id) {
+	case CHIP_ID_8822C:
+	case CHIP_ID_8852A:
+		set_bit(HCI_QUIRK_VALID_LE_STATES, &hdev->quirks);
+		set_bit(HCI_QUIRK_WIDEBAND_SPEECH_SUPPORTED, &hdev->quirks);
+		break;
+	default:
+		rtl_dev_dbg(hdev, "Central-peripheral role not enabled.");
+		rtl_dev_dbg(hdev, "WBS supported not enabled.");
+		break;
+	}
+}
+EXPORT_SYMBOL_GPL(btrtl_set_quirks);
+
 int btrtl_setup_realtek(struct hci_dev *hdev)
 {
 	struct btrtl_device_info *btrtl_dev;
@@ -741,13 +767,9 @@ int btrtl_setup_realtek(struct hci_dev *hdev)
 
 	ret = btrtl_download_firmware(hdev, btrtl_dev);
 
+	btrtl_set_quirks(hdev, btrtl_dev);
+
 	btrtl_free(btrtl_dev);
-
-	/* Enable controller to do both LE scan and BR/EDR inquiry
-	 * simultaneously.
-	 */
-	set_bit(HCI_QUIRK_SIMULTANEOUS_DISCOVERY, &hdev->quirks);
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(btrtl_setup_realtek);
