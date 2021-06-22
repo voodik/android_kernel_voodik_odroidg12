@@ -15072,3 +15072,8 @@ F:	drivers/amlogic/media/camera/ov5640.c
 F:	drivers/amlogic/media/camera/ov5640_firmware.h
 F:	drivers/amlogic/media/vin/tvin/csi/*
 F:	include/linux/amlogic/media/mipi/*
+
+HARDKERNEL USB OTG OVERLAY
+M:	Chris KIM <codewalker@hardkenrle.com>
+F:	arch/arm64/boot/dts/amlogic/overlays/odroidc4/otg_host_mode.dts
+F:	arch/arm64/boot/dts/amlogic/overlays/odroidn2/otg_host_mode.dts
