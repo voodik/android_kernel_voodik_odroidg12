@@ -15246,3 +15246,8 @@ F: include/linux/amlogic/media/video_sink/v4lvideo_ext.h
 AMLOGIC POWER DOMAIN DRIVER
 M:	Zhiqiang Liang <zhiqiang.liang@amlogic.com>
 F: 	drivers/amlogic/power/power_domain.c
+
+HARDKERNEL USB OTG OVERLAY
+M:	Chris KIM <codewalker@hardkenrle.com>
+F:	arch/arm64/boot/dts/amlogic/overlays/odroidc4/otg_host_mode.dts
+F:	arch/arm64/boot/dts/amlogic/overlays/odroidn2/otg_host_mode.dts
