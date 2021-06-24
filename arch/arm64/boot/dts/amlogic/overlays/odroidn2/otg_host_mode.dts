@@ -26,8 +26,6 @@
 			status = "okay";
 			portnum = <1>;
 			otg = <0>;
-			gpio-vbus-power = "";
-			gpios = <>;
 		};
 	};
 };
