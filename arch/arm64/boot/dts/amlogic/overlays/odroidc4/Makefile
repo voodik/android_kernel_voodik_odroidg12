@@ -6,6 +6,7 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					uart0.dtbo		\
 					uart1.dtbo		\
 					uart2.dtbo		\
+					uart3.dtbo		\
 					hktft32.dtbo		\
 					hktft35.dtbo		\
 					ads7846.dtbo		\
@@ -22,7 +23,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					sdio.dtbo		\
 					gpio_shortcut.dtbo	\
 					esp8089.dtbo	\
-					fanspeed-full.dtbo
+					fanspeed-full.dtbo	\
+					otg_host_mode.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)

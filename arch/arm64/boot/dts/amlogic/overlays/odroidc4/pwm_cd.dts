@@ -9,8 +9,9 @@
 
 		__overlay__ {
 			status = "okay";
-			pinctrl-names = "pwm_pins";
+			pinctrl-names = "pwm_pins", "gpio_periphs";
 			pinctrl-0 = <&pwm_c_pins2 &pwm_d_pins1>;
+			pinctrl-1 = <&pwmcd_to_gpios>;
 		};
 	};
 };
