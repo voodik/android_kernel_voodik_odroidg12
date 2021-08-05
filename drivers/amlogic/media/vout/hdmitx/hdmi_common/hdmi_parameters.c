@@ -2775,6 +2775,54 @@ static struct hdmi_format_para fmt_para_vesa_3440x1440p60_43x18 = {
 	},
 };
 
+static struct hdmi_format_para fmt_para_vesa_3840x1080p50_32x9 = {
+	.vic = HDMIV_3840x1080p50hz,
+	.name = "3840x1080p50hz",
+	.sname = "3840x1080p50hz",
+	.pixel_repetition_factor = 0,
+	.progress_mode = 1,
+	.scrambler_en = 0,
+	.tmds_clk_div40 = 0,
+	.tmds_clk = 221000,
+	.timing = {
+		.pixel_freq = 221000,
+		.frac_freq = 221000,
+		.h_freq = 55250,
+		.v_freq = 50000,
+		.vsync_polarity = 1, /* -VSync */
+		.hsync_polarity = 1, /* +HSync */
+		.h_active = 3840,
+		.h_total = 4000,
+		.h_blank = 160,
+		.h_front = 48,
+		.h_sync = 10,
+		.h_back = 102,
+		.v_active = 1080,
+		.v_total = 1106,
+		.v_blank = 26,
+		.v_front = 3,
+		.v_sync = 10,
+		.v_back = 13,
+		.v_sync_ln = 1,
+	},
+	.hdmitx_vinfo = {
+		.name              = "3840x1080p50hz",
+		.mode              = VMODE_HDMI,
+		.width             = 3840,
+		.height            = 1080,
+		.field_height      = 1080,
+		.aspect_ratio_num  = 32,
+		.aspect_ratio_den  = 9,
+		.sync_duration_num = 50,
+		.sync_duration_den = 1,
+		.video_clk         = 221000000,
+		.htotal            = 4000,
+		.vtotal            = 1106,
+		.viu_color_fmt     = COLOR_FMT_YUV444,
+		.viu_mux           = VIU_MUX_ENCP,
+	},
+};
+
 static struct hdmi_format_para fmt_para_custombuilt = {
 	.vic = HDMI_CUSTOMBUILT,
 	.name = "custombuilt",
@@ -2901,6 +2949,7 @@ static struct hdmi_format_para *all_fmt_paras[] = {
 	&fmt_para_vesa_2560x1600p60_8x5,
 	&fmt_para_vesa_2560x1440p60_16x9,
 	&fmt_para_vesa_3440x1440p60_43x18,
+	&fmt_para_vesa_3840x1080p50_32x9,
 	&fmt_para_custombuilt,
 	&fmt_para_null_hdmi_fmt,
 	&fmt_para_non_hdmi_fmt,
