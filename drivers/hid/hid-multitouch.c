@@ -1771,6 +1771,12 @@ static const struct hid_device_id mt_devices[] = {
 				USB_VENDOR_ID_UPERFECT,
 				USB_DEVICE_ID_UPERFECT) },
 
+/* NEXTWINDOW HDMI capacitive Screen */
+	{ .driver_data = MT_CLS_DEFAULT,
+		HID_USB_DEVICE(
+				USB_VENDOR_ID_NEXTWINDOW,
+				USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN_0006) },
+
 /* TEST DISPLAY capacitive Screen */
 	{ .driver_data = MT_CLS_DEFAULT,
 		HID_USB_DEVICE(
