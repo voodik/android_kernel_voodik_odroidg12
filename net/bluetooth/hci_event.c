@@ -5236,6 +5236,8 @@ static bool hci_get_cmd_complete(struct hci_dev *hdev, u16 opcode,
 	return true;
 }
 
+static u8 previous_event = HCI_EV_CMD_COMPLETE;
+
 void hci_event_packet(struct hci_dev *hdev, struct sk_buff *skb)
 {
 	struct hci_event_hdr *hdr = (void *) skb->data;
@@ -5316,6 +5318,17 @@ void hci_event_packet(struct hci_dev *hdev, struct sk_buff *skb)
 		break;
 
 	case HCI_EV_HARDWARE_ERROR:
+		if (previous_event == HCI_EV_CMD_STATUS) {
+/* Some CSR dongle send HCI_EV_CMD_COMPLETE first,
+ * then send HCI_EV_HARDWARE_ERROR.
+ * ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth Dongle (HCI mode)
+ * But We figure out that it is not real hardware error.
+ * We ignore event for HCI_EV_HARDWARE_ERROR.
+ */
+			BT_DBG("We ignore event for HCI_EV_HARDWARE_ERROR");
+			previous_event = HCI_EV_CMD_COMPLETE;
+			break;
+		}
 		hci_hardware_error_evt(hdev, skb);
 		break;
 
@@ -5459,4 +5472,6 @@ void hci_event_packet(struct hci_dev *hdev, struct sk_buff *skb)
 	kfree_skb(orig_skb);
 	kfree_skb(skb);
 	hdev->stat.evt_rx++;
+
+	previous_event = event;
 }
