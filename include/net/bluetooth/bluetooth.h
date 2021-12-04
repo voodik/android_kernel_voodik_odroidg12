@@ -389,6 +389,11 @@ struct hci_ctrl {
 	};
 };
 
+struct mgmt_ctrl {
+	struct hci_dev *hdev;
+	u16 opcode;
+};
+
 struct bt_skb_cb {
 	__u8 pkt_type;
 	__u8 force_active;
@@ -398,6 +403,7 @@ struct bt_skb_cb {
 		struct l2cap_ctrl l2cap;
 		struct sco_ctrl sco;
 		struct hci_ctrl hci;
+		struct mgmt_ctrl mgmt;
 	};
 };
 #define bt_cb(skb) ((struct bt_skb_cb *)((skb)->cb))

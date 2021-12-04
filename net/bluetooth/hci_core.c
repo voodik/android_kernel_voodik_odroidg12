@@ -2632,7 +2632,7 @@ int hci_register_dev(struct hci_dev *hdev)
 	/* Mark Remote Wakeup connection flag as supported if driver has wakeup
 	 * callback.
 	 */
-	if (hdev->wakeup)
+	if (hdev->prevent_wake)
 		set_bit(HCI_CONN_FLAG_REMOTE_WAKEUP, hdev->conn_flags);
 
 	hci_sock_dev_event(hdev, HCI_DEV_REG);

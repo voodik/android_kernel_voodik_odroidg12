@@ -55,7 +55,7 @@ static struct sk_buff *hci_cmd_sync_alloc(struct hci_dev *hdev, u16 opcode,
 	if (!skb)
 		return NULL;
 
-	hdr = (struct hci_command_hdr*)skb_put(skb, HCI_COMMAND_HDR_SIZE);
+	hdr = (void *)skb_put(skb, HCI_COMMAND_HDR_SIZE);
 	hdr->opcode = cpu_to_le16(opcode);
 	hdr->plen   = plen;
 
