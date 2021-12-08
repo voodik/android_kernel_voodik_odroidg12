@@ -1506,6 +1506,21 @@ static enum hrtimer_restart cec_line_check(struct hrtimer *timer)
 	return HRTIMER_RESTART;
 }
 
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+static bool ignoreCEC;
+
+static  int __init ignoreCEC_setup(char *s)
+{
+	if (!(strcmp(s, "true")))
+		ignoreCEC = true;
+	else
+		ignoreCEC = false;
+
+	return 0;
+}
+__setup("ignorecec=", ignoreCEC_setup);
+#endif
+
 static int check_confilct(void)
 {
 	int i;
@@ -2114,6 +2129,9 @@ static void cec_rx_process(void)
 	int opcode;
 	unsigned char msg[MAX_MSG] = {};
 	int dest_phy_addr;
+
+	if (ignoreCEC)
+		return;
 
 	if (len < 2 || !new_msg)		/* ignore ping message */
 		return;
