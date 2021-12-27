@@ -7139,7 +7139,11 @@ static void osd_set_freescale(u32 index,
 		 * in case of higher resolution over 2560x1080.
 		 * Other cases, native vertical size is used.
 		 */
+#ifdef CONFIG_ARCH_MESON64_ODROIDN2
 		if ((dst_height >= 1080) && (dst_width >= 2560))
+#else
+		if ((dst_height > 1080) && (dst_width >= 2560))
+#endif
 			osd_hw.free_scale[index].v_enable = 1;
 		else
 			osd_hw.free_scale[index].v_enable = 0;
