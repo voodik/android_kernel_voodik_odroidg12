@@ -145,3 +145,5 @@ obj-$(CONFIG_AMLOGIC_IRCUT) += ircut/
 obj-$(CONFIG_AMLOGIC_PIXEL_PROBE) += pixel_probe/
 
 obj-$(CONFIG_AMLOGIC_FIRMWARE) += firmware/
+
+obj-$(CONFIG_DRM_LT8619C_QC4011) += bridge/

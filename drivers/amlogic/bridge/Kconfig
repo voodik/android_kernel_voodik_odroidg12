@@ -1,0 +1,6 @@
+config DRM_LT8619C_QC4011
+	tristate "LT8619c HDMI to LVDS Converter"
+	depends on OF
+	select REGMAP_I2C
+	---help---
+	  lt8619c chip driver.
