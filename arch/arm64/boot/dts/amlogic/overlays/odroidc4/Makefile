@@ -18,7 +18,7 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) += spi0.dtbo	\
 					pwm_cd.dtbo		\
 					pwm_ef.dtbo		\
 					pwm_a-pwmfan.dtbo	\
-					pwm_b-backlight.dtbo	\
+					pwm_backlight.dtbo	\
 					wifi_bt_combo.dtbo	\
 					sdio.dtbo		\
 					gpio_shortcut.dtbo	\
