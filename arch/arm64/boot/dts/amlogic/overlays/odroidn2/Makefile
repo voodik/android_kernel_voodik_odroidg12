@@ -24,7 +24,8 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDN2) += spi0.dtbo		\
 					sdio.dtbo		\
 					gpio_shortcut.dtbo		\
 					codec_mm_cma.dtbo	\
-					otg_host_mode.dtbo
+					otg_host_mode.dtbo	\
+					display_vu7c.dtbo
 
 targets	+= $(dtbo-y)
 always	:= $(dtbo-y)
