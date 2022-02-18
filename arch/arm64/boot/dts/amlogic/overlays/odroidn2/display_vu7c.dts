@@ -1,5 +1,5 @@
 /*
- * arch/arm64/boot/dts/amlogic/overlays/odroidc4/display_vu7c.dts
+ * arch/arm64/boot/dts/amlogic/overlays/odroidn2/display_vu7c.dts
  *
  * Copyright (C) 2022 Hardkernel, Inc. All rights reserved.
  *
@@ -36,7 +36,7 @@
 			lt8619c: hdmi-bridge@32 {
 				compatible = "lt8619c";
 				reg = <0x32>;
-				reset-gpios = <&gpio GPIOH_5 GPIO_ACTIVE_LOW>;
+				reset-gpios = <&gpio GPIOX_19 GPIO_ACTIVE_LOW>;
 			};
 		};
 	};
@@ -98,10 +98,10 @@
 				format = "i2s";
 				mclk-fs = <256>;
 				continuous-clock;
-				bitclock-master = <&tdmb>;
-				frame-master = <&tdmb>;
+				bitclock-master = <&aml_tdmb>;
+				frame-master = <&aml_tdmb>;
 				cpu {
-					sound-dai = <&tdmb>;
+					sound-dai = <&aml_tdmb>;
 					dai-tdm-slot-tx-mask = <1 1>;
 					dai-tdm-slot-rx-mask = <1 1>;
 					dai-tdm-slot-num = <2>;
@@ -114,9 +114,8 @@
 			};
 		};
 	};
-
 	fragment@4 {
-		target = <&tdmb>;
+		target = <&aml_tdmb>;
 		__overlay__ {
 			i2s2hdmi = <1>;
 			mclk_pad = <0>;
@@ -129,6 +128,7 @@
 			status = "okay";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c3_master_pins2>;
+			pinctrl-1 = <&i2c3_to_gpioa>;
 			clock-frequency = <400000>; /* default 400k */
 
 			touch: gt9xx@14 {
@@ -141,7 +141,7 @@
 		};
 	};
 	fragment@6 {
-		target = <&spdifa>;
+		target = <&aml_tdmc>;
 		__overlay__ {
 			status = "disabled";
 		};
