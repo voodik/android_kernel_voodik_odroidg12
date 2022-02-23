@@ -867,6 +867,12 @@ static int mt_compute_slot(struct mt_device *td, struct mt_application *app,
 	return input_mt_get_slot_by_key(input, *slot->contactid);
 }
 
+bool touch_invert_x;
+bool touch_invert_y;
+
+extern bool get_touch_invert_x(void);
+extern bool get_touch_invert_y(void);
+
 static void mt_release_pending_palms(struct mt_device *td,
 				     struct mt_application *app,
 				     struct input_dev *input)
@@ -1058,6 +1064,9 @@ static int mt_process_slot(struct mt_device *td, struct input_dev *input,
 			major = major >> 1;
 			minor = minor >> 1;
 		}
+
+		touch_invert_x = get_touch_invert_x();
+		touch_invert_y = get_touch_invert_y();
 
 		if (touch_invert_x)
 			input_event(input, EV_ABS, ABS_MT_POSITION_X,

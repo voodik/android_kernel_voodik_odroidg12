@@ -1511,10 +1511,10 @@ static bool ignoreCEC;
 
 static  int __init ignoreCEC_setup(char *s)
 {
-	if (!(strcmp(s, "true")))
-		ignoreCEC = true;
-	else
+	if (!(strcmp(s, "false")))
 		ignoreCEC = false;
+	else
+		ignoreCEC = true;
 
 	return 0;
 }
@@ -1620,6 +1620,13 @@ try_again:
 	 * free time, that means a send is already started by other
 	 * device, we should wait it finished.
 	 */
+#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
+	if (ignoreCEC) {
+		mutex_unlock(&cec_dev->cec_tx_mutex);
+		return CEC_FAIL_BUSY;
+	}
+#endif
+
 	if (check_confilct()) {
 		CEC_ERR("bus confilct too long\n");
 		mutex_unlock(&cec_dev->cec_tx_mutex);
@@ -2129,9 +2136,6 @@ static void cec_rx_process(void)
 	int opcode;
 	unsigned char msg[MAX_MSG] = {};
 	int dest_phy_addr;
-
-	if (ignoreCEC)
-		return;
 
 	if (len < 2 || !new_msg)		/* ignore ping message */
 		return;

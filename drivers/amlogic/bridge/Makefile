@@ -1,0 +1,1 @@
+obj-$(CONFIG_DRM_LT8619C_QC4011) += lt8619c-qc4011.o

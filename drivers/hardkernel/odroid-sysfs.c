@@ -33,6 +33,78 @@
 #include <linux/hrtimer.h>
 #include <asm/setup.h>
 
+bool touch_invert_x;
+/*-------------------------------------------------------------------------*/
+static int __init touch_invert_x_para_setup(char *s)
+{
+	touch_invert_x = false;
+	if (!strncmp(s, "true", 4))
+		touch_invert_x = true;
+	else if (!strncmp(s, "false", 5))
+		touch_invert_x = false;
+	else {
+		pr_err("%s - wrong touch_invert_x parameter", __func__);
+		touch_invert_x = true;
+	}
+
+	return 0;
+}
+__setup("touch_invert_x=", touch_invert_x_para_setup);
+
+bool get_touch_invert_x(void)
+{
+	return touch_invert_x;
+}
+EXPORT_SYMBOL(get_touch_invert_x);
+
+bool touch_invert_y;
+/*-------------------------------------------------------------------------*/
+static int __init touch_invert_y_para_setup(char *s)
+{
+	touch_invert_y = false;
+	if (!strncmp(s, "true", 4))
+		touch_invert_y = true;
+	else if (!strncmp(s, "false", 5))
+		touch_invert_y = false;
+	else {
+		pr_err("%s - wrong touch_invert_y parameter", __func__);
+		touch_invert_y = true;
+	}
+
+	return 0;
+}
+__setup("touch_invert_y=", touch_invert_y_para_setup);
+
+bool get_touch_invert_y(void)
+{
+	return touch_invert_y;
+}
+EXPORT_SYMBOL(get_touch_invert_y);
+
+static bool disable_vu7;
+/*-------------------------------------------------------------------------*/
+static int __init dwav_usb_mt_boot_para_setup(char *s)
+{
+	disable_vu7 = false;
+	if (!strncmp(s, "true", 4))
+		disable_vu7 = true;
+	else if (!strncmp(s, "false", 5))
+		disable_vu7 = false;
+	else {
+		pr_err("%s - wrong disable_vu7 parameter", __func__);
+		disable_vu7 = true;
+	}
+
+	return 0;
+}
+__setup("disable_vu7=", dwav_usb_mt_boot_para_setup);
+
+bool get_disable_vu7(void)
+{
+	return touch_invert_y;
+}
+EXPORT_SYMBOL(get_disable_vu7);
+
 static int prevent_sleep = 0;
 
 static  int __init prevent_sleep_setup(char *s)

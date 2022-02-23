@@ -123,41 +123,13 @@ struct dwav_usb_mt  {
 	struct finger_t		*finger;
 };
 
+bool disable_vu7;
 bool touch_invert_x;
-/*-------------------------------------------------------------------------*/
-static int __init touch_invert_x_para_setup(char *s)
-{
-	touch_invert_x = false;
-	if (!strncmp(s, "true", 4))
-		touch_invert_x = true;
-	else if (!strncmp(s, "false", 5))
-		touch_invert_x = false;
-	else {
-		pr_err("%s - wrong touch_invert_x parameter", __func__);
-		touch_invert_x = true;
-	}
-
-	return 0;
-}
-__setup("touch_invert_x=", touch_invert_x_para_setup);
-
 bool touch_invert_y;
-/*-------------------------------------------------------------------------*/
-static int __init touch_invert_y_para_setup(char *s)
-{
-	touch_invert_y = false;
-	if (!strncmp(s, "true", 4))
-		touch_invert_y = true;
-	else if (!strncmp(s, "false", 5))
-		touch_invert_y = false;
-	else {
-		pr_err("%s - wrong touch_invert_y parameter", __func__);
-		touch_invert_y = true;
-	}
 
-	return 0;
-}
-__setup("touch_invert_y=", touch_invert_y_para_setup);
+extern bool get_touch_invert_x(void);
+extern bool get_touch_invert_y(void);
+extern bool get_disable_vu7(void);
 
 /*-------------------------------------------------------------------------*/
 static void dwav_usb_mt_report(struct dwav_usb_mt *dwav_usb_mt)
@@ -183,6 +155,10 @@ static void dwav_usb_mt_report(struct dwav_usb_mt *dwav_usb_mt)
 		if (dwav_usb_mt->finger[id].status != TS_EVENT_RELEASE) {
 			input_mt_report_slot_state(dwav_usb_mt->input,
 					MT_TOOL_FINGER, true);
+
+			touch_invert_x = get_touch_invert_x();
+			touch_invert_y = get_touch_invert_y();
+
 			if (touch_invert_x)
 				input_report_abs(dwav_usb_mt->input,
 					ABS_MT_POSITION_X,
@@ -458,27 +434,10 @@ static int dwav_usb_mt_init(struct dwav_usb_mt *dwav_usb_mt, void *dev)
 	return  0;
 }
 
-static bool disable_vu7;
-/*-------------------------------------------------------------------------*/
-static int __init dwav_usb_mt_boot_para_setup(char *s)
-{
-	disable_vu7 = false;
-	if (!strncmp(s, "true", 4))
-		disable_vu7 = true;
-	else if (!strncmp(s, "false", 5))
-		disable_vu7 = false;
-	else {
-		pr_err("%s - wrong disable_vu7 parameter", __func__);
-		disable_vu7 = true;
-	}
-
-	return 0;
-}
-__setup("disable_vu7=", dwav_usb_mt_boot_para_setup);
-
 /*-------------------------------------------------------------------------*/
 static bool dwav_usb_mt_ignore(const struct usb_device_id *id)
 {
+	disable_vu7 = get_disable_vu7();
 	if (disable_vu7 && id->driver_info == ODROID_VU7)
 		return true;
 	else

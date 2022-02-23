@@ -720,6 +720,11 @@ static int goodix_ts_probe(struct i2c_client *client,
 		}
 	}
 
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	client->irq = gpiod_to_irq(ts->gpiod_int);
+	if (client->irq)
+		dev_info(&client->dev, "GT911 irq number : %d\n", client->irq);
+#endif
 	error = goodix_i2c_test(client);
 	if (error) {
 		dev_err(&client->dev, "I2C communication failure: %d\n", error);
