@@ -162,6 +162,7 @@ mali_kbase-y += $(BACKEND:.c=.o)
 
 
 ccflags-y += -I$(srctree)/$(src)/backend/gpu
+ccflags-y += $(call cc-disable-warning, implicit-fallthrough)
 subdir-ccflags-y += -I$(srctree)/$(src)/backend/gpu
 
 # For kutf and mali_kutf_irq_latency_test
