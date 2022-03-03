@@ -4088,7 +4088,7 @@ _dhd_set_mac_address(dhd_info_t *dhd, int ifidx, uint8 *addr)
 	if (ret < 0) {
 		DHD_ERROR(("%s: set cur_etheraddr failed\n", dhd_ifname(&dhd->pub, ifidx)));
 	} else {
-		memcpy(dhd->iflist[ifidx]->net->dev_addr, addr, ETHER_ADDR_LEN);
+		memcpy((void *)(dhd->iflist[ifidx]->net->dev_addr), addr, ETHER_ADDR_LEN);
 		if (ifidx == 0)
 			memcpy(dhd->pub.mac.octet, addr, ETHER_ADDR_LEN);
 	}
@@ -8594,7 +8594,7 @@ dhd_open(struct net_device *net)
 #endif
 
 		/* dhd_sync_with_dongle has been called in dhd_bus_start or wl_android_wifi_on */
-		memcpy(net->dev_addr, dhd->pub.mac.octet, ETHER_ADDR_LEN);
+		memcpy((void *)(net->dev_addr), dhd->pub.mac.octet, ETHER_ADDR_LEN);
 
 #ifdef TOE
 		/* Get current TOE mode from dongle */
@@ -12604,7 +12604,7 @@ dhd_register_if(dhd_pub_t *dhdp, int ifidx, bool need_rtnl_lock)
 		temp_addr[5] += ifidx;
 	}
 #endif
-	memcpy(net->dev_addr, temp_addr, ETHER_ADDR_LEN);
+	memcpy((void *)(net->dev_addr), temp_addr, ETHER_ADDR_LEN);
 
 	if (ifidx == 0)
 		printf("%s\n", dhd_version);
@@ -12613,7 +12613,7 @@ dhd_register_if(dhd_pub_t *dhdp, int ifidx, bool need_rtnl_lock)
 		wl_ext_iapsta_attach_netdev(net, ifidx, ifp->bssidx);
 #endif
 	if (ifidx != 0) {
-		if (_dhd_set_mac_address(dhd, ifidx, net->dev_addr) == 0)
+		if (_dhd_set_mac_address(dhd, ifidx, (uint8 *)(net->dev_addr)) == 0)
 			DHD_INFO(("%s: MACID is overwritten\n", __FUNCTION__));
 		else
 			DHD_ERROR(("%s: _dhd_set_mac_address() failed\n", __FUNCTION__));

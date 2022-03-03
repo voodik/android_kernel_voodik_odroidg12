@@ -4214,7 +4214,7 @@ wl_cfg80211_post_ifcreate(struct net_device *ndev,
 			WL_ERR(("set cur_etheraddr Error (%d)\n", ret));
 			goto fail;
 		}
-		memcpy(new_ndev->dev_addr, addr, ETH_ALEN);
+		memcpy((void *)(new_ndev->dev_addr), addr, ETH_ALEN);
 		WL_ERR(("Applying updated mac address to firmware\n"));
 	}
 

@@ -3247,13 +3247,16 @@ wl_ext_iapsta_attach_netdev(struct net_device *net, int ifidx, uint8 bssidx)
 			net->name[IFNAMSIZ-1] = '\0';
 		}
 		if (apsta_params->apstamode != ISTAAPAP_MODE) {
-			memcpy(net->dev_addr, primary_if->dev->dev_addr, ETHER_ADDR_LEN);
-			net->dev_addr[0] |= 0x02;
+			unsigned char primary_dev_addr[ETHER_ADDR_LEN];
+
+			memcpy((void *)primary_dev_addr, primary_if->dev->dev_addr, ETHER_ADDR_LEN);
+			primary_dev_addr[0] |= 0x02;
 			if (ifidx >= 2) {
-				net->dev_addr[4] ^= 0x80;
-				net->dev_addr[4] += ifidx;
-				net->dev_addr[5] += (ifidx-1);
+				primary_dev_addr[4] ^= 0x80;
+				primary_dev_addr[4] += ifidx;
+				primary_dev_addr[5] += (ifidx-1);
 			}
+			memcpy((void *)(net->dev_addr), primary_dev_addr, ETHER_ADDR_LEN);
 		}
 		if (cur_if->ifmode == ISTA_MODE) {
 			int pm;
