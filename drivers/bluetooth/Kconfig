@@ -393,6 +393,7 @@ config BT_WILINK
 config BT_MTKUART
 	tristate "MediaTek HCI UART driver"
 	depends on SERIAL_DEV_BUS
+	select BT_MTK
 	help
 	  MediaTek Bluetooth HCI UART driver.
 	  This driver is required if you want to use MediaTek Bluetooth
