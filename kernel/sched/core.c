@@ -2228,19 +2228,19 @@ static inline bool is_cpu_allowed(struct task_struct *p, int cpu)
 	if (is_migration_disabled(p))
 		return cpu_online(cpu);
 
+	/* check for all cases */
+	trace_android_rvh_is_cpu_allowed(cpu, &allowed);
+
 	/* Non kernel threads are not allowed during either online or offline. */
-	if (!(p->flags & PF_KTHREAD)) {
-		if (cpu_active(cpu) && task_cpu_possible(cpu, p)) {
-			trace_android_rvh_is_cpu_allowed(cpu, &allowed);
-			return allowed;
-		} else {
-			return false;
-		}
-	}
+	if (!(p->flags & PF_KTHREAD))
+		return cpu_active(cpu) && task_cpu_possible(cpu, p) && allowed;
 
 	/* KTHREAD_IS_PER_CPU is always allowed. */
 	if (kthread_is_per_cpu(p))
 		return cpu_online(cpu);
+
+	if (!allowed)
+		return false;
 
 	/* Regular kernel threads don't get to stay during offline. */
 	if (cpu_dying(cpu))
@@ -4476,6 +4476,7 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 	trace_android_rvh_finish_prio_fork(p);
 
 
+
 #ifdef CONFIG_SCHED_INFO
 	if (likely(sched_info_on()))
 		memset(&p->sched_info, 0, sizeof(p->sched_info));
@@ -5327,8 +5328,9 @@ void scheduler_tick(void)
 
 	rq_lock(rq, &rf);
 
-	trace_android_rvh_tick_entry(rq);
 	update_rq_clock(rq);
+	trace_android_rvh_tick_entry(rq);
+
 	thermal_pressure = arch_scale_thermal_pressure(cpu_of(rq));
 	update_thermal_load_avg(rq_clock_thermal(rq), rq, thermal_pressure);
 	curr->sched_class->task_tick(rq, curr, 0);
