@@ -9586,6 +9586,8 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		for (idx = 0; idx < osd_hw.osd_meson_dev.viu1_osd_count; idx++)
 			osd_reg_write(
 				hw_osd_reg_array[idx].osd_ctrl_stat, data32);
+		if (osd_hw.osd_meson_dev.osd_ver == OSD_HIGH_ONE)
+			osd_setting_default_hwc();
 	}
 	if (osd_hw.osd_meson_dev.osd_ver <= OSD_NORMAL) {
 		osd_vpp_misc =
@@ -9698,7 +9700,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		#endif
 		osd_set_basic_urgent(true);
 		osd_set_two_ports(true);
-		osd_setting_default_hwc();
 	}
 	/* disable deband as default */
 	if (osd_hw.osd_meson_dev.has_deband)
