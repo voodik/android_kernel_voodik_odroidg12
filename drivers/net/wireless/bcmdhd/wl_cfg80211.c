@@ -624,7 +624,9 @@ s32 wl_cfg80211_interface_ops(struct bcm_cfg80211 *cfg,
 s32 wl_cfg80211_add_del_bss(struct bcm_cfg80211 *cfg,
 	struct net_device *ndev, s32 bsscfg_idx,
 	enum nl80211_iftype iface_type, s32 del, u8 *addr);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 4, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41))
+static s32 wl_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev, unsigned int link_id);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 4, 0))
 static s32 wl_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev);
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 4, 0) */
 #ifdef GTK_OFFLOAD_SUPPORT
@@ -9948,7 +9950,14 @@ wl_cfg80211_start_ap(
 		goto fail;
 	}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41))
+	if ((err = wl_cfg80211_set_channel(wiphy, dev,
+		dev->ieee80211_ptr->u.ap.preset_chandef.chan,
+		NL80211_CHAN_HT20) < 0)) {
+		WL_ERR(("Set channel failed \n"));
+		goto fail;
+	}
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
 	if ((err = wl_cfg80211_set_channel(wiphy, dev,
 		dev->ieee80211_ptr->preset_chandef.chan,
 		NL80211_CHAN_HT20) < 0)) {
@@ -10049,7 +10058,11 @@ wl_cfg80211_start_ap(
 fail:
 	if (err) {
 		WL_ERR(("ADD/SET beacon failed\n"));
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41))
+		wl_cfg80211_stop_ap(wiphy, dev, 0);
+#else
 		wl_cfg80211_stop_ap(wiphy, dev);
+#endif
 		if (dev_role == NL80211_IFTYPE_AP) {
 			dhd->op_mode &= ~DHD_FLAG_HOSTAP_MODE;
 #ifdef PKT_FILTER_SUPPORT
@@ -10080,9 +10093,16 @@ fail:
 }
 
 static s32
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41))
+wl_cfg80211_stop_ap(
+	struct wiphy *wiphy,
+	struct net_device *dev,
+	unsigned int link_id)
+#else
 wl_cfg80211_stop_ap(
 	struct wiphy *wiphy,
 	struct net_device *dev)
+#endif
 {
 	int err = 0;
 	u32 dev_role = 0;
@@ -13391,7 +13411,14 @@ wl_bss_roaming_done(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 		MAC2STRDBG((const u8*)(&e->addr)), *channel);
 	wl_cfg80211_check_in4way(cfg, ndev, 0, WL_EXT_STATUS_CONNECTED, NULL);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41))
+	roam_info.links[0].channel = notify_channel;
+	roam_info.links[0].bssid = curbssid;
+	roam_info.req_ie = conn_info->req_ie;
+	roam_info.req_ie_len = conn_info->req_ie_len;
+	roam_info.resp_ie = conn_info->resp_ie;
+	roam_info.resp_ie_len = conn_info->resp_ie_len;
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0))
 	roam_info.channel = notify_channel;
 	roam_info.bssid = curbssid;
 	roam_info.req_ie = conn_info->req_ie;
@@ -20338,7 +20365,10 @@ wl_cfg80211_ch_switch_notify(struct net_device *dev, uint16 chanspec, struct wip
 		WL_ERR(("chspec_chandef failed\n"));
 		return;
 	}
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION (3, 8, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION (5, 15, 41))
+	freq = chandef.chan ? chandef.chan->center_freq : chandef.center_freq1;
+	cfg80211_ch_switch_notify(dev, &chandef, 0);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION (3, 8, 0))
 	freq = chandef.chan ? chandef.chan->center_freq : chandef.center_freq1;
 	cfg80211_ch_switch_notify(dev, &chandef);
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION (3, 5, 0) && (LINUX_VERSION_CODE <= (3, 7, 0)))
