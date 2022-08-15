@@ -1,3 +1,0 @@
-# Downstream boards maintained directly in this manifest branch
-per-file abi_gki_aarch64_cuttlefish = adelva@google.com, rammuthiah@google.com
-per-file abi_gki_aarch64_goldfish = rkir@google.com

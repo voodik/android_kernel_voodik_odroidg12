@@ -343,6 +343,10 @@ DECLARE_HOOK(android_vh_irqtime_account_process_tick,
 	TP_PROTO(struct task_struct *p, struct rq *rq, int user_tick, int ticks),
 	TP_ARGS(p, rq, user_tick, ticks));
 
+DECLARE_HOOK(android_vh_sched_pelt_multiplier,
+	TP_PROTO(unsigned int old, unsigned int cur, int *ret),
+	TP_ARGS(old, cur, ret));
+
 /* Conditionally defined upon CONFIG_UCLAMP_TASK */
 struct uclamp_se;
 DECLARE_RESTRICTED_HOOK(android_rvh_uclamp_eff_get,
@@ -383,6 +387,10 @@ DECLARE_RESTRICTED_HOOK(android_rvh_dequeue_task_fair,
 DECLARE_HOOK(android_vh_em_dev_register_pd,
 	TP_PROTO(bool *cond),
 	TP_ARGS(cond));
+
+DECLARE_HOOK(android_vh_sched_stat_runtime_rt,
+	TP_PROTO(struct task_struct *tsk, u64 delta),
+	TP_ARGS(tsk, delta));
 
 DECLARE_RESTRICTED_HOOK(android_rvh_post_init_entity_util_avg,
 	TP_PROTO(struct sched_entity *se),
@@ -428,6 +436,39 @@ DECLARE_HOOK(android_vh_dup_task_struct,
 DECLARE_HOOK(android_vh_account_task_time,
 	TP_PROTO(struct task_struct *p, struct rq *rq, int user_tick),
 	TP_ARGS(p, rq, user_tick));
+
+DECLARE_RESTRICTED_HOOK(android_rvh_set_cpus_allowed_comm,
+	TP_PROTO(struct task_struct *p, const struct cpumask *new_mask),
+	TP_ARGS(p, new_mask), 1);
+
+DECLARE_HOOK(android_vh_sched_setaffinity_early,
+	TP_PROTO(struct task_struct *p, const struct cpumask *new_mask, int *retval),
+	TP_ARGS(p, new_mask, retval));
+
+DECLARE_RESTRICTED_HOOK(android_rvh_attach_entity_load_avg,
+	TP_PROTO(struct cfs_rq *cfs_rq, struct sched_entity *se),
+	TP_ARGS(cfs_rq, se), 1);
+
+DECLARE_RESTRICTED_HOOK(android_rvh_detach_entity_load_avg,
+	TP_PROTO(struct cfs_rq *cfs_rq, struct sched_entity *se),
+	TP_ARGS(cfs_rq, se), 1);
+
+DECLARE_RESTRICTED_HOOK(android_rvh_update_load_avg,
+	TP_PROTO(u64 now, struct cfs_rq *cfs_rq, struct sched_entity *se),
+	TP_ARGS(now, cfs_rq, se), 1);
+
+DECLARE_RESTRICTED_HOOK(android_rvh_remove_entity_load_avg,
+	TP_PROTO(struct cfs_rq *cfs_rq, struct sched_entity *se),
+	TP_ARGS(cfs_rq, se), 1);
+
+DECLARE_RESTRICTED_HOOK(android_rvh_update_blocked_fair,
+	TP_PROTO(struct rq *rq),
+	TP_ARGS(rq), 1);
+
+DECLARE_RESTRICTED_HOOK(android_rvh_update_rt_rq_load_avg,
+	TP_PROTO(u64 now, struct rq *rq, struct task_struct *tsk, int running),
+	TP_ARGS(now, rq, tsk, running), 1);
+
 /* macro versions of hooks are no longer required */
 
 #endif /* _TRACE_HOOK_SCHED_H */
