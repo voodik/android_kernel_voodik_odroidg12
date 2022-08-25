@@ -1,0 +1,48 @@
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/{
+	fragment@0 {
+		target-path = "/";
+
+		__overlay__ {
+			matrix_keypad: matrix-keypad {
+				compatible = "gpio-matrix-keypad";
+				col-gpios = <
+					&gpio GPIOX_4 GPIO_ACTIVE_HIGH
+					&gpio GPIOX_0 GPIO_ACTIVE_HIGH
+					&gpio GPIOX_1 GPIO_ACTIVE_HIGH
+					&gpio GPIOX_2  GPIO_ACTIVE_HIGH
+					>;
+				row-gpios = <
+					&gpio GPIOX_14 GPIO_ACTIVE_HIGH
+					&gpio GPIOX_15 GPIO_ACTIVE_HIGH
+					&gpio GPIOH_7 GPIO_ACTIVE_HIGH
+					&gpio GPIOH_5 GPIO_ACTIVE_HIGH
+					>;
+				/* sample keymap */
+				linux,keymap = <
+					0x00000074 /* row 0, col 0, KEY_POWER */
+					0x00010052 /* row 0, col 1, KEY_KP0 */
+					0x0002004f /* row 0, col 2, KEY_KP1 */
+					0x00030050 /* row 0, col 3, KEY_KP2 */
+					0x01000051 /* row 1, col 0, KEY_KP3 */
+					0x0101004b /* row 1, col 1, KEY_KP4 */
+					0x0102004c /* row 1, col 2, KEY_KP5 */
+					0x0103004d /* row 1, col 3, KEY_KP6 */
+					0x02000047 /* row 2, col 0, KEY_KP7 */
+					0x02010048 /* row 2, col 1, KEY_KP8 */
+					0x02020049 /* row 2, col 2, KEY_KP9 */
+					>;
+				gpio-activelow;
+				debounce-delay-ms = <100>;
+				col-scan-delay-us = <500>;
+				col-switch-delay-ms = <20>;
+				linux,no-autorepeat;
+			};
+		};
+	};
+};
