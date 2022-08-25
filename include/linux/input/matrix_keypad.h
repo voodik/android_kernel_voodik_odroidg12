@@ -63,6 +63,7 @@ struct matrix_keypad_platform_data {
 	unsigned int	num_col_gpios;
 
 	unsigned int	col_scan_delay_us;
+	unsigned int	col_switch_delay_ms;
 
 	/* key debounce interval in milli-second */
 	unsigned int	debounce_ms;
