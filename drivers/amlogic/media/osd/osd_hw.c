@@ -488,23 +488,6 @@ static struct viu2_osd_reg_item viu2_osd_reg_table[VIU2_OSD_REG_NUM] = {
 		{VIU2_OSD1_DIMM_CTRL, 0x0, 0x7fffffff},
 };
 
-#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-static bool recovery;
-static int __init get_recovery_part(char *str)
-{
-	if (str == NULL)
-		return -EINVAL;
-
-	if (!(strcmp(str, "recovery")))
-		recovery = 1;
-	else
-		recovery = 0;
-
-	return 0;
-}
-__setup("recovery_part=", get_recovery_part);
-#endif
-
 static int osd_setting_blending_scope(u32 index);
 static int vpp_blend_setting_default(u32 index);
 
@@ -9717,10 +9700,6 @@ void osd_init_hw(u32 logo_loaded, u32 osd_probe,
 		#endif
 		osd_set_basic_urgent(true);
 		osd_set_two_ports(true);
-#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-		if (recovery)
-			osd_setting_default_hwc();
-#endif
 	}
 	/* disable deband as default */
 	if (osd_hw.osd_meson_dev.has_deband)
