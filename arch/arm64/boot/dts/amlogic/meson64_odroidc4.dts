@@ -76,7 +76,7 @@
 			reusable;
 			size = <0x0 0x800000>;
 			alignment = <0x0 0x400000>;
-			alloc-ranges = <0x0 0x3d800000 0x0 0x800000>;
+			alloc-ranges = <0x0 0x7f800000 0x0 0x800000>;
 		};
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
@@ -365,7 +365,7 @@
 		/*1920*1080*4*3 = 0x17BB000*/
 		pxp_mode = <0>; /** 0:normal mode 1:pxp mode */
 		mem_alloc = <1>;
-		logo_addr = "0x3d800000";
+		logo_addr = "0x3f800000";
 		clocks = <&clkc CLKID_VPU_CLKC_MUX>;
 		clock-names = "vpu_clkc";
 	};
