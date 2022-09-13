@@ -123,9 +123,6 @@ struct dwav_usb_mt  {
 	struct finger_t		*finger;
 };
 
-bool disable_vu7;
-bool touch_invert_x;
-bool touch_invert_y;
 
 extern bool get_touch_invert_x(void);
 extern bool get_touch_invert_y(void);
@@ -135,6 +132,8 @@ extern bool get_disable_vu7(void);
 static void dwav_usb_mt_report(struct dwav_usb_mt *dwav_usb_mt)
 {
 	int	id, max_x, max_y, max_press, max_finger;
+	bool touch_invert_x;
+	bool touch_invert_y;
 
 	max_x      = DEV_INFO[dwav_usb_mt->dev_id].max_x;
 	max_y      = DEV_INFO[dwav_usb_mt->dev_id].max_y;
@@ -437,6 +436,7 @@ static int dwav_usb_mt_init(struct dwav_usb_mt *dwav_usb_mt, void *dev)
 /*-------------------------------------------------------------------------*/
 static bool dwav_usb_mt_ignore(const struct usb_device_id *id)
 {
+	bool disable_vu7;
 	disable_vu7 = get_disable_vu7();
 	if (disable_vu7 && id->driver_info == ODROID_VU7)
 		return true;

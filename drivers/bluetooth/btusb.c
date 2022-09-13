@@ -2939,7 +2939,7 @@ static int btusb_probe(struct usb_interface *intf,
 
 #ifdef CONFIG_BT_HCIBTUSB_RTL
 	if (id->driver_info & BTUSB_REALTEK && !exist_csr_module) {
-		BT_DBG("RealTek module detected\n");
+		BT_INFO("RealTek module detected");
 		hdev->setup = btrtl_setup_realtek;
 		hdev->shutdown = btrtl_shutdown_realtek;
 
@@ -2979,7 +2979,7 @@ static int btusb_probe(struct usb_interface *intf,
 		struct usb_device *udev = data->udev;
 		u16 bcdDevice = le16_to_cpu(udev->descriptor.bcdDevice);
 #ifdef CONFIG_BT_HCIBTUSB_RTL
-		BT_DBG("CSR module detected\n");
+		BT_INFO("CSR module detected");
 		exist_csr_module = 1;
 #endif
 

@@ -867,8 +867,6 @@ static int mt_compute_slot(struct mt_device *td, struct mt_application *app,
 	return input_mt_get_slot_by_key(input, *slot->contactid);
 }
 
-bool touch_invert_x;
-bool touch_invert_y;
 
 extern bool get_touch_invert_x(void);
 extern bool get_touch_invert_y(void);
@@ -951,9 +949,6 @@ static int mt_touch_event(struct hid_device *hid, struct hid_field *field,
 	return 1;
 }
 
-extern bool touch_invert_x;
-extern bool touch_invert_y;
-
 static int mt_process_slot(struct mt_device *td, struct input_dev *input,
 			    struct mt_application *app,
 			    struct mt_usages *slot)
@@ -966,6 +961,8 @@ static int mt_process_slot(struct mt_device *td, struct input_dev *input,
 	int active;
 	int slotnum;
 	int tool = MT_TOOL_FINGER;
+	bool touch_invert_x;
+	bool touch_invert_y;
 
 	if (!slot)
 		return -EINVAL;
