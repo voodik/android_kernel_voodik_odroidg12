@@ -42,7 +42,7 @@
 					dev = "/dev/block/odm";
 					type = "vfat";
 					mnt_flags = "rw";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,check";
 				};
 			};
 		};
