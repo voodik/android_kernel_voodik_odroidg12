@@ -4734,7 +4734,9 @@ int dhd_sendup(dhd_pub_t *dhdp, int ifidx, void *p)
 			 */
 			bcm_object_trace_opr(skb, BCM_OBJDBG_REMOVE,
 				__FUNCTION__, __LINE__);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+			netif_rx(skb);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 			netif_rx_ni(skb);
 #else
 			ulong flags;
@@ -5599,10 +5601,12 @@ dhd_event_logtrace_process(struct work_struct * work)
 #else /* !DHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT */
 		/* Do not call netif_recieve_skb as this workqueue scheduler is not from NAPI
 		 * Also as we are not in INTR context, do not call netif_rx, instead call
-		 * netif_rx_ni (for kerenl >= 2.6) which  does netif_rx, disables irq, raise
+		 * netif_rx_ni (for kernel >= 2.6) which does netif_rx, disables irq, raise
 		 * NET_IF_RX softirq and enables interrupts back
 		 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#if LINUX_KERNEL_VERSION >= KERNEL_VERSION(5, 15, 0)
+		netif_rx(skb);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 		netif_rx_ni(skb);
 #else
 		{
@@ -6176,7 +6180,11 @@ dhd_rx_frame(dhd_pub_t *dhdp, int ifidx, void *pktbuf, int numpkt, uint8 chan)
 #else /* !defined(DHD_LB_RXP) */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 				DHD_PERIM_UNLOCK_ALL((dhd->fwder_unit % FWDER_MAX_UNIT));
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+				netif_rx(skb);
+#else
 				netif_rx_ni(skb);
+#endif
 				DHD_PERIM_LOCK_ALL((dhd->fwder_unit % FWDER_MAX_UNIT));
 #else
 				ulong flags;
@@ -6638,7 +6646,9 @@ dhd_rxf_thread(void *data)
 				PKTSETNEXT(pub->osh, skb, NULL);
 				bcm_object_trace_opr(skb, BCM_OBJDBG_REMOVE,
 					__FUNCTION__, __LINE__);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+				netif_rx(skb);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 				netif_rx_ni(skb);
 #else
 				netif_rx(skb);
@@ -6823,7 +6833,11 @@ dhd_sched_rxf(dhd_pub_t *dhdp, void *skb)
 			PKTSETNEXT(dhdp->osh, skbp, NULL);
 			bcm_object_trace_opr(skb, BCM_OBJDBG_REMOVE,
 				__FUNCTION__, __LINE__);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+			netif_rx(skbp);
+#else
 			netif_rx_ni(skbp);
+#endif
 			skbp = skbnext;
 		}
 		DHD_ERROR(("send skb to kernel backlog without rxf_thread\n"));
@@ -7222,7 +7236,11 @@ dhd_rx_mon_pkt(dhd_pub_t *dhdp, host_rxbuf_cmpl_t* msg, void *pkt, int ifidx)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 		DHD_PERIM_UNLOCK_ALL((dhd->fwder_unit % FWDER_MAX_UNIT));
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+		netif_rx(dhd->monitor_skb);
+#else
 		netif_rx_ni(dhd->monitor_skb);
+#endif
 		DHD_PERIM_LOCK_ALL((dhd->fwder_unit % FWDER_MAX_UNIT));
 #else
 		ulong flags;
@@ -14096,7 +14114,11 @@ dhd_sendup_log(dhd_pub_t *dhdp, void *data, int data_len)
 		if (in_interrupt()) {
 			netif_rx(skb);
 		} else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+			netif_rx(skb);
+#else
 			netif_rx_ni(skb);
+#endif
 		}
 	} else {
 		/* Could not allocate a sk_buf */
@@ -19315,7 +19337,7 @@ static struct dhd_attr dhd_attr_lbtxp =
 #endif /* DHD_LB_TXP */
 
 /* Attribute object that gets registered with "bcm-dhd" kobject tree */
-static struct attribute *default_attrs[] = {
+static struct attribute *debug_lb_attrs[] = {
 #if defined(DHD_TRACE_WAKE_LOCK)
 	&dhd_attr_wklock.attr,
 #endif /* DHD_TRACE_WAKE_LOCK */
@@ -19324,6 +19346,9 @@ static struct attribute *default_attrs[] = {
 #endif /* DHD_LB_TXP */
 	NULL
 };
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+ATTRIBUTE_GROUPS(debug_lb);
+#endif
 
 #define to_dhd(k) container_of(k, struct dhd_info, dhd_kobj)
 #define to_attr(a) container_of(a, struct dhd_attr, attr)
@@ -19387,7 +19412,11 @@ static struct sysfs_ops dhd_sysfs_ops = {
 
 static struct kobj_type dhd_ktype = {
 	.sysfs_ops = &dhd_sysfs_ops,
-	.default_attrs = default_attrs,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	.default_groups = debug_lb_groups,
+#else
+	.default_attrs = debug_lb_attrs,
+#endif
 };
 
 /* Create a kobject and attach to sysfs interface */

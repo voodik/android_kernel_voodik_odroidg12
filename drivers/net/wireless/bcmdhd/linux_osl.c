@@ -1806,9 +1806,17 @@ osl_dma_free_consistent(osl_t *osh, void *va, uint size, dmaaddr_t pa)
 #else
 #ifdef BCMDMA64OSL
 	PHYSADDRTOULONG(pa, paddr);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+	dma_free_coherent(osh->pdev, size, va, paddr);
+#else
 	pci_free_consistent(osh->pdev, size, va, paddr);
+#endif
+#else
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+	dma_free_coherent(osh->pdev, size, va, (dma_addr_t)pa);
 #else
 	pci_free_consistent(osh->pdev, size, va, (dma_addr_t)pa);
+#endif
 #endif /* BCMDMA64OSL */
 #endif /* __ARM_ARCH_7A__ && !DHD_USE_COHERENT_MEM_FOR_RING */
 #else
@@ -1825,13 +1833,16 @@ osl_dma_map(osl_t *osh, void *va, uint size, int direction, void *p, hnddma_seg_
 	int ret;
 
 	ASSERT((osh && (osh->magic == OS_HANDLE_MAGIC)));
-	dir = (direction == DMA_TX)? PCI_DMA_TODEVICE: PCI_DMA_FROMDEVICE;
+	dir = (direction == DMA_TX)? DMA_TO_DEVICE: DMA_FROM_DEVICE;
 
-
-
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+	map_addr = dma_map_single(osh->pdev, va, size, dir);
+#else
 	map_addr = pci_map_single(osh->pdev, va, size, dir);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
+#endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+	ret = dma_mapping_error(osh->pdev, map_addr);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27))
 	ret = pci_dma_mapping_error(osh->pdev, map_addr);
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 5))
 	ret = pci_dma_mapping_error(map_addr);
@@ -1861,12 +1872,20 @@ osl_dma_unmap(osl_t *osh, dmaaddr_t pa, uint size, int direction)
 	ASSERT((osh && (osh->magic == OS_HANDLE_MAGIC)));
 
 
-	dir = (direction == DMA_TX)? PCI_DMA_TODEVICE: PCI_DMA_FROMDEVICE;
+	dir = (direction == DMA_TX)? DMA_TO_DEVICE: DMA_FROM_DEVICE;
 #ifdef BCMDMA64OSL
 	PHYSADDRTOULONG(pa, paddr);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+	dma_unmap_single(osh->pdev, paddr, size, dir);
+#else
 	pci_unmap_single(osh->pdev, paddr, size, dir);
+#endif
+#else
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+	dma_unmap_single(osh->pdev, (uint32)pa, size, dir);
 #else
 	pci_unmap_single(osh->pdev, (uint32)pa, size, dir);
+#endif
 #endif /* BCMDMA64OSL */
 }
 
