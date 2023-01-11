@@ -941,6 +941,12 @@ config HID_XINMO
 	standard. Currently only supports the Xin-Mo Dual Arcade. Say Y here
 	if you have a Xin-Mo Dual Arcade controller.
 
+config HID_XPADNEO
+	tristate "Xbox One Wireless Gamepad support"
+	depends on HID
+	---help---
+	Support for Xbox One Wireless Gamepad.
+
 config HID_ZEROPLUS
 	tristate "Zeroplus based game controller support"
 	depends on HID
