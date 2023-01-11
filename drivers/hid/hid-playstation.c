@@ -5,7 +5,7 @@
  *  Copyright (c) 2020-2022 Sony Interactive Entertainment
  */
 
-#include <linux/bits.h>
+#include <linux/bitops.h>
 #include <linux/crc32.h>
 #include <linux/device.h>
 #include <linux/hid.h>
@@ -196,7 +196,9 @@ struct dualsense_touch_point {
 	uint8_t x_hi:4, y_lo:4;
 	uint8_t y_hi;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualsense_touch_point) == 4);
+#endif
 
 /* Main DualSense input report excluding any BT/USB specific headers. */
 struct dualsense_input_report {
@@ -221,7 +223,9 @@ struct dualsense_input_report {
 	uint8_t reserved4[10];
 } __packed;
 /* Common input report size shared equals the size of the USB report minus 1 byte for ReportID. */
+#ifdef static_assert
 static_assert(sizeof(struct dualsense_input_report) == DS_INPUT_REPORT_USB_SIZE - 1);
+#endif
 
 /* Common data between DualSense BT/USB main output report. */
 struct dualsense_output_report_common {
@@ -249,7 +253,9 @@ struct dualsense_output_report_common {
 	uint8_t lightbar_green;
 	uint8_t lightbar_blue;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualsense_output_report_common) == 47);
+#endif
 
 struct dualsense_output_report_bt {
 	uint8_t report_id; /* 0x31 */
@@ -259,14 +265,18 @@ struct dualsense_output_report_bt {
 	uint8_t reserved[24];
 	__le32 crc32;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualsense_output_report_bt) == DS_OUTPUT_REPORT_BT_SIZE);
+#endif
 
 struct dualsense_output_report_usb {
 	uint8_t report_id; /* 0x02 */
 	struct dualsense_output_report_common common;
 	uint8_t reserved[15];
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualsense_output_report_usb) == DS_OUTPUT_REPORT_USB_SIZE);
+#endif
 
 /*
  * The DualSense has a main output report used to control most features. It is
@@ -406,13 +416,17 @@ struct dualshock4_touch_point {
 	uint8_t x_hi:4, y_lo:4;
 	uint8_t y_hi;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_touch_point) == 4);
+#endif
 
 struct dualshock4_touch_report {
 	uint8_t timestamp;
 	struct dualshock4_touch_point points[2];
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_touch_report) == 9);
+#endif
 
 /* Main DualShock4 input report excluding any BT/USB specific headers. */
 struct dualshock4_input_report_common {
@@ -431,7 +445,9 @@ struct dualshock4_input_report_common {
 	uint8_t status[2];
 	uint8_t reserved3;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_input_report_common) == 32);
+#endif
 
 struct dualshock4_input_report_usb {
 	uint8_t report_id; /* 0x01 */
@@ -440,7 +456,9 @@ struct dualshock4_input_report_usb {
 	struct dualshock4_touch_report touch_reports[3];
 	uint8_t reserved[3];
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_input_report_usb) == DS4_INPUT_REPORT_USB_SIZE);
+#endif
 
 struct dualshock4_input_report_bt {
 	uint8_t report_id; /* 0x11 */
@@ -451,7 +469,9 @@ struct dualshock4_input_report_bt {
 	uint8_t reserved2[2];
 	__le32 crc32;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_input_report_bt) == DS4_INPUT_REPORT_BT_SIZE);
+#endif
 
 /* Common data between Bluetooth and USB DualShock4 output reports. */
 struct dualshock4_output_report_common {
@@ -475,7 +495,9 @@ struct dualshock4_output_report_usb {
 	struct dualshock4_output_report_common common;
 	uint8_t reserved[21];
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_output_report_usb) == DS4_OUTPUT_REPORT_USB_SIZE);
+#endif
 
 struct dualshock4_output_report_bt {
 	uint8_t report_id; /* 0x11 */
@@ -485,7 +507,9 @@ struct dualshock4_output_report_bt {
 	uint8_t reserved[61];
 	__le32 crc32;
 } __packed;
+#ifdef static_assert
 static_assert(sizeof(struct dualshock4_output_report_bt) == DS4_OUTPUT_REPORT_BT_SIZE);
+#endif
 
 /*
  * The DualShock4 has a main output report used to control most features. It is
@@ -570,18 +594,26 @@ static int ps_devices_list_remove(struct ps_device *dev)
 
 static int ps_device_set_player_id(struct ps_device *dev)
 {
-	int ret = ida_alloc(&ps_player_id_allocator, GFP_KERNEL);
+	int player_id;
+	int ret;
+
+	do {
+		if (!ida_pre_get(&ps_player_id_allocator, GFP_KERNEL))
+			return -ENODEV;
+
+		ret = ida_get_new(&ps_player_id_allocator, &player_id);
+	} while (ret == -EAGAIN);
 
 	if (ret < 0)
 		return ret;
 
-	dev->player_id = ret;
+	dev->player_id = player_id;
 	return 0;
 }
 
 static void ps_device_release_player_id(struct ps_device *dev)
 {
-	ida_free(&ps_player_id_allocator, dev->player_id);
+	ida_remove(&ps_player_id_allocator, dev->player_id);
 
 	dev->player_id = U32_MAX;
 }
@@ -918,7 +950,7 @@ static ssize_t firmware_version_show(struct device *dev,
 	struct hid_device *hdev = to_hid_device(dev);
 	struct ps_device *ps_dev = hid_get_drvdata(hdev);
 
-	return sysfs_emit(buf, "0x%08x\n", ps_dev->fw_version);
+	return snprintf(buf, PAGE_SIZE, "0x%08x\n", ps_dev->fw_version);
 }
 
 static DEVICE_ATTR_RO(firmware_version);
@@ -930,7 +962,7 @@ static ssize_t hardware_version_show(struct device *dev,
 	struct hid_device *hdev = to_hid_device(dev);
 	struct ps_device *ps_dev = hid_get_drvdata(hdev);
 
-	return sysfs_emit(buf, "0x%08x\n", ps_dev->hw_version);
+	return snprintf(buf, PAGE_SIZE, "0x%08x\n", ps_dev->hw_version);
 }
 
 static DEVICE_ATTR_RO(hardware_version);
@@ -1134,7 +1166,7 @@ static int dualsense_player_led_set_brightness(struct led_classdev *led, enum le
 	ds->update_player_leds = true;
 	spin_unlock_irqrestore(&ds->base.lock, flags);
 
-	schedule_work(&ds->output_worker);
+	dualsense_schedule_work(ds);
 
 	return 0;
 }
@@ -2611,7 +2643,7 @@ static int ps_probe(struct hid_device *hdev, const struct hid_device_id *id)
 		}
 	}
 
-	ret = devm_device_add_group(&hdev->dev, &ps_device_attribute_group);
+	ret = sysfs_create_group(&hdev->dev.kobj, &ps_device_attribute_group);
 	if (ret) {
 		hid_err(hdev, "Failed to register sysfs nodes.\n");
 		goto err_close;
