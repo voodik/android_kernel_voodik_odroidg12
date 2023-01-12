@@ -19,6 +19,16 @@
 
 #include "hid-ids.h"
 
+static bool param_disable_sensors = 0;
+module_param_named(disable_sensors, param_disable_sensors, bool, 0444);
+MODULE_PARM_DESC(disable_sensors,
+		"(bool) Disable sensors. 1: disabled, 0: enabled.");
+
+static bool param_disable_touchpad = 0;
+module_param_named(disable_touchpad, param_disable_touchpad, bool, 0444);
+MODULE_PARM_DESC(disable_touchpad,
+		"(bool) Disable touchpad. 1: disabled, 0: enabled.");
+
 /* List of connected playstation devices. */
 static DEFINE_MUTEX(ps_devices_lock);
 static LIST_HEAD(ps_devices_list);
@@ -1387,6 +1397,7 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
 	}
 	ds->last_btn_mic_state = btn_mic_state;
 
+	if (!param_disable_sensors) {
 	/* Parse and calibrate gyroscope data. */
 	for (i = 0; i < ARRAY_SIZE(ds_report->gyro); i++) {
 		int raw_data = (short)le16_to_cpu(ds_report->gyro[i]);
@@ -1424,6 +1435,9 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
 	ds->prev_sensor_timestamp = sensor_timestamp;
 	input_event(ds->sensors, EV_MSC, MSC_TIMESTAMP, ds->sensor_timestamp_us);
 	input_sync(ds->sensors);
+	}
+
+	if (!param_disable_touchpad) {
 
 	for (i = 0; i < ARRAY_SIZE(ds_report->points); i++) {
 		struct dualsense_touch_point *point = &ds_report->points[i];
@@ -1443,6 +1457,8 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
 	input_mt_sync_frame(ds->touchpad);
 	input_report_key(ds->touchpad, BTN_LEFT, ds_report->buttons[2] & DS_BUTTONS2_TOUCHPAD);
 	input_sync(ds->touchpad);
+
+	}
 
 	battery_data = ds_report->status & DS_STATUS_BATTERY_CAPACITY;
 	charging_status = (ds_report->status & DS_STATUS_CHARGING) >> DS_STATUS_CHARGING_SHIFT;
@@ -1668,17 +1684,20 @@ static struct ps_device *dualsense_create(struct hid_device *hdev)
 	/* Use gamepad input device name as primary device name for e.g. LEDs */
 	ps_dev->input_dev_name = dev_name(&ds->gamepad->dev);
 
-	ds->sensors = ps_sensors_create(hdev, DS_ACC_RANGE, DS_ACC_RES_PER_G,
-			DS_GYRO_RANGE, DS_GYRO_RES_PER_DEG_S);
-	if (IS_ERR(ds->sensors)) {
-		ret = PTR_ERR(ds->sensors);
-		goto err;
+	if (!param_disable_sensors) {
+		ds->sensors = ps_sensors_create(hdev, DS_ACC_RANGE, DS_ACC_RES_PER_G,
+				DS_GYRO_RANGE, DS_GYRO_RES_PER_DEG_S);
+		if (IS_ERR(ds->sensors)) {
+			ret = PTR_ERR(ds->sensors);
+			goto err;
+		}
 	}
-
-	ds->touchpad = ps_touchpad_create(hdev, DS_TOUCHPAD_WIDTH, DS_TOUCHPAD_HEIGHT, 2);
-	if (IS_ERR(ds->touchpad)) {
-		ret = PTR_ERR(ds->touchpad);
-		goto err;
+	if (!param_disable_touchpad) {
+		ds->touchpad = ps_touchpad_create(hdev, DS_TOUCHPAD_WIDTH, DS_TOUCHPAD_HEIGHT, 2);
+		if (IS_ERR(ds->touchpad)) {
+			ret = PTR_ERR(ds->touchpad);
+			goto err;
+		}
 	}
 
 	ret = ps_device_register_battery(ps_dev);
@@ -2210,67 +2229,70 @@ static int dualshock4_parse_report(struct ps_device *ps_dev, struct hid_report *
 	input_report_key(ds4->gamepad, BTN_MODE,   ds4_report->buttons[2] & DS_BUTTONS2_PS_HOME);
 	input_sync(ds4->gamepad);
 
-	/* Parse and calibrate gyroscope data. */
-	for (i = 0; i < ARRAY_SIZE(ds4_report->gyro); i++) {
-		int raw_data = (short)le16_to_cpu(ds4_report->gyro[i]);
-		int calib_data = mult_frac(ds4->gyro_calib_data[i].sens_numer,
-					   raw_data - ds4->gyro_calib_data[i].bias,
-					   ds4->gyro_calib_data[i].sens_denom);
+	if (!param_disable_sensors) {
+		/* Parse and calibrate gyroscope data. */
+		for (i = 0; i < ARRAY_SIZE(ds4_report->gyro); i++) {
+			int raw_data = (short)le16_to_cpu(ds4_report->gyro[i]);
+			int calib_data = mult_frac(ds4->gyro_calib_data[i].sens_numer,
+						raw_data - ds4->gyro_calib_data[i].bias,
+						ds4->gyro_calib_data[i].sens_denom);
 
-		input_report_abs(ds4->sensors, ds4->gyro_calib_data[i].abs_code, calib_data);
-	}
-
-	/* Parse and calibrate accelerometer data. */
-	for (i = 0; i < ARRAY_SIZE(ds4_report->accel); i++) {
-		int raw_data = (short)le16_to_cpu(ds4_report->accel[i]);
-		int calib_data = mult_frac(ds4->accel_calib_data[i].sens_numer,
-					   raw_data - ds4->accel_calib_data[i].bias,
-					   ds4->accel_calib_data[i].sens_denom);
-
-		input_report_abs(ds4->sensors, ds4->accel_calib_data[i].abs_code, calib_data);
-	}
-
-	/* Convert timestamp (in 5.33us unit) to timestamp_us */
-	sensor_timestamp = le16_to_cpu(ds4_report->sensor_timestamp);
-	if (!ds4->sensor_timestamp_initialized) {
-		ds4->sensor_timestamp_us = DIV_ROUND_CLOSEST(sensor_timestamp*16, 3);
-		ds4->sensor_timestamp_initialized = true;
-	} else {
-		uint16_t delta;
-
-		if (ds4->prev_sensor_timestamp > sensor_timestamp)
-			delta = (U16_MAX - ds4->prev_sensor_timestamp + sensor_timestamp + 1);
-		else
-			delta = sensor_timestamp - ds4->prev_sensor_timestamp;
-		ds4->sensor_timestamp_us += DIV_ROUND_CLOSEST(delta*16, 3);
-	}
-	ds4->prev_sensor_timestamp = sensor_timestamp;
-	input_event(ds4->sensors, EV_MSC, MSC_TIMESTAMP, ds4->sensor_timestamp_us);
-	input_sync(ds4->sensors);
-
-	for (i = 0; i < num_touch_reports; i++) {
-		struct dualshock4_touch_report *touch_report = &touch_reports[i];
-
-		for (j = 0; j < ARRAY_SIZE(touch_report->points); j++) {
-			struct dualshock4_touch_point *point = &touch_report->points[j];
-			bool active = (point->contact & DS4_TOUCH_POINT_INACTIVE) ? false : true;
-
-			input_mt_slot(ds4->touchpad, j);
-			input_mt_report_slot_state(ds4->touchpad, MT_TOOL_FINGER, active);
-
-			if (active) {
-				int x = (point->x_hi << 8) | point->x_lo;
-				int y = (point->y_hi << 4) | point->y_lo;
-
-				input_report_abs(ds4->touchpad, ABS_MT_POSITION_X, x);
-				input_report_abs(ds4->touchpad, ABS_MT_POSITION_Y, y);
-			}
+			input_report_abs(ds4->sensors, ds4->gyro_calib_data[i].abs_code, calib_data);
 		}
-		input_mt_sync_frame(ds4->touchpad);
-		input_sync(ds4->touchpad);
-	}
-	input_report_key(ds4->touchpad, BTN_LEFT, ds4_report->buttons[2] & DS_BUTTONS2_TOUCHPAD);
 
+		/* Parse and calibrate accelerometer data. */
+		for (i = 0; i < ARRAY_SIZE(ds4_report->accel); i++) {
+			int raw_data = (short)le16_to_cpu(ds4_report->accel[i]);
+			int calib_data = mult_frac(ds4->accel_calib_data[i].sens_numer,
+						raw_data - ds4->accel_calib_data[i].bias,
+						ds4->accel_calib_data[i].sens_denom);
+
+			input_report_abs(ds4->sensors, ds4->accel_calib_data[i].abs_code, calib_data);
+		}
+
+		/* Convert timestamp (in 5.33us unit) to timestamp_us */
+		sensor_timestamp = le16_to_cpu(ds4_report->sensor_timestamp);
+		if (!ds4->sensor_timestamp_initialized) {
+			ds4->sensor_timestamp_us = DIV_ROUND_CLOSEST(sensor_timestamp*16, 3);
+			ds4->sensor_timestamp_initialized = true;
+		} else {
+			uint16_t delta;
+
+			if (ds4->prev_sensor_timestamp > sensor_timestamp)
+				delta = (U16_MAX - ds4->prev_sensor_timestamp + sensor_timestamp + 1);
+			else
+				delta = sensor_timestamp - ds4->prev_sensor_timestamp;
+			ds4->sensor_timestamp_us += DIV_ROUND_CLOSEST(delta*16, 3);
+		}
+		ds4->prev_sensor_timestamp = sensor_timestamp;
+		input_event(ds4->sensors, EV_MSC, MSC_TIMESTAMP, ds4->sensor_timestamp_us);
+		input_sync(ds4->sensors);
+	}
+
+	if (!param_disable_touchpad) {
+		for (i = 0; i < num_touch_reports; i++) {
+			struct dualshock4_touch_report *touch_report = &touch_reports[i];
+
+			for (j = 0; j < ARRAY_SIZE(touch_report->points); j++) {
+				struct dualshock4_touch_point *point = &touch_report->points[j];
+				bool active = (point->contact & DS4_TOUCH_POINT_INACTIVE) ? false : true;
+
+				input_mt_slot(ds4->touchpad, j);
+				input_mt_report_slot_state(ds4->touchpad, MT_TOOL_FINGER, active);
+
+				if (active) {
+					int x = (point->x_hi << 8) | point->x_lo;
+					int y = (point->y_hi << 4) | point->y_lo;
+
+					input_report_abs(ds4->touchpad, ABS_MT_POSITION_X, x);
+					input_report_abs(ds4->touchpad, ABS_MT_POSITION_Y, y);
+				}
+			}
+			input_mt_sync_frame(ds4->touchpad);
+			input_sync(ds4->touchpad);
+		}
+		input_report_key(ds4->touchpad, BTN_LEFT, ds4_report->buttons[2] & DS_BUTTONS2_TOUCHPAD);
+	}
 	/*
 	 * Interpretation of the battery_capacity data depends on the cable state.
 	 * When no cable is connected (bit4 is 0):
@@ -2542,17 +2564,21 @@ static struct ps_device *dualshock4_create(struct hid_device *hdev)
 	/* Use gamepad input device name as primary device name for e.g. LEDs */
 	ps_dev->input_dev_name = dev_name(&ds4->gamepad->dev);
 
-	ds4->sensors = ps_sensors_create(hdev, DS4_ACC_RANGE, DS4_ACC_RES_PER_G,
-			DS4_GYRO_RANGE, DS4_GYRO_RES_PER_DEG_S);
-	if (IS_ERR(ds4->sensors)) {
-		ret = PTR_ERR(ds4->sensors);
-		goto err;
+	if (!param_disable_sensors) {
+		ds4->sensors = ps_sensors_create(hdev, DS4_ACC_RANGE, DS4_ACC_RES_PER_G,
+				DS4_GYRO_RANGE, DS4_GYRO_RES_PER_DEG_S);
+		if (IS_ERR(ds4->sensors)) {
+			ret = PTR_ERR(ds4->sensors);
+			goto err;
+		}
 	}
 
-	ds4->touchpad = ps_touchpad_create(hdev, DS4_TOUCHPAD_WIDTH, DS4_TOUCHPAD_HEIGHT, 2);
-	if (IS_ERR(ds4->touchpad)) {
-		ret = PTR_ERR(ds4->touchpad);
-		goto err;
+	if (!param_disable_touchpad) {
+		ds4->touchpad = ps_touchpad_create(hdev, DS4_TOUCHPAD_WIDTH, DS4_TOUCHPAD_HEIGHT, 2);
+		if (IS_ERR(ds4->touchpad)) {
+			ret = PTR_ERR(ds4->touchpad);
+			goto err;
+		}
 	}
 
 	ret = ps_device_register_battery(ps_dev);
