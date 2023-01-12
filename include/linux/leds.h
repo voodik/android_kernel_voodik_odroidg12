@@ -12,7 +12,9 @@
 #ifndef __LINUX_LEDS_H_INCLUDED
 #define __LINUX_LEDS_H_INCLUDED
 
+#include <dt-bindings/leds/common.h>
 #include <linux/device.h>
+#include <linux/kernfs.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/rwsem.h>
@@ -32,6 +34,30 @@ enum led_brightness {
 	LED_FULL	= 255,
 };
 
+struct led_init_data {
+	/* device fwnode handle */
+	struct fwnode_handle *fwnode;
+	/*
+	 * default <color:function> tuple, for backward compatibility
+	 * with in-driver hard-coded LED names used as a fallback when
+	 * DT "label" property is absent; it should be set to NULL
+	 * in new LED class drivers.
+	 */
+	const char *default_label;
+	/*
+	 * string to be used for devicename section of LED class device
+	 * either for label based LED name composition path or for fwnode
+	 * based when devname_mandatory is true
+	 */
+	const char *devicename;
+	/*
+	 * indicates if LED name should always comprise devicename section;
+	 * only LEDs exposed by drivers of hot-pluggable devices should
+	 * set it to true
+	 */
+	bool devname_mandatory;
+};
+
 struct led_classdev {
 	const char		*name;
 	enum led_brightness	 brightness;
@@ -39,20 +65,26 @@ struct led_classdev {
 	int			 flags;
 
 	/* Lower 16 bits reflect status */
-#define LED_SUSPENDED		(1 << 0)
-#define LED_UNREGISTERING	(1 << 1)
+#define LED_SUSPENDED		BIT(0)
+#define LED_UNREGISTERING	BIT(1)
 	/* Upper 16 bits reflect control information */
-#define LED_CORE_SUSPENDRESUME	(1 << 16)
-#define LED_BLINK_SW		(1 << 17)
-#define LED_BLINK_ONESHOT	(1 << 18)
-#define LED_BLINK_ONESHOT_STOP	(1 << 19)
-#define LED_BLINK_INVERT	(1 << 20)
-#define LED_BLINK_BRIGHTNESS_CHANGE (1 << 21)
-#define LED_BLINK_DISABLE	(1 << 22)
-#define LED_SYSFS_DISABLE	(1 << 23)
-#define LED_DEV_CAP_FLASH	(1 << 24)
-#define LED_HW_PLUGGABLE	(1 << 25)
-#define LED_PANIC_INDICATOR	(1 << 26)
+#define LED_CORE_SUSPENDRESUME	BIT(16)
+#define LED_SYSFS_DISABLE	BIT(17)
+#define LED_DEV_CAP_FLASH	BIT(18)
+#define LED_HW_PLUGGABLE	BIT(19)
+#define LED_PANIC_INDICATOR	BIT(20)
+#define LED_BRIGHT_HW_CHANGED	BIT(21)
+#define LED_RETAIN_AT_SHUTDOWN	BIT(22)
+
+	/* set_brightness_work / blink_timer flags, atomic, private. */
+	unsigned long		work_flags;
+
+#define LED_BLINK_SW			0
+#define LED_BLINK_ONESHOT		1
+#define LED_BLINK_ONESHOT_STOP		2
+#define LED_BLINK_INVERT		3
+#define LED_BLINK_BRIGHTNESS_CHANGE 	4
+#define LED_BLINK_DISABLE		5
 
 	/* Set LED brightness level
 	 * Must not sleep. Use brightness_set_blocking for drivers
@@ -90,6 +122,7 @@ struct led_classdev {
 	unsigned long		 blink_delay_on, blink_delay_off;
 	struct timer_list	 blink_timer;
 	int			 blink_brightness;
+	int			 new_blink_brightness;
 	void			(*flash_resume)(struct led_classdev *led_cdev);
 
 	struct work_struct	set_brightness_work;
@@ -106,14 +139,34 @@ struct led_classdev {
 	bool			activated;
 #endif
 
+#ifdef CONFIG_LEDS_BRIGHTNESS_HW_CHANGED
+	int			 brightness_hw_changed;
+	struct kernfs_node	*brightness_hw_changed_kn;
+#endif
+
 	/* Ensures consistent access to the LED Flash Class device */
 	struct mutex		led_access;
 };
 
-extern int led_classdev_register(struct device *parent,
-				 struct led_classdev *led_cdev);
-extern int devm_led_classdev_register(struct device *parent,
-				      struct led_classdev *led_cdev);
+/**
+ * led_classdev_register_ext - register a new object of LED class with
+ *			       init data
+ * @parent: LED controller device this LED is driven by
+ * @led_cdev: the led_classdev structure for this device
+ * @init_data: the LED class device initialization data
+ *
+ * Returns: 0 on success or negative error value on failure
+ */
+extern int led_classdev_register_ext(struct device *parent,
+				     struct led_classdev *led_cdev,
+				     struct led_init_data *init_data);
+#define led_classdev_register(parent, led_cdev)			\
+	led_classdev_register_ext(parent, led_cdev, NULL)
+extern int devm_led_classdev_register_ext(struct device *parent,
+					  struct led_classdev *led_cdev,
+					  struct led_init_data *init_data);
+#define devm_led_classdev_register(parent, led_cdev)		\
+	devm_led_classdev_register_ext(parent, led_cdev, NULL)
 extern void led_classdev_unregister(struct led_classdev *led_cdev);
 extern void devm_led_classdev_unregister(struct device *parent,
 					 struct led_classdev *led_cdev);
@@ -194,6 +247,19 @@ extern int led_set_brightness_sync(struct led_classdev *led_cdev,
 extern int led_update_brightness(struct led_classdev *led_cdev);
 
 /**
+ * led_get_default_pattern - return default pattern
+ *
+ * @led_cdev: the LED to get default pattern for
+ * @size:     pointer for storing the number of elements in returned array,
+ *            modified only if return != NULL
+ *
+ * Return:    Allocated array of integers with default pattern from device tree
+ *            or NULL.  Caller is responsible for kfree().
+ */
+extern u32 *led_get_default_pattern(struct led_classdev *led_cdev,
+				    unsigned int *size);
+
+/**
  * led_sysfs_disable - disable LED sysfs interface
  * @led_cdev: the LED to set
  *
@@ -208,6 +274,22 @@ extern void led_sysfs_disable(struct led_classdev *led_cdev);
  * Enable the led_cdev's sysfs interface.
  */
 extern void led_sysfs_enable(struct led_classdev *led_cdev);
+
+/**
+ * led_compose_name - compose LED class device name
+ * @dev: LED controller device object
+ * @child: child fwnode_handle describing a LED or a group of synchronized LEDs;
+ *	   it must be provided only for fwnode based LEDs
+ * @led_classdev_name: composed LED class device name
+ *
+ * Create LED class device name basing on the provided init_data argument.
+ * The name can have <devicename:color:function> or <color:function>.
+ * form, depending on the init_data configuration.
+ *
+ * Returns: 0 on success or negative error value on failure
+ */
+extern int led_compose_name(struct device *dev, struct led_init_data *init_data,
+			    char *led_classdev_name);
 
 /**
  * led_sysfs_is_disabled - check if LED sysfs interface is disabled
@@ -327,9 +409,9 @@ static inline void *led_get_trigger_data(struct led_classdev *led_cdev)
 
 /* Trigger specific functions */
 #ifdef CONFIG_LEDS_TRIGGER_DISK
-extern void ledtrig_disk_activity(void);
+extern void ledtrig_disk_activity(bool write);
 #else
-static inline void ledtrig_disk_activity(void) {}
+static inline void ledtrig_disk_activity(bool write) {}
 #endif
 
 #ifdef CONFIG_LEDS_TRIGGER_MTD
@@ -360,6 +442,15 @@ struct led_platform_data {
 	struct led_info	*leds;
 };
 
+struct led_properties {
+	u32		color;
+	bool		color_present;
+	const char	*function;
+	u32		func_enum;
+	bool		func_enum_present;
+	const char	*label;
+};
+
 struct gpio_desc;
 typedef int (*gpio_blink_set_t)(struct gpio_desc *desc, int state,
 				unsigned long *delay_on,
@@ -374,6 +465,7 @@ struct gpio_led {
 	unsigned	retain_state_suspended : 1;
 	unsigned	panic_indicator : 1;
 	unsigned	default_state : 2;
+	unsigned	retain_state_shutdown : 1;
 	/* default_state should be one of LEDS_GPIO_DEFSTATE_(ON|OFF|KEEP) */
 	struct gpio_desc *gpiod;
 };
@@ -416,6 +508,14 @@ static inline void ledtrig_cpu(enum cpu_led_event evt)
 {
 	return;
 }
+#endif
+
+#ifdef CONFIG_LEDS_BRIGHTNESS_HW_CHANGED
+extern void led_classdev_notify_brightness_hw_changed(
+	struct led_classdev *led_cdev, enum led_brightness brightness);
+#else
+static inline void led_classdev_notify_brightness_hw_changed(
+	struct led_classdev *led_cdev, enum led_brightness brightness) { }
 #endif
 
 #endif		/* __LINUX_LEDS_H_INCLUDED */
