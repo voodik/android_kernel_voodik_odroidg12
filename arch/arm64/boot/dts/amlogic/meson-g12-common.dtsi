@@ -61,14 +61,6 @@
 	gpu_opp_table: opp-table-gpu {
 		compatible = "operating-points-v2";
 
-		opp-124999998 {
-			opp-hz = /bits/ 64 <124999998>;
-			opp-microvolt = <800000>;
-		};
-		opp-249999996 {
-			opp-hz = /bits/ 64 <249999996>;
-			opp-microvolt = <800000>;
-		};
 		opp-285714281 {
 			opp-hz = /bits/ 64 <285714281>;
 			opp-microvolt = <800000>;
@@ -2419,6 +2411,15 @@
 			resets = <&reset RESET_DVALIN_CAPB3>, <&reset RESET_DVALIN>;
 			operating-points-v2 = <&gpu_opp_table>;
 			#cooling-cells = <2>;
+
+			power_model@simple {
+				compatible = "arm,mali-simple-power-model";
+				static-coefficient = <2427750>;
+				dynamic-coefficient = <4687>;
+				ts = <20000 2000 (-20) 2>;
+				thermal-zone = "";
+			};
+
 		};
 	};
 

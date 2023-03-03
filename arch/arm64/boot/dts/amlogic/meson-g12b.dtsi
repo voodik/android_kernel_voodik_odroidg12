@@ -137,5 +137,5 @@
 };
 
 &mali {
-	dma-coherent;
+	system-coherency=<0>;
 };
