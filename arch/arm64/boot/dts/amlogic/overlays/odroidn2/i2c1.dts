@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2019 BayLibre SAS. All rights reserved.
+ */
+
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/phy/phy.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/gpio/meson-g12a-gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pwm/pwm.h>
+
+/ {
+  fragment@0 {
+          target = <&i2c1>;
+          __overlay__ {
+                  #address-cells = <1>;
+                  #size-cells = <0>;
+                  status = "okay";
+                  pinctrl-0 = <&i2c1_sda_x_pins>, <&i2c1_sck_x_pins>;
+                  pinctrl-names = "default";
+                  clock-frequency = <100000>;     /* default 100k */
+          };
+  };
+};
