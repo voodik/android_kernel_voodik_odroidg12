@@ -6,11 +6,6 @@
 /dts-v1/;
 /plugin/;
 
-#include <dt-bindings/phy/phy.h>
-#include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/gpio/meson-g12a-gpio.h>
-#include <dt-bindings/input/input.h>
-#include <dt-bindings/interrupt-controller/irq.h>
 
 / {
   fragment@101 {
@@ -29,6 +24,16 @@
                         };
                 };
 
+        };
+  };
+  fragment@102 {
+        target = <&sd_emmc_b>;
+        __overlay__ {
+                max-frequency = <200000000>;
+                sd-uhs-sdr12;
+                sd-uhs-sdr25;
+                sd-uhs-sdr50;
+                sd-uhs-sdr104;
         };
   };
 };
