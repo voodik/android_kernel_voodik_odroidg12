@@ -782,7 +782,7 @@ void __cfg80211_connect_result(struct net_device *dev,
 
 	if (cr->status == WLAN_STATUS_SUCCESS) {
 		for_each_valid_link(cr, link) {
-			if (WARN_ON_ONCE(!cr->links[link].bss))
+			if (!cr->links[link].bss)
 				break;
 		}
 
