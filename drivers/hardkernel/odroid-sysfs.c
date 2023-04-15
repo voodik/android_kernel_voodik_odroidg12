@@ -101,7 +101,7 @@ __setup("disable_vu7=", dwav_usb_mt_boot_para_setup);
 
 bool get_disable_vu7(void)
 {
-	return touch_invert_y;
+	return disable_vu7;
 }
 EXPORT_SYMBOL(get_disable_vu7);
 
