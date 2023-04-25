@@ -31,6 +31,10 @@
 #include <linux/videodev2.h>
 #endif
 
+/* Helper definitions to be used at frontend drivers */
+#define kHz 1000UL
+#define MHz 1000000UL
+
 enum fe_type {
 	FE_QPSK,
 	FE_QAM,
