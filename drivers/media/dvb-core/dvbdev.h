@@ -34,20 +34,42 @@
 #if defined(CONFIG_DVB_MAX_ADAPTERS) && CONFIG_DVB_MAX_ADAPTERS > 0
   #define DVB_MAX_ADAPTERS CONFIG_DVB_MAX_ADAPTERS
 #else
-  #define DVB_MAX_ADAPTERS 8
+  #define DVB_MAX_ADAPTERS 16
 #endif
 
 #define DVB_UNSET (-1)
 
-#define DVB_DEVICE_VIDEO      0
-#define DVB_DEVICE_AUDIO      1
-#define DVB_DEVICE_SEC        2
-#define DVB_DEVICE_FRONTEND   3
-#define DVB_DEVICE_DEMUX      4
-#define DVB_DEVICE_DVR        5
-#define DVB_DEVICE_CA         6
-#define DVB_DEVICE_NET        7
-#define DVB_DEVICE_OSD        8
+/* List of DVB device types */
+
+/**
+ * enum dvb_device_type - type of the Digital TV device
+ *
+ * @DVB_DEVICE_SEC:		Digital TV standalone Common Interface (CI)
+ * @DVB_DEVICE_FRONTEND:	Digital TV frontend.
+ * @DVB_DEVICE_DEMUX:		Digital TV demux.
+ * @DVB_DEVICE_DVR:		Digital TV digital video record (DVR).
+ * @DVB_DEVICE_CA:		Digital TV Conditional Access (CA).
+ * @DVB_DEVICE_NET:		Digital TV network.
+ *
+ * @DVB_DEVICE_VIDEO:		Digital TV video decoder.
+ *				Deprecated. Used only on av7110-av.
+ * @DVB_DEVICE_AUDIO:		Digital TV audio decoder.
+ *				Deprecated. Used only on av7110-av.
+ * @DVB_DEVICE_OSD:		Digital TV On Screen Display (OSD).
+ *				Deprecated. Used only on av7110.
+ */
+enum dvb_device_type {
+	DVB_DEVICE_SEC,
+	DVB_DEVICE_FRONTEND,
+	DVB_DEVICE_DEMUX,
+	DVB_DEVICE_DVR,
+	DVB_DEVICE_CA,
+	DVB_DEVICE_NET,
+
+	DVB_DEVICE_VIDEO,
+	DVB_DEVICE_AUDIO,
+	DVB_DEVICE_OSD,
+};
 
 #define DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr) \
 	static short adapter_nr[] = \
@@ -108,8 +130,7 @@ struct dvb_adapter {
  * @list_head:	List head with all DVB devices
  * @fops:	pointer to struct file_operations
  * @adapter:	pointer to the adapter that holds this device node
- * @type:	type of the device: DVB_DEVICE_SEC, DVB_DEVICE_FRONTEND,
- *		DVB_DEVICE_DEMUX, DVB_DEVICE_DVR, DVB_DEVICE_CA, DVB_DEVICE_NET
+ * @type:	type of the device, as defined by &enum dvb_device_type.
  * @minor:	devnode minor number. Major number is always DVB_MAJOR.
  * @id:		device ID number, inside the adapter
  * @readers:	Initialized by the caller. Each call to open() in Read Only mode
@@ -139,7 +160,7 @@ struct dvb_device {
 	struct list_head list_head;
 	const struct file_operations *fops;
 	struct dvb_adapter *adapter;
-	int type;
+	enum dvb_device_type type;
 	int minor;
 	u32 id;
 
@@ -198,9 +219,7 @@ int dvb_unregister_adapter(struct dvb_adapter *adap);
  *		stored
  * @template:	Template used to create &pdvbdev;
  * @priv:	private data
- * @type:	type of the device: %DVB_DEVICE_SEC, %DVB_DEVICE_FRONTEND,
- *		%DVB_DEVICE_DEMUX, %DVB_DEVICE_DVR, %DVB_DEVICE_CA,
- *		%DVB_DEVICE_NET
+ * @type:	type of the device, as defined by &enum dvb_device_type.
  * @demux_sink_pads: Number of demux outputs, to be used to create the TS
  *		outputs via the Media Controller.
  */
@@ -208,11 +227,34 @@ int dvb_register_device(struct dvb_adapter *adap,
 			struct dvb_device **pdvbdev,
 			const struct dvb_device *template,
 			void *priv,
-			int type,
+			enum dvb_device_type type,
 			int demux_sink_pads);
 
 /**
+ * dvb_remove_device - Remove a registered DVB device
+ *
+ * This does not free memory.  To do that, call dvb_free_device().
+ *
+ * @dvbdev:	pointer to struct dvb_device
+ */
+void dvb_remove_device(struct dvb_device *dvbdev);
+
+/**
+ * dvb_free_device - Free memory occupied by a DVB device.
+ *
+ * Call dvb_unregister_device() before calling this function.
+ *
+ * @dvbdev:	pointer to struct dvb_device
+ */
+void dvb_free_device(struct dvb_device *dvbdev);
+
+/**
  * dvb_unregister_device - Unregisters a DVB device
+ *
+ * This is a combination of dvb_remove_device() and dvb_free_device().
+ * Using this function is usually a mistake, and is often an indicator
+ * for a use-after-free bug (when a userspace process keeps a file
+ * handle to a detached device).
  *
  * @dvbdev:	pointer to struct dvb_device
  */
@@ -270,8 +312,81 @@ generic_usercopy()  someday... */
 int dvb_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
 		 int (*func)(struct file *file, unsigned int cmd, void *arg));
 
-/** generic DVB attach function. */
+#ifdef CONFIG_I2C
+
+struct i2c_adapter;
+struct i2c_client;
+/**
+ * dvb_module_probe - helper routine to probe an I2C module
+ *
+ * @module_name:
+ *	Name of the I2C module to be probed
+ * @name:
+ *	Optional name for the I2C module. Used for debug purposes.
+ * 	If %NULL, defaults to @module_name.
+ * @adap:
+ *	pointer to &struct i2c_adapter that describes the I2C adapter where
+ *	the module will be bound.
+ * @addr:
+ *	I2C address of the adapter, in 7-bit notation.
+ * @platform_data:
+ *	Platform data to be passed to the I2C module probed.
+ *
+ * This function binds an I2C device into the DVB core. Should be used by
+ * all drivers that use I2C bus to control the hardware. A module bound
+ * with dvb_module_probe() should use dvb_module_release() to unbind.
+ *
+ * Return:
+ *	On success, return an &struct i2c_client, pointing the the bound
+ *	I2C device. %NULL otherwise.
+ *
+ * .. note::
+ *
+ *    In the past, DVB modules (mainly, frontends) were bound via dvb_attach()
+ *    macro, with does an ugly hack, using I2C low level functions. Such
+ *    usage is deprecated and will be removed soon. Instead, use this routine.
+ */
+struct i2c_client *dvb_module_probe(const char *module_name,
+				    const char *name,
+				    struct i2c_adapter *adap,
+				    unsigned char addr,
+				    void *platform_data);
+
+/**
+ * dvb_module_release - releases an I2C device allocated with
+ *	 dvb_module_probe().
+ *
+ * @client: pointer to &struct i2c_client with the I2C client to be released.
+ *	    can be %NULL.
+ *
+ * This function should be used to free all resources reserved by
+ * dvb_module_probe() and unbinding the I2C hardware.
+ */
+void dvb_module_release(struct i2c_client *client);
+
+#endif /* CONFIG_I2C */
+
+/* Legacy generic DVB attach function. */
 #ifdef CONFIG_MEDIA_ATTACH
+
+/**
+ * dvb_attach - attaches a DVB frontend into the DVB core.
+ *
+ * @FUNCTION:	function on a frontend module to be called.
+ * @ARGS...:	@FUNCTION arguments.
+ *
+ * This ancillary function loads a frontend module in runtime and runs
+ * the @FUNCTION function there, with @ARGS.
+ * As it increments symbol usage cont, at unregister, dvb_detach()
+ * should be called.
+ *
+ * .. note::
+ *
+ *    In the past, DVB modules (mainly, frontends) were bound via dvb_attach()
+ *    macro, with does an ugly hack, using I2C low level functions. Such
+ *    usage is deprecated and will be removed soon. Instead, you should use
+ *    dvb_module_probe().
+ */
 #define dvb_attach(FUNCTION, ARGS...) ({ \
 	void *__r = NULL; \
 	typeof(&FUNCTION) __a = symbol_request(FUNCTION); \
@@ -294,6 +409,6 @@ int dvb_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
 
 #define dvb_detach(FUNC)	{}
 
-#endif
+#endif	/* CONFIG_MEDIA_ATTACH */
 
 #endif /* #ifndef _DVBDEV_H_ */
