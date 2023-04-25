@@ -295,6 +295,8 @@ static const char * const fw_path[] = {
 	"/lib/firmware/updates/" UTS_RELEASE,
 	"/lib/firmware/updates",
 	"/vendor/firmware/",
+	"/vendor/etc/firmware/",
+	"/vendor/lib/firmware/",
 	"/lib/firmware/" UTS_RELEASE,
 	"/lib/firmware"
 };
