@@ -1941,7 +1941,7 @@ static int dtv_property_process_set(struct dvb_frontend *fe,
 
 	/* Physical layer scrambling support */
 	case DTV_SCRAMBLING_SEQUENCE_INDEX:
-		c->scrambling_sequence_index = data;
+		c->scrambling_sequence_index = tvp->u.data;
 		break;
 
 	/* ATSC-MH */
