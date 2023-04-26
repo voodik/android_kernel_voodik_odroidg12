@@ -25,11 +25,14 @@
 struct si2157_dev {
 	struct mutex i2c_mutex;
 	struct dvb_frontend *fe;
-	bool active;
-	bool inversion;
+	unsigned int active:1;
+	unsigned int inversion:1;
+	unsigned int dont_load_firmware:1;
 	u8 chiptype;
 	u8 if_port;
 	u32 if_frequency;
+	u32 bandwidth;
+	u32 frequency;
 	struct delayed_work stat_work;
 
 #if defined(CONFIG_MEDIA_CONTROLLER)
@@ -43,6 +46,7 @@ struct si2157_dev {
 #define SI2157_CHIPTYPE_SI2157 0
 #define SI2157_CHIPTYPE_SI2146 1
 #define SI2157_CHIPTYPE_SI2141 2
+#define SI2157_CHIPTYPE_SI2177 3
 
 /* firmware command struct */
 #define SI2157_ARGLEN      30
@@ -54,5 +58,5 @@ struct si2157_cmd {
 
 #define SI2158_A20_FIRMWARE "dvb-tuner-si2158-a20-01.fw"
 #define SI2141_A10_FIRMWARE "dvb-tuner-si2141-a10-01.fw"
-
+#define SI2157_A30_FIRMWARE "dvb-tuner-si2157-a30-01.fw"
 #endif

@@ -35,7 +35,6 @@ MODULE_PARM_DESC(disable_rc, "Disable inbuilt IR receiver.");
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
 struct dvbsky_state {
-	struct mutex stream_mutex;
 	u8 ibuf[DVBSKY_BUF_LEN];
 	u8 obuf[DVBSKY_BUF_LEN];
 	u8 last_lock;
@@ -73,17 +72,19 @@ static int dvbsky_usb_generic_rw(struct dvb_usb_device *d,
 static int dvbsky_stream_ctrl(struct dvb_usb_device *d, u8 onoff)
 {
 	struct dvbsky_state *state = d_to_priv(d);
+	static const u8 obuf_pre[3] = { 0x37, 0, 0 };
+	static const u8 obuf_post[3] = { 0x36, 3, 0 };
 	int ret;
-	u8 obuf_pre[3] = { 0x37, 0, 0 };
-	u8 obuf_post[3] = { 0x36, 3, 0 };
 
-	mutex_lock(&state->stream_mutex);
-	ret = dvbsky_usb_generic_rw(d, obuf_pre, 3, NULL, 0);
+	mutex_lock(&d->usb_mutex);
+	memcpy(state->obuf, obuf_pre, 3);
+	ret = dvb_usbv2_generic_write_locked(d, state->obuf, 3);
 	if (!ret && onoff) {
 		msleep(20);
-		ret = dvbsky_usb_generic_rw(d, obuf_post, 3, NULL, 0);
+		memcpy(state->obuf, obuf_post, 3);
+		ret = dvb_usbv2_generic_write_locked(d, state->obuf, 3);
 	}
-	mutex_unlock(&state->stream_mutex);
+	mutex_unlock(&d->usb_mutex);
 	return ret;
 }
 
@@ -104,8 +105,6 @@ static int dvbsky_gpio_ctrl(struct dvb_usb_device *d, u8 gport, u8 value)
 	obuf[1] = gport;
 	obuf[2] = value;
 	ret = dvbsky_usb_generic_rw(d, obuf, 3, ibuf, 1);
-	if (ret)
-		dev_err(&d->udev->dev, "failed=%d\n", ret);
 	return ret;
 }
 
@@ -143,8 +142,6 @@ static int dvbsky_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 			obuf[3] = msg[0].addr;
 			ret = dvbsky_usb_generic_rw(d, obuf, 4,
 					ibuf, msg[0].len + 1);
-			if (ret)
-				dev_err(&d->udev->dev, "failed=%d\n", ret);
 			if (!ret)
 				memcpy(msg[0].buf, &ibuf[1], msg[0].len);
 		} else {
@@ -155,8 +152,6 @@ static int dvbsky_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 			memcpy(&obuf[3], msg[0].buf, msg[0].len);
 			ret = dvbsky_usb_generic_rw(d, obuf,
 					msg[0].len + 3, ibuf, 1);
-			if (ret)
-				dev_err(&d->udev->dev, "failed=%d\n", ret);
 		}
 	} else {
 		if ((msg[0].len > 60) || (msg[1].len > 60)) {
@@ -174,9 +169,6 @@ static int dvbsky_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 		memcpy(&obuf[4], msg[0].buf, msg[0].len);
 		ret = dvbsky_usb_generic_rw(d, obuf,
 			msg[0].len + 4, ibuf, msg[1].len + 1);
-		if (ret)
-			dev_err(&d->udev->dev, "failed=%d\n", ret);
-
 		if (!ret)
 			memcpy(msg[1].buf, &ibuf[1], msg[1].len);
 	}
@@ -205,8 +197,6 @@ static int dvbsky_rc_query(struct dvb_usb_device *d)
 
 	obuf[0] = 0x10;
 	ret = dvbsky_usb_generic_rw(d, obuf, 1, ibuf, 2);
-	if (ret)
-		dev_err(&d->udev->dev, "failed=%d\n", ret);
 	if (ret == 0)
 		code = (ibuf[0] << 8) | ibuf[1];
 	if (code != 0xffff) {
@@ -310,8 +300,8 @@ static int dvbsky_s960_attach(struct dvb_usb_adapter *adap)
 	m88ds3103_pdata.ts_clk = 16000;
 	m88ds3103_pdata.ts_clk_pol = 0;
 	m88ds3103_pdata.agc = 0x99;
-	m88ds3103_pdata.lnb_hv_pol = 1,
-	m88ds3103_pdata.lnb_en_pol = 1,
+	m88ds3103_pdata.lnb_hv_pol = 1;
+	m88ds3103_pdata.lnb_en_pol = 1;
 
 	state->i2c_client_demod = dvb_module_probe("m88ds3103", NULL,
 						   &d->i2c_adap,
@@ -406,15 +396,15 @@ static int dvbsky_s960c_attach(struct dvb_usb_adapter *adap)
 	struct sp2_config sp2_config = {};
 
 	/* attach demod */
-	m88ds3103_pdata.clk = 27000000,
-	m88ds3103_pdata.i2c_wr_max = 33,
-	m88ds3103_pdata.clk_out = 0,
-	m88ds3103_pdata.ts_mode = M88DS3103_TS_CI,
-	m88ds3103_pdata.ts_clk = 10000,
-	m88ds3103_pdata.ts_clk_pol = 1,
-	m88ds3103_pdata.agc = 0x99,
-	m88ds3103_pdata.lnb_hv_pol = 0,
-	m88ds3103_pdata.lnb_en_pol = 1,
+	m88ds3103_pdata.clk = 27000000;
+	m88ds3103_pdata.i2c_wr_max = 33;
+	m88ds3103_pdata.clk_out = 0;
+	m88ds3103_pdata.ts_mode = M88DS3103_TS_CI;
+	m88ds3103_pdata.ts_clk = 10000;
+	m88ds3103_pdata.ts_clk_pol = 1;
+	m88ds3103_pdata.agc = 0x99;
+	m88ds3103_pdata.lnb_hv_pol = 0;
+	m88ds3103_pdata.lnb_en_pol = 1;
 
 	state->i2c_client_demod = dvb_module_probe("m88ds3103", NULL,
 						   &d->i2c_adap,
@@ -564,6 +554,10 @@ static int dvbsky_mygica_t230c_attach(struct dvb_usb_adapter *adap)
 	si2168_config.i2c_adapter = &i2c_adapter;
 	si2168_config.fe = &adap->fe[0];
 	si2168_config.ts_mode = SI2168_TS_PARALLEL;
+	if (le16_to_cpu(d->udev->descriptor.idProduct) == USB_PID_MYGICA_T230C2 ||
+	    le16_to_cpu(d->udev->descriptor.idProduct) == USB_PID_MYGICA_T230C2_LITE ||
+	    le16_to_cpu(d->udev->descriptor.idProduct) == USB_PID_MYGICA_T230A)
+		si2168_config.ts_mode |= SI2168_TS_CLK_MANUAL;
 	si2168_config.ts_clock_inv = 1;
 
 	state->i2c_client_demod = dvb_module_probe("si2168", NULL,
@@ -574,11 +568,19 @@ static int dvbsky_mygica_t230c_attach(struct dvb_usb_adapter *adap)
 
 	/* attach tuner */
 	si2157_config.fe = adap->fe[0];
-	si2157_config.if_port = 0;
-
-	state->i2c_client_tuner = dvb_module_probe("si2157", "si2141",
-						   i2c_adapter,
-						   0x60, &si2157_config);
+	if (le16_to_cpu(d->udev->descriptor.idProduct) == USB_PID_MYGICA_T230) {
+		si2157_config.if_port = 1;
+		state->i2c_client_tuner = dvb_module_probe("si2157", NULL,
+							   i2c_adapter,
+							   0x60,
+							   &si2157_config);
+	} else {
+		si2157_config.if_port = 0;
+		state->i2c_client_tuner = dvb_module_probe("si2157", "si2141",
+							   i2c_adapter,
+							   0x60,
+							   &si2157_config);
+	}
 	if (!state->i2c_client_tuner) {
 		dvb_module_release(state->i2c_client_demod);
 		return -ENODEV;
@@ -590,15 +592,24 @@ static int dvbsky_mygica_t230c_attach(struct dvb_usb_adapter *adap)
 
 static int dvbsky_identify_state(struct dvb_usb_device *d, const char **name)
 {
-	dvbsky_gpio_ctrl(d, 0x04, 1);
-	msleep(20);
-	dvbsky_gpio_ctrl(d, 0x83, 0);
-	dvbsky_gpio_ctrl(d, 0xc0, 1);
-	msleep(100);
-	dvbsky_gpio_ctrl(d, 0x83, 1);
-	dvbsky_gpio_ctrl(d, 0xc0, 0);
-	msleep(50);
-
+	if (le16_to_cpu(d->udev->descriptor.idProduct) == USB_PID_MYGICA_T230A) {
+		dvbsky_gpio_ctrl(d, 0x87, 0);
+		msleep(20);
+		dvbsky_gpio_ctrl(d, 0x86, 1);
+		dvbsky_gpio_ctrl(d, 0x80, 0);
+		msleep(100);
+		dvbsky_gpio_ctrl(d, 0x80, 1);
+		msleep(50);
+	} else {
+		dvbsky_gpio_ctrl(d, 0x04, 1);
+		msleep(20);
+		dvbsky_gpio_ctrl(d, 0x83, 0);
+		dvbsky_gpio_ctrl(d, 0xc0, 1);
+		msleep(100);
+		dvbsky_gpio_ctrl(d, 0x83, 1);
+		dvbsky_gpio_ctrl(d, 0xc0, 0);
+		msleep(50);
+	}
 	return WARM;
 }
 
@@ -612,20 +623,24 @@ static int dvbsky_init(struct dvb_usb_device *d)
 	if (ret)
 		return ret;
 	*/
-	mutex_init(&state->stream_mutex);
 
 	state->last_lock = 0;
 
 	return 0;
 }
 
-static void dvbsky_exit(struct dvb_usb_device *d)
+static int dvbsky_frontend_detach(struct dvb_usb_adapter *adap)
 {
+	struct dvb_usb_device *d = adap_to_d(adap);
 	struct dvbsky_state *state = d_to_priv(d);
+
+	dev_dbg(&d->udev->dev, "%s: adap=%d\n", __func__, adap->id);
 
 	dvb_module_release(state->i2c_client_tuner);
 	dvb_module_release(state->i2c_client_demod);
 	dvb_module_release(state->i2c_client_ci);
+
+	return 0;
 }
 
 /* DVB USB Driver stuff */
@@ -641,11 +656,11 @@ static struct dvb_usb_device_properties dvbsky_s960_props = {
 
 	.i2c_algo         = &dvbsky_i2c_algo,
 	.frontend_attach  = dvbsky_s960_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
 	.init             = dvbsky_init,
 	.get_rc_config    = dvbsky_get_rc_config,
 	.streaming_ctrl   = dvbsky_streaming_ctrl,
 	.identify_state	  = dvbsky_identify_state,
-	.exit             = dvbsky_exit,
 	.read_mac_address = dvbsky_read_mac_addr,
 
 	.num_adapters = 1,
@@ -668,11 +683,11 @@ static struct dvb_usb_device_properties dvbsky_s960c_props = {
 
 	.i2c_algo         = &dvbsky_i2c_algo,
 	.frontend_attach  = dvbsky_s960c_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
 	.init             = dvbsky_init,
 	.get_rc_config    = dvbsky_get_rc_config,
 	.streaming_ctrl   = dvbsky_streaming_ctrl,
 	.identify_state	  = dvbsky_identify_state,
-	.exit             = dvbsky_exit,
 	.read_mac_address = dvbsky_read_mac_addr,
 
 	.num_adapters = 1,
@@ -695,11 +710,11 @@ static struct dvb_usb_device_properties dvbsky_t680c_props = {
 
 	.i2c_algo         = &dvbsky_i2c_algo,
 	.frontend_attach  = dvbsky_t680c_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
 	.init             = dvbsky_init,
 	.get_rc_config    = dvbsky_get_rc_config,
 	.streaming_ctrl   = dvbsky_streaming_ctrl,
 	.identify_state	  = dvbsky_identify_state,
-	.exit             = dvbsky_exit,
 	.read_mac_address = dvbsky_read_mac_addr,
 
 	.num_adapters = 1,
@@ -722,11 +737,11 @@ static struct dvb_usb_device_properties dvbsky_t330_props = {
 
 	.i2c_algo         = &dvbsky_i2c_algo,
 	.frontend_attach  = dvbsky_t330_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
 	.init             = dvbsky_init,
 	.get_rc_config    = dvbsky_get_rc_config,
 	.streaming_ctrl   = dvbsky_streaming_ctrl,
 	.identify_state	  = dvbsky_identify_state,
-	.exit             = dvbsky_exit,
 	.read_mac_address = dvbsky_read_mac_addr,
 
 	.num_adapters = 1,
@@ -749,11 +764,11 @@ static struct dvb_usb_device_properties mygica_t230c_props = {
 
 	.i2c_algo         = &dvbsky_i2c_algo,
 	.frontend_attach  = dvbsky_mygica_t230c_attach,
+	.frontend_detach  = dvbsky_frontend_detach,
 	.init             = dvbsky_init,
 	.get_rc_config    = dvbsky_get_rc_config,
 	.streaming_ctrl   = dvbsky_streaming_ctrl,
 	.identify_state	  = dvbsky_identify_state,
-	.exit             = dvbsky_exit,
 
 	.num_adapters = 1,
 	.adapter = {
@@ -795,9 +810,24 @@ static const struct usb_device_id dvbsky_id_table[] = {
 	{ DVB_USB_DEVICE(USB_VID_TERRATEC, USB_PID_TERRATEC_CINERGY_S2_R4,
 		&dvbsky_s960_props, "Terratec Cinergy S2 Rev.4",
 		RC_MAP_DVBSKY) },
-	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C,
-		&mygica_t230c_props, "MyGica Mini DVB-T2 USB Stick T230C",
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230,
+		&mygica_t230c_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230",
 		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C,
+		&mygica_t230c_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C",
+		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C_LITE,
+		&mygica_t230c_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C Lite",
+		NULL) },
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2,
+		&mygica_t230c_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C v2",
+		RC_MAP_TOTAL_MEDIA_IN_HAND_02) },
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230C2_LITE,
+		 &mygica_t230c_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230C v2  Lite",
+		 NULL) },
+	{ DVB_USB_DEVICE(USB_VID_CONEXANT, USB_PID_MYGICA_T230A,
+		 &mygica_t230c_props, "MyGica Mini DVB-(T/T2/C) USB Stick T230A",
+		 NULL) },
 	{ }
 };
 MODULE_DEVICE_TABLE(usb, dvbsky_id_table);

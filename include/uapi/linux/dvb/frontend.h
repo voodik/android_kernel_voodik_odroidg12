@@ -31,6 +31,10 @@
 #include <linux/videodev2.h>
 #endif
 
+/* Helper definitions to be used at frontend drivers */
+#define kHz 1000UL
+#define MHz 1000000UL
+
 enum fe_type {
 	FE_QPSK,
 	FE_QAM,
@@ -350,27 +354,30 @@ struct fe_blind_scan_parameters {
 #define DTV_STAT_ERROR_BLOCK_COUNT	68
 #define DTV_STAT_TOTAL_BLOCK_COUNT	69
 
+/* Physical layer scrambling */
+#define DTV_SCRAMBLING_SEQUENCE_INDEX   70
+
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 
 /* Get tne TS input of the frontend */
-#define DTV_TS_INPUT                    70
+#define DTV_TS_INPUT                    71
 /* Blind scan */
-#define DTV_START_BLIND_SCAN            71
-#define DTV_CANCEL_BLIND_SCAN           72
-#define DTV_BLIND_SCAN_MIN_FRE          73
-#define DTV_BLIND_SCAN_MAX_FRE          74
-#define DTV_BLIND_SCAN_MIN_SRATE        75
-#define DTV_BLIND_SCAN_MAX_SRATE        76
-#define DTV_BLIND_SCAN_FRE_RANGE        77
-#define DTV_BLIND_SCAN_FRE_STEP         78
-#define DTV_BLIND_SCAN_TIMEOUT          79
+#define DTV_START_BLIND_SCAN            72
+#define DTV_CANCEL_BLIND_SCAN           73
+#define DTV_BLIND_SCAN_MIN_FRE          74
+#define DTV_BLIND_SCAN_MAX_FRE          75
+#define DTV_BLIND_SCAN_MIN_SRATE        76
+#define DTV_BLIND_SCAN_MAX_SRATE        77
+#define DTV_BLIND_SCAN_FRE_RANGE        78
+#define DTV_BLIND_SCAN_FRE_STEP         79
+#define DTV_BLIND_SCAN_TIMEOUT          80
 /* Blind scan end*/
-#define DTV_DELIVERY_SUB_SYSTEM			80
+#define DTV_DELIVERY_SUB_SYSTEM			81
 #define DTV_MAX_COMMAND		DTV_DELIVERY_SUB_SYSTEM
 
 #else  /*!defined(CONFIG_AMLOGIC_DVB_COMPAT)*/
 
-#define DTV_MAX_COMMAND		DTV_STAT_TOTAL_BLOCK_COUNT
+#define DTV_MAX_COMMAND		DTV_SCRAMBLING_SEQUENCE_INDEX
 
 #endif /*CONFIG_AMLOGIC_DVB_COMPAT*/
 
