@@ -146,21 +146,21 @@ enum fe_sec_mini_cmd {
  *			to reset DiSEqC, tone and parameters
  */
 enum fe_status {
-	FE_HAS_SIGNAL	= 0x01,   /* found something above the noise level */
-	FE_HAS_CARRIER	= 0x02,   /* found a DVB signal  */
-	FE_HAS_VITERBI	= 0x04,   /* FEC is stable  */
-	FE_HAS_SYNC	= 0x08,   /* found sync bytes  */
-	FE_HAS_LOCK	= 0x10,   /* everything's working... */
-	FE_TIMEDOUT	= 0x20,   /* no lock within the last ~2 seconds */
-	FE_REINIT	= 0x40,    /* frontend was reinitialized,  */
+	FE_NONE			= 0x00,
+	FE_HAS_SIGNAL		= 0x01,
+	FE_HAS_CARRIER		= 0x02,
+	FE_HAS_VITERBI		= 0x04,
+	FE_HAS_SYNC		= 0x08,
+	FE_HAS_LOCK		= 0x10,
+	FE_TIMEDOUT		= 0x20,
+	FE_REINIT		= 0x40,
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
-	BLINDSCAN_NONEDO = 0x80, /* not blind scan  */
-	BLINDSCAN_UPDATESTARTFREQ = 0x100, /* blind scan update start freq  */
-	BLINDSCAN_UPDATEPROCESS   = 0x200, /* blind scan update process  */
-	BLINDSCAN_UPDATERESULTFREQ = 0x400/* blind scan update result  */
+        BLINDSCAN_NONEDO = 0x80, /* not blind scan  */
+        BLINDSCAN_UPDATESTARTFREQ = 0x100, /* blind scan update start freq  */
+        BLINDSCAN_UPDATEPROCESS   = 0x200, /* blind scan update process  */
+        BLINDSCAN_UPDATERESULTFREQ = 0x400/* blind scan update result  */
 #endif
-}; /* application is recommended to reset */
-/* DiSEqC, tone and parameters */
+};
 
 enum fe_spectral_inversion {
 	INVERSION_OFF,
@@ -548,38 +548,16 @@ struct dtv_property {
 			__u32 reserved1[3];
 			void *reserved2;
 		} buffer;
-	} u;
-	int result;
-} __attribute__ ((packed));
-
-struct dtv_property_32 {
-	__u32 cmd;
-	__u32 reserved[3];
-	union {
-		__u32 data;
-		struct dtv_fe_stats st;
+#if 0
+#ifdef CONFIG_AMLOGIC_DVB_COMPAT
 		struct {
 			__u8 data[32];
 			__u32 len;
 			__u32 reserved1[3];
-			__u32 reserved2;
-		} buffer;
-	} u;
-	int result;
-} __attribute__ ((packed));
-
-struct dtv_property_64 {
-	__u32 cmd;
-	__u32 reserved[3];
-	union {
-		__u32 data;
-		struct dtv_fe_stats st;
-		struct {
-			__u8 data[32];
-			__u32 len;
-			__u32 reserved1[3];
-			__u64 reserved2;
-		} buffer;
+			__u64 reserved;
+		} reserved;
+#endif
+#endif
 	} u;
 	int result;
 } __attribute__ ((packed));
@@ -589,17 +567,14 @@ struct dtv_property_64 {
 
 struct dtv_properties {
 	__u32 num;
+#if 0 && defined(CONFIG_AMLOGIC_DVB_COMPAT)
+	union {
+		struct dtv_property *props;
+		__u64                reserved;
+	};
+#else
 	struct dtv_property *props;
-};
-
-struct dtv_properties_32 {
-	__u32 num;
-	__u32 props;
-};
-
-struct dtv_properties_64 {
-	__u32 num;
-	__u64 props;
+#endif
 };
 
 #if defined(__DVB_CORE__) || !defined (__KERNEL__)
@@ -753,12 +728,6 @@ struct dvbsx_blindscanevent {
 
 #define FE_SET_PROPERTY		   _IOW('o', 82, struct dtv_properties)
 #define FE_GET_PROPERTY		   _IOR('o', 83, struct dtv_properties)
-
-#define FE_SET_PROPERTY_32     _IOW('o', 82, struct dtv_properties_32)
-#define FE_GET_PROPERTY_32     _IOR('o', 83, struct dtv_properties_32)
-
-#define FE_SET_PROPERTY_64     _IOW('o', 82, struct dtv_properties_64)
-#define FE_GET_PROPERTY_64     _IOR('o', 83, struct dtv_properties_64)
 
 #ifdef CONFIG_AMLOGIC_DVB_COMPAT
 /*for atv*/
