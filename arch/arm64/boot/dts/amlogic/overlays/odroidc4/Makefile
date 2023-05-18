@@ -12,6 +12,7 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) +=	\
 					i2c0.dtbo		\
 					i2c1.dtbo		\
 					keymatrix.dtbo	\
+					oled_rtc.dtbo		\
 					onewire.dtbo		\
 					otg_host_mode.dtbo	\
 					pcf8563.dtbo		\
@@ -20,8 +21,10 @@ dtbo-$(CONFIG_ARCH_MESON64_ODROIDC4) +=	\
 					pwm_backlight.dtbo	\
 					pwm_cd.dtbo		\
 					pwm_ef.dtbo		\
+					rtc.dtbo		\
 					sdio.dtbo		\
 					spi0.dtbo		\
+					ssd1306.dtbo	\
 					sx865x-i2c1.dtbo	\
 					uart0.dtbo		\
 					uart1.dtbo		\
