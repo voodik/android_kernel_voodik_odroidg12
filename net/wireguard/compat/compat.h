@@ -355,17 +355,6 @@ static inline bool rng_is_initialized(void)
 }
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0)
-static inline int get_random_bytes_wait(void *buf, int nbytes)
-{
-	int ret = wait_for_random_bytes();
-	if (unlikely(ret))
-		return ret;
-	get_random_bytes(buf, nbytes);
-	return 0;
-}
-#endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0) && !defined(ISRHEL7)
 #define system_power_efficient_wq system_unbound_wq
 #endif
