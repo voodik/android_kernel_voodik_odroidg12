@@ -293,28 +293,6 @@ static inline void rng_initialized_callback(struct random_ready_callback *cb)
 {
 	complete(&container_of(cb, struct rng_initializer, cb)->done);
 }
-static inline int wait_for_random_bytes(void)
-{
-	static bool rng_is_initialized = false;
-	int ret;
-	if (unlikely(!rng_is_initialized)) {
-		struct rng_initializer rng = {
-			.done = COMPLETION_INITIALIZER(rng.done),
-			.cb = { .owner = THIS_MODULE, .func = rng_initialized_callback }
-		};
-		ret = add_random_ready_callback(&rng.cb);
-		if (!ret) {
-			ret = wait_for_completion_interruptible(&rng.done);
-			if (ret) {
-				del_random_ready_callback(&rng.cb);
-				return ret;
-			}
-		} else if (ret != -EALREADY)
-			return ret;
-		rng_is_initialized = true;
-	}
-	return 0;
-}
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
 /* This is a disaster. Without this API, we really have no way of
  * knowing if it's initialized. We just return that it has and hope
