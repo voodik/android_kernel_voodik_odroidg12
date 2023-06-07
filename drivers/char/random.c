@@ -880,11 +880,6 @@ static void do_numa_crng_init(struct work_struct *work)
 
 static DECLARE_WORK(numa_crng_init_work, do_numa_crng_init);
 
-static void numa_crng_init(void)
-{
-	schedule_work(&numa_crng_init_work);
-}
-
 static struct crng_state *select_crng(void)
 {
 	struct crng_state **pool;
@@ -898,7 +893,6 @@ static struct crng_state *select_crng(void)
 	return &primary_crng;
 }
 #else
-static void numa_crng_init(void) {}
 
 static struct crng_state *select_crng(void)
 {
