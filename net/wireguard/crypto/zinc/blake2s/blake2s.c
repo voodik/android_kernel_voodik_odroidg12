@@ -167,42 +167,6 @@ static inline void blake2s_compress(struct blake2s_state *state,
 	}
 }
 
-void blake2s_update(struct blake2s_state *state, const u8 *in, size_t inlen)
-{
-	const size_t fill = BLAKE2S_BLOCK_SIZE - state->buflen;
-
-	if (unlikely(!inlen))
-		return;
-	if (inlen > fill) {
-		memcpy(state->buf + state->buflen, in, fill);
-		blake2s_compress(state, state->buf, 1, BLAKE2S_BLOCK_SIZE);
-		state->buflen = 0;
-		in += fill;
-		inlen -= fill;
-	}
-	if (inlen > BLAKE2S_BLOCK_SIZE) {
-		const size_t nblocks = DIV_ROUND_UP(inlen, BLAKE2S_BLOCK_SIZE);
-		/* Hash one less (full) block than strictly possible */
-		blake2s_compress(state, in, nblocks - 1, BLAKE2S_BLOCK_SIZE);
-		in += BLAKE2S_BLOCK_SIZE * (nblocks - 1);
-		inlen -= BLAKE2S_BLOCK_SIZE * (nblocks - 1);
-	}
-	memcpy(state->buf + state->buflen, in, inlen);
-	state->buflen += inlen;
-}
-
-void blake2s_final(struct blake2s_state *state, u8 *out)
-{
-	WARN_ON(IS_ENABLED(DEBUG) && !out);
-	blake2s_set_lastblock(state);
-	memset(state->buf + state->buflen, 0,
-	       BLAKE2S_BLOCK_SIZE - state->buflen); /* Padding */
-	blake2s_compress(state, state->buf, 1, state->buflen);
-	cpu_to_le32_array(state->h, ARRAY_SIZE(state->h));
-	memcpy(out, state->h, state->outlen);
-	memzero_explicit(state, sizeof(*state));
-}
-
 void blake2s_hmac(u8 *out, const u8 *in, const u8 *key, const size_t outlen,
 		  const size_t inlen, const size_t keylen)
 {
