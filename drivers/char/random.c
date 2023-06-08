@@ -886,6 +886,8 @@ static void crng_initialize(struct crng_state *crng)
 	crng->init_time = jiffies - CRNG_RESEED_INTERVAL - 1;
 }
 
+static void numa_crng_init(void);
+
 static void crng_finalize_init(struct crng_state *crng)
 {
 	if (crng != &primary_crng || crng_init >= 2)
