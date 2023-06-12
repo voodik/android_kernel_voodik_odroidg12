@@ -880,27 +880,6 @@ static int crng_fast_load(const char *cp, size_t len)
 	return 1;
 }
 
-#ifdef CONFIG_NUMA
-static struct crng_state *select_crng(void)
-{
-	struct crng_state **pool;
-	int nid = numa_node_id();
-
-	/* pairs with cmpxchg_release() in do_numa_crng_init() */
-	pool = READ_ONCE(crng_node_pool);
-	if (pool && pool[nid])
-		return pool[nid];
-
-	return &primary_crng;
-}
-#else
-
-static struct crng_state *select_crng(void)
-{
-	return &primary_crng;
-}
-#endif
-
 /*
  * crng_slow_load() is called by add_device_randomness, which has two
  * attributes.  (1) We can't trust the buffer passed to it is
