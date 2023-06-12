@@ -809,6 +809,8 @@ static void __maybe_unused crng_initialize_secondary(struct crng_state *crng)
 	crng->init_time = jiffies - CRNG_RESEED_INTERVAL - 1;
 }
 
+static void numa_crng_init(void);
+
 static void __init crng_initialize_primary(struct crng_state *crng)
 {
 	memcpy(&crng->state[0], "expand 32-byte k", 16);
@@ -821,8 +823,6 @@ static void __init crng_initialize_primary(struct crng_state *crng)
 	}
 	crng->init_time = jiffies - CRNG_RESEED_INTERVAL - 1;
 }
-
-static void numa_crng_init(void);
 
 static void crng_finalize_init(struct crng_state *crng)
 {
