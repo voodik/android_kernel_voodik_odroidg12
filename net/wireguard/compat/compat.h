@@ -281,51 +281,6 @@ static const struct in6_addr __compat_in6addr_any = IN6ADDR_ANY_INIT;
 #define in6addr_any __compat_in6addr_any
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
-#include <linux/completion.h>
-#include <linux/random.h>
-#include <linux/errno.h>
-struct rng_initializer {
-	struct completion done;
-	struct random_ready_callback cb;
-};
-static inline void rng_initialized_callback(struct random_ready_callback *cb)
-{
-	complete(&container_of(cb, struct rng_initializer, cb)->done);
-}
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
-/* This is a disaster. Without this API, we really have no way of
- * knowing if it's initialized. We just return that it has and hope
- * for the best... */
-static inline int wait_for_random_bytes(void)
-{
-	return 0;
-}
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0) && !defined(ISRHEL8)
-#include <linux/random.h>
-#include <linux/slab.h>
-struct rng_is_initialized_callback {
-	struct random_ready_callback cb;
-	atomic_t *rng_state;
-};
-static inline void rng_is_initialized_callback(struct random_ready_callback *cb)
-{
-	struct rng_is_initialized_callback *rdy = container_of(cb, struct rng_is_initialized_callback, cb);
-	atomic_set(rdy->rng_state, 2);
-	kfree(rdy);
-}
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 2, 0)
-/* This is a disaster. Without this API, we really have no way of
- * knowing if it's initialized. We just return that it has and hope
- * for the best... */
-static inline bool rng_is_initialized(void)
-{
-	return true;
-}
-#endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 11, 0) && !defined(ISRHEL7)
 #define system_power_efficient_wq system_unbound_wq
 #endif
