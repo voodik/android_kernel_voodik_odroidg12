@@ -562,7 +562,9 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 		.capability = ARM64_SPECTRE_BHB,
 		.matches = is_spectre_bhb_affected,
 #ifdef CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY
+#ifdef CONFIG_HARDEN_BRANCH_PREDICTOR
 		.cpu_enable = spectre_bhb_enable_mitigation,
+#endif
 #endif
 	},
 	{
