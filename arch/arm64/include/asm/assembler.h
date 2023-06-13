@@ -512,7 +512,9 @@ alternative_endif
 
 	.macro __mitigate_spectre_bhb_loop      tmp
 #ifdef CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY
+#ifdef CONFIG_HARDEN_BRANCH_PREDICTOR
 alternative_cb  spectre_bhb_patch_loop_iter
+#endif
 	mov	\tmp, #32		// Patched to correct the immediate
 alternative_cb_end
 .Lspectre_bhb_loop\@:
