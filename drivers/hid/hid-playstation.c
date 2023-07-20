@@ -809,7 +809,7 @@ static int ps_get_report(struct hid_device *hdev, uint8_t report_id, uint8_t *bu
 
 		if (!ps_check_crc32(PS_FEATURE_CRC32_SEED, buf, crc_offset, report_crc)) {
 			hid_err(hdev, "CRC check failed for reportID=%d\n", report_id);
-			return -EILSEQ;
+//			return -EILSEQ;
 		}
 	}
 
