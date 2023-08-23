@@ -21,6 +21,8 @@
 #include <linux/types.h>
 #include <linux/vmalloc.h>
 
+#include <asm-generic/dma-coherent.h>
+
 #include <xen/xen.h>
 #include <asm/xen/hypervisor.h>
 

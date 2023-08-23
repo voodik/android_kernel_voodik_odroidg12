@@ -10,6 +10,7 @@
 #include <linux/scatterlist.h>
 #include <linux/kmemcheck.h>
 #include <linux/bug.h>
+#include <linux/dma-attrs.h>
 
 /**
  * List of possible attributes associated with a DMA mapping. The semantics
@@ -178,10 +179,18 @@ int dma_release_from_coherent(struct device *dev, int order, void *vaddr);
 
 int dma_mmap_from_coherent(struct device *dev, struct vm_area_struct *vma,
 			    void *cpu_addr, size_t size, int *ret);
+
+int dma_alloc_from_coherent_attr(struct device *dev, ssize_t size,
+				       dma_addr_t *dma_handle, void **ret,
+				       unsigned long attrs);
+int dma_release_from_coherent_attr(struct device *dev, size_t size, void *vaddr,
+				unsigned long attrs, dma_addr_t dma_handle);
 #else
 #define dma_alloc_from_coherent(dev, size, handle, ret) (0)
 #define dma_release_from_coherent(dev, order, vaddr) (0)
 #define dma_mmap_from_coherent(dev, vma, vaddr, order, ret) (0)
+#define dma_alloc_from_coherent_attr(dev, size, dandle, ret, attrs) (0)
+#define dma_release_from_coherent_attr(dev, size, vaddr, attrs, handle) (0)
 #endif /* CONFIG_HAVE_GENERIC_DMA_COHERENT */
 
 #ifdef CONFIG_HAS_DMA
