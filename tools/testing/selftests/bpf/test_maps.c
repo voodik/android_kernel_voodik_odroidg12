@@ -332,7 +332,6 @@ static void test_arraymap_percpu(int task, void *data)
 
 static void test_arraymap_percpu_many_keys(void)
 {
-<<<<<<< HEAD
 	unsigned int nr_cpus = sysconf(_SC_NPROCESSORS_CONF);
 	unsigned int nr_keys = 20000;
 	long values[nr_cpus];
