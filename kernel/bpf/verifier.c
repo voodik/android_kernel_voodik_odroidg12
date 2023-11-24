@@ -544,11 +544,10 @@ static bool is_spillable_regtype(enum bpf_reg_type type)
 /* check_stack_read/write functions track spill/fill of registers,
  * stack boundary and alignment are checked in check_mem_access()
  */
-static int check_stack_write(struct bpf_verifier_env *env,
-			     struct bpf_verifier_state *state, int off,
-			     int size, int value_regno, int insn_idx)
+static int check_stack_write(struct bpf_verifier_state *state, int off,
+			     int size, int value_regno)
 {
-	int i, spi = (MAX_BPF_STACK + off) / BPF_REG_SIZE;
+	int i;
 	/* caller checked that off % size == 0 and -MAX_BPF_STACK <= off < 0,
 	 * so it's aligned access and [off, off + size) are within stack limits
 	 */
@@ -563,37 +562,15 @@ static int check_stack_write(struct bpf_verifier_env *env,
 		}
 
 		/* save register state */
-		state->spilled_regs[spi] = state->regs[value_regno];
+		state->spilled_regs[(MAX_BPF_STACK + off) / BPF_REG_SIZE] =
+			state->regs[value_regno];
 
-		for (i = 0; i < BPF_REG_SIZE; i++) {
-			if (state->stack_slot_type[MAX_BPF_STACK + off + i] == STACK_MISC &&
-			    !env->allow_ptr_leaks) {
-				int *poff = &env->insn_aux_data[insn_idx].sanitize_stack_off;
-				int soff = (-spi - 1) * BPF_REG_SIZE;
-
-				/* detected reuse of integer stack slot with a pointer
-				 * which means either llvm is reusing stack slot or
-				 * an attacker is trying to exploit CVE-2018-3639
-				 * (speculative store bypass)
-				 * Have to sanitize that slot with preemptive
-				 * store of zero.
-				 */
-				if (*poff && *poff != soff) {
-					/* disallow programs where single insn stores
-					 * into two different stack slots, since verifier
-					 * cannot sanitize them
-					 */
-					verbose("insn %d cannot access two stack slots fp%d and fp%d",
-						insn_idx, *poff, soff);
-					return -EINVAL;
-				}
-				*poff = soff;
-			}
+		for (i = 0; i < BPF_REG_SIZE; i++)
 			state->stack_slot_type[MAX_BPF_STACK + off + i] = STACK_SPILL;
-		}
 	} else {
 		/* regular write of data into stack */
-		state->spilled_regs[spi] = (struct bpf_reg_state) {};
+		state->spilled_regs[(MAX_BPF_STACK + off) / BPF_REG_SIZE] =
+			(struct bpf_reg_state) {};
 
 		for (i = 0; i < size; i++)
 			state->stack_slot_type[MAX_BPF_STACK + off + i] = STACK_MISC;
@@ -872,7 +849,7 @@ static int check_mem_access(struct bpf_verifier_env *env, int insn_idx, u32 regn
 			verbose("R%d leaks addr into ctx\n", value_regno);
 			return -EACCES;
 		}
-		err = check_ctx_access(env, off, size, t, &reg_type);
+		err = check_ctx_access(env, insn_idx, off, size, t, &reg_type);
 		if (!err && t == BPF_READ && value_regno >= 0) {
 			mark_reg_unknown_value(state->regs, value_regno);
 			/* note that reg.[id|off|range] == 0 */
@@ -895,8 +872,7 @@ static int check_mem_access(struct bpf_verifier_env *env, int insn_idx, u32 regn
 				verbose("attempt to corrupt spilled pointer on stack\n");
 				return -EACCES;
 			}
-			err = check_stack_write(env, state, off, size,
-						value_regno, insn_idx);
+			err = check_stack_write(state, off, size, value_regno);
 		} else {
 			err = check_stack_read(state, off, size, value_regno);
 		}
@@ -2968,7 +2944,7 @@ static int do_check(struct bpf_verifier_env *env)
 		class = BPF_CLASS(insn->code);
 
 		if (++insn_processed > BPF_COMPLEXITY_LIMIT_INSNS) {
-			verbose("BPF program is too large. Proccessed %d insn\n",
+			verbose("BPF program is too large. Processed %d insn\n",
 				insn_processed);
 			return -E2BIG;
 		}
@@ -2988,14 +2964,15 @@ static int do_check(struct bpf_verifier_env *env)
 			goto process_bpf_exit;
 		}
 
-		if (signal_pending(current))
-			return -EAGAIN;
-
 		if (need_resched())
 			cond_resched();
 
-		if (log_level && do_print_state) {
-			verbose("\nfrom %d to %d:", prev_insn_idx, insn_idx);
+		if (log_level > 1 || (log_level && do_print_state)) {
+			if (log_level > 1)
+				verbose("%d:", insn_idx);
+			else
+				verbose("\nfrom %d to %d:",
+					prev_insn_idx, insn_idx);
 			print_verifier_state(&env->cur_state);
 			do_print_state = false;
 		}
@@ -3009,7 +2986,6 @@ static int do_check(struct bpf_verifier_env *env)
 		if (err)
 			return err;
 
-		env->insn_aux_data[insn_idx].seen = true;
 		if (class == BPF_ALU || class == BPF_ALU64) {
 			err = check_alu_op(env, insn);
 			if (err)
@@ -3039,13 +3015,6 @@ static int do_check(struct bpf_verifier_env *env)
 					       insn->dst_reg);
 			if (err)
 				return err;
-
-			reset_reg_range_values(regs, insn->dst_reg);
-			if (BPF_SIZE(insn->code) != BPF_W &&
-			    BPF_SIZE(insn->code) != BPF_DW) {
-				insn_idx++;
-				continue;
-			}
 
 			prev_src_type = &env->insn_aux_data[insn_idx].ptr_type;
 
@@ -3120,12 +3089,6 @@ static int do_check(struct bpf_verifier_env *env)
 			err = check_reg_arg(regs, insn->dst_reg, SRC_OP);
 			if (err)
 				return err;
-
-			if (is_ctx_reg(env, insn->dst_reg)) {
-				verbose("BPF_ST stores into R%d context is not allowed\n",
-					insn->dst_reg);
-				return -EACCES;
-			}
 
 			/* check that memory (dst_reg + off) is writeable */
 			err = check_mem_access(env, insn_idx, insn->dst_reg, insn->off,
@@ -3213,7 +3176,6 @@ process_bpf_exit:
 					return err;
 
 				insn_idx++;
-				env->insn_aux_data[insn_idx].seen = true;
 			} else {
 				verbose("invalid BPF_LD mode\n");
 				return -EINVAL;
@@ -3395,7 +3357,6 @@ static int adjust_insn_aux_data(struct bpf_verifier_env *env, u32 prog_len,
 				u32 off, u32 cnt)
 {
 	struct bpf_insn_aux_data *new_data, *old_data = env->insn_aux_data;
-	int i;
 
 	if (cnt == 1)
 		return 0;
@@ -3405,8 +3366,6 @@ static int adjust_insn_aux_data(struct bpf_verifier_env *env, u32 prog_len,
 	memcpy(new_data, old_data, sizeof(struct bpf_insn_aux_data) * off);
 	memcpy(new_data + off + cnt - 1, old_data + off,
 	       sizeof(struct bpf_insn_aux_data) * (prog_len - off - cnt + 1));
-	for (i = off; i < off + cnt - 1; i++)
-		new_data[i].seen = true;
 	env->insn_aux_data = new_data;
 	vfree(old_data);
 	return 0;
@@ -3423,25 +3382,6 @@ static struct bpf_prog *bpf_patch_insn_data(struct bpf_verifier_env *env, u32 of
 	if (adjust_insn_aux_data(env, new_prog->len, off, len))
 		return NULL;
 	return new_prog;
-}
-
-/* The verifier does more data flow analysis than llvm and will not explore
- * branches that are dead at run time. Malicious programs can have dead code
- * too. Therefore replace all dead at-run-time code with nops.
- */
-static void sanitize_dead_code(struct bpf_verifier_env *env)
-{
-	struct bpf_insn_aux_data *aux_data = env->insn_aux_data;
-	struct bpf_insn nop = BPF_MOV64_REG(BPF_REG_0, BPF_REG_0);
-	struct bpf_insn *insn = env->prog->insnsi;
-	const int insn_cnt = env->prog->len;
-	int i;
-
-	for (i = 0; i < insn_cnt; i++) {
-		if (aux_data[i].seen)
-			continue;
-		memcpy(insn + i, &nop, sizeof(nop));
-	}
 }
 
 /* convert load instructions that access fields of 'struct __sk_buff'
@@ -3768,9 +3708,6 @@ int bpf_check(struct bpf_prog **prog, union bpf_attr *attr)
 skip_full_check:
 	while (pop_stack(env, NULL) >= 0);
 	free_states(env);
-
-	if (ret == 0)
-		sanitize_dead_code(env);
 
 	if (ret == 0)
 		/* program is valid, convert *(u32*)(ctx + off) accesses */

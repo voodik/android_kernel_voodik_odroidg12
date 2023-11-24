@@ -171,6 +171,7 @@ enum bpf_reg_type {
 struct bpf_insn_access_aux {
 	enum bpf_reg_type reg_type;
 	int ctx_field_size;
+	int converted_op_size;
 };
 
 static inline void
@@ -187,7 +188,7 @@ struct bpf_verifier_ops {
 	 * with 'type' (read or write) is allowed
 	 */
 	bool (*is_valid_access)(int off, int size, enum bpf_access_type type,
-				enum bpf_reg_type *reg_type);
+				struct bpf_insn_access_aux *info);
 	int (*gen_prologue)(struct bpf_insn *insn, bool direct_write,
 			    const struct bpf_prog *prog);
 	u32 (*convert_ctx_access)(enum bpf_access_type type,
@@ -275,6 +276,9 @@ DECLARE_PER_CPU(int, bpf_prog_active);
 #include <linux/bpf_types.h>
 #undef BPF_PROG_TYPE
 #undef BPF_MAP_TYPE
+
+extern const struct file_operations bpf_map_fops;
+extern const struct file_operations bpf_prog_fops;
 
 struct bpf_prog *bpf_prog_get(u32 ufd);
 struct bpf_prog *bpf_prog_get_type(u32 ufd, enum bpf_prog_type type);
