@@ -34,6 +34,7 @@
 #include <linux/file.h>
 #include <linux/kernel.h>
 #include <linux/net.h>
+#include <linux/refcount.h>
 #include <linux/skbuff.h>
 #include <linux/workqueue.h>
 #include <linux/list.h>
