@@ -2314,6 +2314,11 @@ static int btintel_setup_combined(struct hci_dev *hdev)
 			err = -EINVAL;
 		}
 
+		hci_set_hw_info(hdev,
+				"INTEL platform=%u variant=%u revision=%u",
+				ver.hw_platform, ver.hw_variant,
+				ver.hw_revision);
+
 		goto exit_error;
 	}
 
@@ -2362,6 +2367,10 @@ static int btintel_setup_combined(struct hci_dev *hdev)
 			   INTEL_HW_VARIANT(ver_tlv.cnvi_bt));
 		return -EINVAL;
 	}
+
+	hci_set_hw_info(hdev, "INTEL platform=%u variant=%u",
+			INTEL_HW_PLATFORM(ver_tlv.cnvi_bt),
+			INTEL_HW_VARIANT(ver_tlv.cnvi_bt));
 
 exit_error:
 	kfree_skb(skb);
