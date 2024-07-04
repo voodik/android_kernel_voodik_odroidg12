@@ -434,7 +434,7 @@ static int btmtksdio_recv_acl(struct hci_dev *hdev, struct sk_buff *skb)
 		 * device can no longer suspend and thus disable auto-suspend.
 		 */
 		pm_runtime_forbid(bdev->dev);
-		fallthrough;
+		/* fall through */
 	case 0x05ff:
 	case 0x05fe:
 		/* Firmware debug logging */
