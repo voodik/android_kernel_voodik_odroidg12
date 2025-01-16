@@ -3472,7 +3472,7 @@ SYSCALL_DEFINE1(sigpending, old_sigset_t __user *, uset)
 	if (sizeof(old_sigset_t) > sizeof(*uset))
 		return -EINVAL;
 
-	err = do_sigpending(&set);
+	err = do_sigpending(&set, sizeof(old_sigset_t));
 	if (!err && copy_to_user(uset, &set, sizeof(old_sigset_t)))
 		err = -EFAULT;
 	return err;
