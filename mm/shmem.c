@@ -2520,7 +2520,7 @@ static void shmem_tag_pins(struct address_space *mapping)
 		if (++tagged % 1024)
 			continue;
 
-		slot = radix_tree_iter_next(&iter);
+		slot = radix_tree_iter_resume(slot, &iter);
 		spin_unlock_irq(&mapping->tree_lock);
 		cond_resched();
 		spin_lock_irq(&mapping->tree_lock);

@@ -475,7 +475,7 @@ static void lo_rw_aio_do_completion(struct loop_cmd *cmd)
 		return;
 	kfree(cmd->bvec);
 	cmd->bvec = NULL;
-	blk_mq_complete_request(cmd->rq);
+	blk_mq_complete_request(cmd->rq, 0);
 }
 
 static void lo_rw_aio_complete(struct kiocb *iocb, long ret, long ret2)
