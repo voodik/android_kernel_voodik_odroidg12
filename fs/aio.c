@@ -51,6 +51,8 @@
 
 #define KIOCB_KEY		0
 
+#define key_to_poll(m) ((__force __poll_t)(uintptr_t)(void *)(m))
+
 #define AIO_RING_MAGIC			0xa10a10a1
 #define AIO_RING_COMPAT_FEATURES	1
 #define AIO_RING_INCOMPAT_FEATURES	0
@@ -169,11 +171,11 @@ struct fsync_iocb {
 
 struct poll_iocb {
 	struct file		*file;
-	struct wait_queue_head	*head;
+	struct __wait_queue_head	*head;
 	__poll_t		events;
 	bool			woken;
 	bool			cancelled;
-	struct wait_queue_entry	wait;
+	struct __wait_queue	wait;
 	struct work_struct	work;
 };
 
@@ -994,6 +996,13 @@ static void user_refill_reqs_available(struct kioctx *ctx)
 	spin_unlock_irq(&ctx->completion_lock);
 }
 
+static inline __poll_t vfs_poll(struct file *file, struct poll_table_struct *pt)
+{
+	if (unlikely(!file->f_op->poll))
+		return DEFAULT_POLLMASK;
+	return file->f_op->poll(file, pt);
+}
+
 /* aio_get_req
  *	Allocate a slot for an aio request.
  * Returns NULL if no requests are free.
@@ -1646,8 +1655,8 @@ static int aio_poll_cancel(struct kiocb *iocb)
 
 	spin_lock(&req->head->lock);
 	WRITE_ONCE(req->cancelled, true);
-	if (!list_empty(&req->wait.entry)) {
-		list_del_init(&req->wait.entry);
+	if (!list_empty(&req->wait.task_list)) {
+		list_del_init(&req->wait.task_list);
 		schedule_work(&aiocb->poll.work);
 	}
 	spin_unlock(&req->head->lock);
@@ -1655,7 +1664,7 @@ static int aio_poll_cancel(struct kiocb *iocb)
 	return 0;
 }
 
-static int aio_poll_wake(struct wait_queue_entry *wait, unsigned mode, int sync,
+static int aio_poll_wake(struct __wait_queue *wait, unsigned mode, int sync,
 		void *key)
 {
 	struct poll_iocb *req = container_of(wait, struct poll_iocb, wait);
@@ -1680,13 +1689,13 @@ static int aio_poll_wake(struct wait_queue_entry *wait, unsigned mode, int sync,
 			list_del(&iocb->ki_list);
 			spin_unlock_irqrestore(&iocb->ki_ctx->ctx_lock, flags);
 
-			list_del_init(&req->wait.entry);
+			list_del_init(&req->wait.task_list);
 			aio_poll_complete(iocb, mask);
 			return 1;
 		}
 	}
 
-	list_del_init(&req->wait.entry);
+	list_del_init(&req->wait.task_list);
 	schedule_work(&req->work);
 	return 1;
 }
@@ -1698,7 +1707,7 @@ struct aio_poll_table {
 };
 
 static void
-aio_poll_queue_proc(struct file *file, struct wait_queue_head *head,
+aio_poll_queue_proc(struct file *file, struct __wait_queue_head *head,
 		struct poll_table_struct *p)
 {
 	struct aio_poll_table *pt = container_of(p, struct aio_poll_table, pt);
@@ -1740,7 +1749,7 @@ static ssize_t aio_poll(struct aio_kiocb *aiocb, struct iocb *iocb)
 	apt.error = -EINVAL; /* same as no support for IOCB_CMD_POLL */
 
 	/* initialized the list so that we can do list_empty checks */
-	INIT_LIST_HEAD(&req->wait.entry);
+	INIT_LIST_HEAD(&req->wait.task_list);
 	init_waitqueue_func_entry(&req->wait, aio_poll_wake);
 
 	/* one for removal from waitqueue, one for this function */
@@ -1760,8 +1769,8 @@ static ssize_t aio_poll(struct aio_kiocb *aiocb, struct iocb *iocb)
 		apt.error = 0;
 	} else if (mask || apt.error) {
 		/* if we get an error or a mask we are done */
-		WARN_ON_ONCE(list_empty(&req->wait.entry));
-		list_del_init(&req->wait.entry);
+		WARN_ON_ONCE(list_empty(&req->wait.task_list));
+		list_del_init(&req->wait.task_list);
 	} else {
 		/* actually waiting for an event */
 		list_add_tail(&aiocb->ki_list, &ctx->active_reqs);
@@ -1825,12 +1834,6 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 			req->ki_eventfd = NULL;
 			goto out_put_req;
 		}
-	}
-
-	if ((req->common.ki_flags & IOCB_NOWAIT) &&
-			!(req->common.ki_flags & IOCB_DIRECT)) {
-		ret = -EOPNOTSUPP;
-		goto out_put_req;
 	}
 
 	ret = put_user(KIOCB_KEY, &user_iocb->aio_key);
@@ -2052,7 +2055,8 @@ static long do_io_getevents(aio_context_t ctx_id,
 		struct io_event __user *events,
 		struct timespec64 *ts)
 {
-	ktime_t until = ts ? timespec64_to_ktime(*ts) : KTIME_MAX;
+
+	ktime_t until = ts ? timespec64_to_ktime(*ts) : (ktime_t){ .tv64 = KTIME_MAX };
 	struct kioctx *ioctx = lookup_ioctx(ctx_id);
 	long ret = -EINVAL;
 
