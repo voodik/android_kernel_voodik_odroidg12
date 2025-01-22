@@ -1572,8 +1572,6 @@ static long kernel_waitid(int which, pid_t upid, struct waitid_info *infop,
 	wo.wo_rusage	= ru;
 	ret = do_wait(&wo);
 
-	if (which == P_PIDFD) pr_err("MNG waitid upid=%u pid=%d ret=%d\n", upid, pid, ret);
-
 	put_pid(pid);
 	return ret;
 }
