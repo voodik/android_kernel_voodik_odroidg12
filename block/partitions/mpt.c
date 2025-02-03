@@ -4,7 +4,7 @@
 #define MAX_MPT_PART_NAME_LEN	16
 #define MAX_MPT_PART_NUM		32
 
-#define MPT_PARTITION_SECTOR_OFFSET	2048
+#define MPT_PARTITION_SECTOR_OFFSET	1928
 
 struct partition_mpt {
 	char name[MAX_MPT_PART_NAME_LEN];
