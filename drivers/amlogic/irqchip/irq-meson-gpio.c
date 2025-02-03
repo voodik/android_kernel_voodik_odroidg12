@@ -75,6 +75,7 @@ static const struct meson_gpio_irq_params txlx_params = {
 
 static const struct meson_gpio_irq_params g12a_params = {
 	.nr_hwirq = 100,
+	.support_double_edge = 1,
 };
 
 static const struct meson_gpio_irq_params txl_params = {
