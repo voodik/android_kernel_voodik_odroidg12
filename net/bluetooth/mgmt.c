@@ -37,6 +37,8 @@
 #include "smp.h"
 #include "mgmt_util.h"
 
+#include <linux/overflow.h>
+
 #define MGMT_VERSION	1
 #define MGMT_REVISION	14
 
