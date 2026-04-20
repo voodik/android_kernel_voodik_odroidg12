@@ -52,6 +52,15 @@ config BT_HCIBTUSB_RTL
 
 	  Say Y here to compile support for Realtek protocol.
 
+config RTK_BTUSB
+	tristate "Realtek new protocol support"
+	select BT_RTL
+	help
+	  The Realtek new protocol support enables firmware and configuration
+	  download support for Realtek Bluetooth controllers.
+
+	  Say Y here to compile support for Realtek new protocol.
+
 config BT_HCIBTSDIO
 	tristate "HCI SDIO driver"
 	depends on MMC

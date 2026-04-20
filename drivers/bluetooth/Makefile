@@ -25,6 +25,10 @@ obj-$(CONFIG_BT_BCM)		+= btbcm.o
 obj-$(CONFIG_BT_RTL)		+= btrtl.o
 obj-$(CONFIG_BT_QCA)		+= btqca.o
 
+obj-$(CONFIG_RTK_BTUSB)		+= rtk_btusb.o
+
+rtk_btusb-y			:= rtk_coex.o rtk_misc.o rtk_bt.o
+
 btmrvl-y			:= btmrvl_main.o
 btmrvl-$(CONFIG_DEBUG_FS)	+= btmrvl_debugfs.o
 
