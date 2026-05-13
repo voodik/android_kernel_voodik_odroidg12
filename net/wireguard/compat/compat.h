@@ -446,13 +446,6 @@ static inline void *__compat_kvcalloc(size_t n, size_t size, gfp_t flags)
 #define nla_parse_nested(a, b, c, d, e) nla_parse_nested(a, b, c, d)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) && !defined(ISRHEL7)
-static inline struct nlattr **genl_family_attrbuf(const struct genl_family *family)
-{
-	return family->attrbuf;
-}
-#endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 12, 0)
 #define PTR_ERR_OR_ZERO(p) PTR_RET(p)
 #endif
