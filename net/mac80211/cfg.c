@@ -22,11 +22,53 @@
 #include "mesh.h"
 #include "wme.h"
 
+static int ieee80211_set_mu_mimo_follow(struct ieee80211_sub_if_data *sdata,
+					struct vif_params *params)
+{
+	struct ieee80211_local *local = sdata->local;
+	struct ieee80211_sub_if_data *monitor_sdata;
+	bool mu_mimo_groups = false;
+	bool mu_mimo_follow = false;
+
+	monitor_sdata = rtnl_dereference(local->monitor_sdata);
+
+	if (!monitor_sdata)
+		return -EOPNOTSUPP;
+
+	if (params->vht_mumimo_groups) {
+		u64 membership;
+
+		BUILD_BUG_ON(sizeof(membership) != WLAN_MEMBERSHIP_LEN);
+
+		memcpy(monitor_sdata->vif.bss_conf.mu_group.membership,
+		       params->vht_mumimo_groups, WLAN_MEMBERSHIP_LEN);
+		memcpy(monitor_sdata->vif.bss_conf.mu_group.position,
+		       params->vht_mumimo_groups + WLAN_MEMBERSHIP_LEN,
+		       WLAN_USER_POSITION_LEN);
+		ieee80211_bss_info_change_notify(monitor_sdata,
+						 BSS_CHANGED_MU_GROUPS);
+		/* don't care about endianness - just check for 0 */
+		memcpy(&membership, params->vht_mumimo_groups,
+		       WLAN_MEMBERSHIP_LEN);
+		mu_mimo_groups = membership != 0;
+	}
+
+	if (params->vht_mumimo_follow_addr) {
+		mu_mimo_follow =
+			is_valid_ether_addr(params->vht_mumimo_follow_addr);
+		ether_addr_copy(monitor_sdata->u.mntr.mu_follow_addr,
+				params->vht_mumimo_follow_addr);
+	}
+
+	monitor_sdata->vif.mu_mimo_owner = mu_mimo_groups || mu_mimo_follow;
+
+	return 0;
+}
+
 static struct wireless_dev *ieee80211_add_iface(struct wiphy *wiphy,
 						const char *name,
 						unsigned char name_assign_type,
 						enum nl80211_iftype type,
-						u32 *flags,
 						struct vif_params *params)
 {
 	struct ieee80211_local *local = wiphy_priv(wiphy);
@@ -38,9 +80,16 @@ static struct wireless_dev *ieee80211_add_iface(struct wiphy *wiphy,
 	if (err)
 		return ERR_PTR(err);
 
-	if (type == NL80211_IFTYPE_MONITOR && flags) {
-		sdata = IEEE80211_WDEV_TO_SUB_IF(wdev);
-		sdata->u.mntr.flags = *flags;
+	sdata = IEEE80211_WDEV_TO_SUB_IF(wdev);
+
+	if (type == NL80211_IFTYPE_MONITOR) {
+		err = ieee80211_set_mu_mimo_follow(sdata, params);
+		if (err) {
+			ieee80211_if_remove(sdata);
+			return NULL;
+		}
+
+		sdata->u.mntr.flags = params->flags;
 	}
 
 	return wdev;
@@ -55,7 +104,7 @@ static int ieee80211_del_iface(struct wiphy *wiphy, struct wireless_dev *wdev)
 
 static int ieee80211_change_iface(struct wiphy *wiphy,
 				  struct net_device *dev,
-				  enum nl80211_iftype type, u32 *flags,
+				  enum nl80211_iftype type,
 				  struct vif_params *params)
 {
 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
@@ -76,26 +125,13 @@ static int ieee80211_change_iface(struct wiphy *wiphy,
 
 	if (sdata->vif.type == NL80211_IFTYPE_MONITOR) {
 		struct ieee80211_local *local = sdata->local;
-		struct ieee80211_sub_if_data *monitor_sdata;
-		u32 mu_mntr_cap_flag = NL80211_EXT_FEATURE_MU_MIMO_AIR_SNIFFER;
+		int err;
 
-		monitor_sdata = rtnl_dereference(local->monitor_sdata);
-		if (monitor_sdata &&
-		    wiphy_ext_feature_isset(wiphy, mu_mntr_cap_flag)) {
-			memcpy(monitor_sdata->vif.bss_conf.mu_group.membership,
-			       params->vht_mumimo_groups, WLAN_MEMBERSHIP_LEN);
-			memcpy(monitor_sdata->vif.bss_conf.mu_group.position,
-			       params->vht_mumimo_groups + WLAN_MEMBERSHIP_LEN,
-			       WLAN_USER_POSITION_LEN);
-			monitor_sdata->vif.mu_mimo_owner = true;
-			ieee80211_bss_info_change_notify(monitor_sdata,
-							 BSS_CHANGED_MU_GROUPS);
+		err = ieee80211_set_mu_mimo_follow(sdata, params);
+		if (err)
+			return err;
 
-			ether_addr_copy(monitor_sdata->u.mntr.mu_follow_addr,
-					params->macaddr);
-		}
-
-		if (!flags)
+		if (!params->flags)
 			return 0;
 
 		if (ieee80211_sdata_running(sdata)) {
@@ -111,11 +147,12 @@ static int ieee80211_change_iface(struct wiphy *wiphy,
 			 *	cooked_mntrs, monitor and all fif_* counters
 			 *	reconfigure hardware
 			 */
-			if ((*flags & mask) != (sdata->u.mntr.flags & mask))
+			if ((params->flags & mask) !=
+			    (sdata->u.mntr.flags & mask))
 				return -EBUSY;
 
 			ieee80211_adjust_monitor_flags(sdata, -1);
-			sdata->u.mntr.flags = *flags;
+			sdata->u.mntr.flags = params->flags;
 			ieee80211_adjust_monitor_flags(sdata, 1);
 
 			ieee80211_configure_filter(local);
@@ -125,7 +162,7 @@ static int ieee80211_change_iface(struct wiphy *wiphy,
 			 * and ieee80211_do_open take care of "everything"
 			 * mentioned in the comment above.
 			 */
-			sdata->u.mntr.flags = *flags;
+			sdata->u.mntr.flags = params->flags;
 		}
 	}
 
@@ -208,8 +245,8 @@ static int ieee80211_nan_change_conf(struct wiphy *wiphy,
 	if (changes & CFG80211_NAN_CONF_CHANGED_PREF)
 		new_conf.master_pref = conf->master_pref;
 
-	if (changes & CFG80211_NAN_CONF_CHANGED_DUAL)
-		new_conf.dual = conf->dual;
+	if (changes & CFG80211_NAN_CONF_CHANGED_BANDS)
+		new_conf.bands = conf->bands;
 
 	ret = drv_nan_change_conf(sdata->local, sdata, &new_conf, changes);
 	if (!ret)
@@ -2168,7 +2205,8 @@ ieee80211_sched_scan_start(struct wiphy *wiphy,
 }
 
 static int
-ieee80211_sched_scan_stop(struct wiphy *wiphy, struct net_device *dev)
+ieee80211_sched_scan_stop(struct wiphy *wiphy, struct net_device *dev,
+			  u64 reqid)
 {
 	struct ieee80211_local *local = wiphy_priv(wiphy);
 
