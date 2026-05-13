@@ -63,7 +63,7 @@
 #include <linux/file.h>
 #include <linux/ctype.h>
 #define BDADDR_STRING_LEN	17
-#define BDADDR_FILE		"/opt/bdaddr"
+#define BDADDR_FILE		"/odm/bdaddr"
 
 struct cfg_list_item {
 	struct list_head list;
@@ -74,7 +74,7 @@ struct cfg_list_item {
 
 static struct list_head list_configs;
 
-#define EXTRA_CONFIG_FILE	"/opt/rtk_btconfig.txt"
+#define EXTRA_CONFIG_FILE	"/odm/rtk_btconfig.txt"
 static struct list_head list_extracfgs;
 
 static LIST_HEAD(apcf_filters);
