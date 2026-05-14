@@ -946,7 +946,7 @@ static int sco_sock_setsockopt(struct socket *sock, int level, int optname,
 			break;
 		}
 
-		if (copy_from_sockptr(buffer, optval, optlen)) {
+		if (copy_from_sockptr(buffer, USER_SOCKPTR(optval), optlen)) {
 			hci_dev_put(hdev);
 			err = -EFAULT;
 			break;
