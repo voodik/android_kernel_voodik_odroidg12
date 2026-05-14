@@ -130,7 +130,7 @@ struct btrealtek_data {
 	DECLARE_BITMAP(flags, __REALTEK_NUM_FLAGS);
 };
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
 static inline void *hci_get_priv(struct hci_dev *hdev)
 {
 	return (char *)hdev + sizeof(*hdev);
