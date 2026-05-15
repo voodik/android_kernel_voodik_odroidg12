@@ -43,7 +43,7 @@
 #include <linux/overflow.h>
 
 #define MGMT_VERSION	1
-#define MGMT_REVISION	21
+#define MGMT_REVISION	22
 
 static const u16 mgmt_commands[] = {
 	MGMT_OP_READ_INDEX_LIST,
@@ -9656,7 +9656,7 @@ static void mgmt_adv_monitor_device_found(struct hci_dev *hdev,
 	 * that it also has 'monitor_handle'. Make a copy of DEVICE_FOUND and
 	 * store monitor_handle of the matched monitor.
 	 */
-	monitor_handle = skb_put(advmon_skb, sizeof(*monitor_handle));
+	monitor_handle = (void *) skb_put(advmon_skb, sizeof(*monitor_handle));
 	skb_put_data(advmon_skb, skb->data, skb->len);
 
 	hdev->advmon_pend_notify = false;
