@@ -9043,7 +9043,7 @@ void mgmt_device_connected(struct hci_dev *hdev, struct hci_conn *conn,
 		skb = mgmt_alloc_skb(hdev, MGMT_EV_DEVICE_CONNECTED,
 				     2 + name_len + 5);
 
-	ev = skb_put(skb, sizeof(*ev));
+	ev = (void *) skb_put(skb, sizeof(*ev));
 	bacpy(&ev->addr.bdaddr, &conn->dst);
 	ev->addr.type = link_to_bdaddr(conn->type, conn->dst_type);
 
@@ -9612,7 +9612,7 @@ void mgmt_device_found(struct hci_dev *hdev, bdaddr_t *bdaddr, u8 link_type,
 	if (!skb)
 		return;
 
-	ev = skb_put(skb, sizeof(*ev));
+	ev = (void *) skb_put(skb, sizeof(*ev));
 
 	/* In case of device discovery with BR/EDR devices (pre 1.2), the
 	 * RSSI value was reported as 0 when not available. This behavior
@@ -9665,7 +9665,7 @@ void mgmt_remote_name(struct hci_dev *hdev, bdaddr_t *bdaddr, u8 link_type,
 	else
 		skb = mgmt_alloc_skb(hdev, MGMT_EV_DEVICE_FOUND, 0);
 
-	ev = skb_put(skb, sizeof(*ev));
+	ev = (void *) skb_put(skb, sizeof(*ev));
 	bacpy(&ev->addr.bdaddr, bdaddr);
 	ev->addr.type = link_to_bdaddr(link_type, addr_type);
 	ev->rssi = rssi;
