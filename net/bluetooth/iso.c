@@ -8,7 +8,6 @@
 #include <linux/module.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
-#include <linux/sched/signal.h>
 
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h>
@@ -307,7 +306,7 @@ static int iso_send_frame(struct sock *sk, struct sk_buff *skb)
 	len = skb->len;
 
 	/* Push ISO data header */
-	hdr = skb_push(skb, HCI_ISO_DATA_HDR_SIZE);
+	hdr = (void *) skb_push(skb, HCI_ISO_DATA_HDR_SIZE);
 	hdr->sn = cpu_to_le16(conn->tx_sn++);
 	hdr->slen = cpu_to_le16(hci_iso_data_len_pack(len,
 						      HCI_ISO_STATUS_VALID));
@@ -711,7 +710,7 @@ done:
 }
 
 static int iso_sock_accept(struct socket *sock, struct socket *newsock,
-			   int flags, bool kern)
+			   int flags)
 {
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 	struct sock *sk = sock->sk, *ch;
@@ -766,7 +765,7 @@ done:
 }
 
 static int iso_sock_getname(struct socket *sock, struct sockaddr *addr,
-			    int peer)
+			    int *len, int peer)
 {
 	struct sockaddr_iso *sa = (struct sockaddr_iso *)addr;
 	struct sock *sk = sock->sk;
@@ -774,6 +773,7 @@ static int iso_sock_getname(struct socket *sock, struct sockaddr *addr,
 	BT_DBG("sock %p, sk %p", sock, sk);
 
 	addr->sa_family = AF_BLUETOOTH;
+	*len = sizeof(struct sockaddr_iso);
 
 	if (peer) {
 		bacpy(&sa->iso_bdaddr, &iso_pi(sk)->dst);
@@ -940,7 +940,7 @@ static bool check_qos(struct bt_iso_qos *qos)
 }
 
 static int iso_sock_setsockopt(struct socket *sock, int level, int optname,
-			       sockptr_t optval, unsigned int optlen)
+			       char __user *optval, unsigned int optlen)
 {
 	struct sock *sk = sock->sk;
 	int len, err = 0;
@@ -958,7 +958,7 @@ static int iso_sock_setsockopt(struct socket *sock, int level, int optname,
 			break;
 		}
 
-		if (copy_from_sockptr(&opt, optval, sizeof(u32))) {
+		if (copy_from_sockptr(&opt, USER_SOCKPTR(optval), sizeof(u32))) {
 			err = -EFAULT;
 			break;
 		}
@@ -982,7 +982,7 @@ static int iso_sock_setsockopt(struct socket *sock, int level, int optname,
 
 		memset(&qos, 0, sizeof(qos));
 
-		if (copy_from_sockptr(&qos, optval, len)) {
+		if (copy_from_sockptr(&qos, USER_SOCKPTR(optval), len)) {
 			err = -EFAULT;
 			break;
 		}
