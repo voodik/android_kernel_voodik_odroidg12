@@ -1210,7 +1210,7 @@ static int iso_sock_setsockopt(struct socket *sock, int level, int optname,
 
 		len = min_t(unsigned int, sizeof(iso_pi(sk)->base), optlen);
 
-		if (copy_from_sockptr(iso_pi(sk)->base, optval, len)) {
+		if (copy_from_sockptr(iso_pi(sk)->base, USER_SOCKPTR(optval), len)) {
 			err = -EFAULT;
 			break;
 		}
