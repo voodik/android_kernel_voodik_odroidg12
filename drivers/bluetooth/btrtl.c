@@ -242,7 +242,7 @@ static const struct id_table ic_id_table[] = {
 	  .hw_info  = "rtl8761bu" },
 
 	/* 8761CU */
-	{ IC_INFO(RTL_ROM_LMP_8761A, 0x0e, 0, HCI_USB),
+	{ IC_INFO(RTL_ROM_LMP_8761A, 0x0e, 0x0d, HCI_USB),
 	  .config_needed = false,
 	  .has_rom_version = true,
 	  .fw_name  = "rtl_bt/rtl8761cu_fw",
