@@ -1140,7 +1140,7 @@ next:
 		if (!skb)
 			goto err_free;
 
-		cmd = skb_put(skb, HCI_COMMAND_HDR_SIZE);
+		cmd = (void *)skb_put(skb, HCI_COMMAND_HDR_SIZE);
 		cmd->opcode = cpu_to_le16(0xfc66);
 		cmd->plen = 0;
 
