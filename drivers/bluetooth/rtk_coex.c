@@ -1706,7 +1706,7 @@ static void rtk_notify_regester_to_wifi(uint8_t * reg_value)
 
 #endif
 
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 static void rtk_btcoex_handle_cmd_le_create_cis(u8 *buffer, int count)
 {
 	struct hci_cp_le_create_cis *cp;
@@ -1866,7 +1866,7 @@ void rtk_btcoex_parse_cmd(uint8_t *buffer, int count)
 		RTKBT_INFO("HCI OP Disconnect, handle %04x, reason 0x%02x",
 			   ((u16)buffer[4] << 8 | buffer[3]), buffer[5]);
 		break;
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	case HCI_OP_LE_CREATE_CIS:
 	case HCI_OP_LE_SETUP_ISO_PATH:
 	case HCI_OP_LE_REMOVE_ISO_PATH:
@@ -2059,7 +2059,7 @@ static void rtk_parse_vendor_mailbox_cmd_evt(u8 * p, u8 total_len)
 }
 #endif /* RTB_SOFTWARE_MAILBOX */
 
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 static void big_conn_remove(u16 big_handle)
 {
 	struct list_head *head = &btrtl_coex.conn_hash;
@@ -2199,7 +2199,7 @@ static void rtk_handle_cmd_complete_evt(u8 total_len, u8 * p)
 			  *p, profileinfo_cmd);
 	}
 
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	if (opcode == HCI_OP_LE_SETUP_ISO_PATH)
 		rtk_handle_cc_le_setup_iso_path(p);
 
@@ -2245,7 +2245,7 @@ static void rtk_handle_cmd_status_evt(u8 * p)
 #endif
 		}
 	}
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	if (opcode == HCI_OP_LE_CREATE_CIS) {
 		/* TODO: Should we remove the cis conn?
 		 * Will an HCI_LE_CIS_Established event be generated for each
@@ -2408,7 +2408,7 @@ static void rtk_handle_le_connection_update_complete_evt(u8 * p)
 	update_hid_active_state(handle, interval);
 }
 
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 static void rtk_handle_le_cis_established_evt(void * p)
 {
 	struct hci_evt_le_cis_established *ev = p;
@@ -2488,7 +2488,7 @@ static void rtk_handle_le_create_big_complete_evt(void *p)
 {
 	struct hci_evt_le_create_big_complete *ev = p;
 	u16 big_handle;
-	u8 status;
+	u8 status, i;
 
 	status = ev->status;
 	if (status) {
@@ -2497,7 +2497,7 @@ static void rtk_handle_le_create_big_complete_evt(void *p)
 	}
 	big_handle = ev->handle;
 	big_handle += HCI_CONN_HANDLE_UNSET_START;
-	for (u8 i = 0; i < ev->num_bis; i++) {
+	for (i = 0; i < ev->num_bis; i++) {
 		u16 handle = le16_to_cpu(ev->bis_handle[i]);
 		big_conn_add(big_handle, handle, profile_lea_src);
 	}
@@ -2516,7 +2516,7 @@ static void rtk_handle_le_terminate_big_complete_evt(u8 * p)
 static void rtk_handle_le_big_sync_established_evt(void * p)
 {
 	struct hci_evt_le_big_sync_estabilished *ev = p;
-	u8 status;
+	u8 status, i;
 	u16 big_handle;
 	u16 bis_handle;
 
@@ -2528,7 +2528,7 @@ static void rtk_handle_le_big_sync_established_evt(void * p)
 		return;
 	}
 
-	for (u8 i = 0; i < ev->num_bis; i++) {
+	for (i = 0; i < ev->num_bis; i++) {
 		bis_handle = le16_to_cpu(ev->bis[i]);
 		big_conn_add(big_handle, bis_handle, profile_lea_snk);
 	}
@@ -2560,7 +2560,7 @@ static void rtk_handle_le_meta_evt(u8 * p)
 	case HCI_EV_LE_CONN_UPDATE_COMPLETE:
 		rtk_handle_le_connection_update_complete_evt(p);
 		break;
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	case HCI_EV_LE_CIS_EST:
 		rtk_handle_le_cis_established_evt(p);
 		break;
@@ -2929,7 +2929,7 @@ static void rtl_process_cmd(struct rtl_coex_struct *coex, u8 *buffer, int count)
 	hdr = (void *)buffer;
 	opcode = get_unaligned_le16(&hdr->opcode);
 	switch (opcode) {
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	case HCI_OP_LE_CREATE_CIS:
 		rtk_btcoex_handle_cmd_le_create_cis(buffer, count);
 		break;
@@ -3069,7 +3069,7 @@ static inline int cmd_cmplt_filter_out(u8 *buf)
 	case HCI_VENDOR_MAILBOX_CMD:
 #endif
 	case HCI_VENDOR_SET_PROFILE_REPORT_COMMAND:
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	case HCI_OP_LE_SETUP_ISO_PATH:
 	case HCI_OP_LE_BIG_TERM_SYNC:
 #endif
@@ -3087,7 +3087,7 @@ static inline int cmd_status_filter_out(u8 *buf)
 	switch (opcode) {
 	case HCI_OP_INQUIRY:
 	case HCI_OP_CREATE_CONN:
-#if HCI_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	case HCI_OP_LE_CREATE_CIS:
 #endif
 		return 0;

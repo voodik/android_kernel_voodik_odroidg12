@@ -53,7 +53,7 @@ static bool reset = true;
 #endif
 
 static struct usb_driver btusb_driver;
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 static u16 iso_min_conn_handle = 0x1b;
 #endif
 
@@ -248,7 +248,7 @@ static int btusb_recv_bulk(struct btusb_data *data, void *buffer, int count)
 		if (skb->len == HCI_ACL_HDR_SIZE) {
 			struct hci_acl_hdr *h = hci_acl_hdr(skb);
 			__le16 dlen = h->dlen;
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 			__u16 handle = __le16_to_cpu(h->handle) & 0xfff;
 
 			if(handle >= iso_min_conn_handle) {
@@ -854,7 +854,7 @@ done:
 	kfree_skb(skb);
 }
 
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 static int rtl_read_iso_handle_range(struct hci_dev *hdev)
 {
 	struct sk_buff *skb;
@@ -967,7 +967,7 @@ failed:
 	return err;
 }
 
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 static int btusb_setup(struct hci_dev *hdev)
 {
 	rtl_read_iso_handle_range(hdev);
@@ -1096,7 +1096,7 @@ static const char pkt_ind[][8] = {
 	[HCI_COMMAND_PKT] = "cmd",
 	[HCI_ACLDATA_PKT] = "acl",
 	[HCI_SCODATA_PKT] = "sco",
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	[HCI_ISODATA_PKT] = "iso",
 #endif
 };
@@ -1351,7 +1351,7 @@ int btusb_send_frame(struct sk_buff *skb)
 		break;
 
 #endif
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	case HCI_ISODATA_PKT:
 #endif
 	case HCI_ACLDATA_PKT:
@@ -2906,7 +2906,7 @@ static int btusb_probe(struct usb_interface *intf,
 	hdev->flush = btusb_flush;
 	hdev->send = btusb_send_frame;
 	hdev->notify = btusb_notify;
-#if HCI_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if HCI_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	hdev->setup = btusb_setup;
 #endif
 
