@@ -864,7 +864,6 @@ static const struct hid_device_id hid_ignore_list[] = {
 	{ HID_USB_DEVICE(USB_VENDOR_ID_SYNAPTICS, USB_DEVICE_ID_SYNAPTICS_DPAD) },
 #endif
 	{ HID_USB_DEVICE(USB_VENDOR_ID_YEALINK, USB_DEVICE_ID_YEALINK_P1K_P4K_B2K) },
-	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_MULTITOUCH) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ODROID, USB_DEVICE_ID_VU5) },
 	{ HID_USB_DEVICE(USB_VENDOR_ID_ODROID, USB_DEVICE_ID_VU7PLUS) },
 	{ }
@@ -937,8 +936,12 @@ static const struct hid_device_id hid_mouse_ignore_list[] = {
 	{ }
 };
 
+extern bool get_disable_vu7(void);
+
 bool hid_ignore(struct hid_device *hdev)
 {
+	bool disable_vu7;
+
 	if (hdev->quirks & HID_QUIRK_NO_IGNORE)
 		return false;
 	if (hdev->quirks & HID_QUIRK_IGNORE)
@@ -1000,6 +1003,14 @@ bool hid_ignore(struct hid_device *hdev)
 		    hdev->bus == BUS_USB &&
 		    strncmp(hdev->name, "www.masterkit.ru MA901", 22) == 0)
 			return true;
+		break;
+	case USB_VENDOR_ID_DWAV:
+		/* These are not HID devices.  They are handled by dwaw-mt */
+		if (hdev->product == USB_DEVICE_ID_DWAV_MULTITOUCH) {
+			disable_vu7 = get_disable_vu7();
+			pr_warn("Ignore USB_DEVICE_ID_DWAV_MULTITOUCH %d", !disable_vu7);
+			return !disable_vu7;
+		}
 		break;
 	}
 
