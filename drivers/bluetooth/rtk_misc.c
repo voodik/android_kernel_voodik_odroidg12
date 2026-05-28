@@ -413,13 +413,13 @@ static patch_info fw_patch_table[] = {
 	{0x8A60, 0x8761, "mp_rtl8761a_fw", "rtl8761au8812ae_fw", "rtl8761a_config", RTLPREVIOUS},	/* RTL8761AU + 8812AE */
 	{0x3527, 0x8761, "mp_rtl8761a_fw", "rtl8761au8192ee_fw", "rtl8761a_config", RTLPREVIOUS},	/* RTL8761AU + 8814AE */
 
-	{0x8821, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AE */
-	{0x0821, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AE */
-	{0x0823, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AU */
-	{0x3414, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AE */
-	{0x3458, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AE */
-	{0x3461, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AE */
-	{0x3462, 0x8821, "mp_rtl8821a_fw", "rtl8821a_fw", "rtl8821a_config", RTLPREVIOUS},	/* RTL8821AE */
+	{0x8821, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AE */
+	{0x0821, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AE */
+	{0x0823, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AU */
+	{0x3414, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AE */
+	{0x3458, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AE */
+	{0x3461, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AE */
+	{0x3462, 0x8821, "mp_rtl8821a_fw", "rtl_bt/rtl8821a_fw.bin", "rtl_bt/rtl8821a_config.bin", RTLPREVIOUS},	/* RTL8821AE */
 
 	{0xb82c, 0x8822, "mp_rtl8822bu_fw", "rtl8822bu_fw", "rtl8822bu_config", RTL8822BU}, /* RTL8822BU */
 
@@ -431,34 +431,34 @@ static patch_info fw_patch_table[] = {
 
 	{0xb703, 0x8703, "mp_rtl8723cu_fw", "rtl8723cu_fw", "rtl8723cu_config", RTL8723CU}, /* RTL8723CU */
 
-	{0xb820, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CU */
-	{0xc820, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CU */
-	{0xc821, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc823, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc824, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc825, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc827, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc025, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc024, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc030, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xb00a, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xb00e, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0xc032, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0x4000, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for LiteOn */
-	{0x4001, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for LiteOn */
-	{0x3529, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3530, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3532, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3533, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3538, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3539, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3558, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3559, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3581, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for Azurewave */
-	{0x3540, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE */
-	{0x3541, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for GSD */
-	{0x3543, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CE for GSD */
-	{0xc80c, 0x8821, "mp_rtl8821cu_fw", "rtl8821cu_fw", "rtl8821cu_config", RTL8821CU}, /* RTL8821CUH */
+	{0xb820, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CU */
+	{0xc820, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CU */
+	{0xc821, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc823, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc824, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc825, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc827, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc025, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc024, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc030, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xb00a, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xb00e, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0xc032, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0x4000, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for LiteOn */
+	{0x4001, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for LiteOn */
+	{0x3529, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3530, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3532, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3533, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3538, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3539, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3558, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3559, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3581, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for Azurewave */
+	{0x3540, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE */
+	{0x3541, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for GSD */
+	{0x3543, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CE for GSD */
+	{0xc80c, 0x8821, "mp_rtl8821cu_fw", "rtl_bt/rtl8821c_fw.bin", "rtl_bt/rtl8821c_config.bin", RTL8821CU}, /* RTL8821CUH */
 
 	{0xc82c, 0x8822, "mp_rtl8822cu_fw", "rtl8822cu_fw", "rtl8822cu_config", RTL8822CU}, /* RTL8822CU */
 	{0xc82e, 0x8822, "mp_rtl8822cu_fw", "rtl8822cu_fw", "rtl8822cu_config", RTL8822CU}, /* RTL8822CU */
@@ -492,8 +492,8 @@ static patch_info fw_patch_table[] = {
 	{0xc02f, 0x8822, "mp_rtl8822cu_fw", "rtl8822cu_fw", "rtl8822cu_config", RTL8822CU}, /* RTL8822CE-VS */
 	{0xc03f, 0x8822, "mp_rtl8822cu_fw", "rtl8822cu_fw", "rtl8822cu_config", RTL8822CU}, /* RTL8822CE-VS */
 
-	{0x8771, 0x8761, "mp_rtl8761b_fw", "rtl8761bu_fw", "rtl8761bu_config", RTL8761BU}, /* RTL8761BU only */
-	{0x876e, 0x8761, "mp_rtl8761b_fw", "rtl8761bu_fw", "rtl8761bu_config", RTL8761BU}, /* RTL8761BUE */
+	{0x8771, 0x8761, "mp_rtl8761b_fw", "rtl_bt/rtl8761bu_fw.bin", "rtl_bt/rtl8761bu_config.bin", RTL8761BU}, /* RTL8761BU only */
+	{0x876e, 0x8761, "mp_rtl8761b_fw", "rtl_bt/rtl8761bu_fw.bin", "rtl_bt/rtl8761bu_config.bin", RTL8761BU}, /* RTL8761BUE */
 	{0xa725, 0x8761, "mp_rtl8761b_fw", "rtl8725au_fw", "rtl8725au_config", RTL8761BU}, /* RTL8725AU */
 	{0xa72A, 0x8761, "mp_rtl8761b_fw", "rtl8725au_fw", "rtl8725au_config", RTL8761BU}, /* RTL8725AU BT only */
 
@@ -819,7 +819,7 @@ void config_file_proc(const char *path, int type)
 	int rc;
 	struct file *file;
 	u8 tbuf[256];
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	loff_t pos = 0;
 #endif
 
@@ -834,7 +834,7 @@ void config_file_proc(const char *path, int type)
 		return;
 
 	memset(tbuf, 0, sizeof(tbuf));
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	rc = kernel_read(file, tbuf, size, &pos);
 #else
 	rc = kernel_read(file, 0, tbuf, size);
@@ -2147,7 +2147,7 @@ static int request_bdaddr(u8 *buf)
 	u8 tbuf[BDADDR_STRING_LEN + 1];
 	char *str;
 	int i;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	loff_t pos = 0;
 #endif
 
@@ -2169,7 +2169,7 @@ static int request_bdaddr(u8 *buf)
 
 	memset(tbuf, 0, sizeof(tbuf));
 	RTKBT_INFO("size = %d", size);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 	rc = kernel_read(file, tbuf, size, &pos);
 #else
 	rc = kernel_read(file, 0, tbuf, size);
