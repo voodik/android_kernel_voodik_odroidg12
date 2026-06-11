@@ -2172,7 +2172,7 @@ int __sk_mem_schedule(struct sock *sk, int size, int kind)
 		if (sk->sk_type == SOCK_STREAM) {
 			if (sk->sk_wmem_queued < wmem0)
 				return 1;
-		} else if (atomic_read(&sk->sk_wmem_alloc) < wmem0)
+		} else if (atomic_read(&sk->sk_wmem_alloc) < wmem0) {
 				return 1;
 		}
 	}
